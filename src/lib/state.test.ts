@@ -16,8 +16,36 @@ describe('parseState', () => {
   })
 
   it('drops unknown fields', () => {
-    const result = parseState(JSON.stringify({ version: CURRENT_VERSION, junk: 1 }))
+    const result = parseState(JSON.stringify({ ...defaultState(), junk: 1 }))
     expect(result.ok && result.state).toEqual(defaultState())
+  })
+
+  it('migrates a version 1 sample, adding a running clock at zero', () => {
+    const result = parseState('{"version":1}')
+    expect(result).toEqual({
+      ok: true,
+      state: { version: 2, clock: { playMs: 0, paused: false } },
+      fromVersion: 1,
+    })
+  })
+
+  it('keeps a saved clock', () => {
+    const text = '{"version":2,"clock":{"playMs":3723000,"paused":true,"extra":1}}'
+    expect(parseState(text)).toMatchObject({
+      ok: true,
+      state: { clock: { playMs: 3723000, paused: true } },
+    })
+  })
+
+  it.each([
+    ['a missing clock', '{"version":2}', 'clock section is missing'],
+    ['a negative play time', '{"version":2,"clock":{"playMs":-1,"paused":false}}', 'play time'],
+    ['a text play time', '{"version":2,"clock":{"playMs":"5","paused":false}}', 'play time'],
+    ['a bad pause flag', '{"version":2,"clock":{"playMs":0,"paused":"no"}}', 'pause setting'],
+  ])('rejects %s', (_, text, message) => {
+    const result = parseState(text)
+    expect(result).toMatchObject({ ok: false, reason: 'invalid' })
+    expect(!result.ok && result.message).toContain(message)
   })
 
   it('reports a newer version without touching it', () => {

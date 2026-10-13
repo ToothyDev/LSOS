@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ClockBar from './components/ClockBar.svelte'
   import SaveStatus from './components/SaveStatus.svelte'
   import Settings from './components/Settings.svelte'
   import { TABS, hashForTab, tabFromHash, type TabId } from './lib/tabs'
@@ -23,6 +24,7 @@
   </nav>
 </header>
 
+<ClockBar />
 <SaveStatus />
 
 <main>

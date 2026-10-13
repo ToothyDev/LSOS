@@ -18,3 +18,4 @@ free number, add one line below. **Replacing one:** write a new decision, then m
 - [005](005-weekly-data.md) Weekly events come from a JSON file updated by PR, not a live API
 - [006](006-persisted-state.md) Persisted state is versioned, migrated on load, exportable as JSON
 - [007](007-state-store.md) State store: unreadable data blocks saving like a newer version; import overrides
+- [008](008-clock-details.md) Clock details: gaps over 5 min dropped, pause saved, trackers use `TimeMark`
