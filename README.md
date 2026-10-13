@@ -32,6 +32,11 @@ npm run verify   # typecheck, format check, tests, build (what CI runs)
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow and [docs/decisions](docs/decisions/README.md)
 for the design decisions behind the code.
 
+## License
+
+[MIT](LICENSE). Game data in `src/data/` cites its sources; facts about the game
+belong to no one, but please keep the source links when reusing it.
+
 ## Disclaimer
 
 LSOS is a fan-made tool, not affiliated with or endorsed by Rockstar Games or Take-Two Interactive.
