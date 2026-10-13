@@ -17,5 +17,5 @@ description: Get a PR ready to merge - empty the handoff, update docs, verify, r
    commands or workflow changed, and its "Next up" line.
 3. **Verify.** `npm run verify 2>&1 | tail -n 5` must pass.
 4. **Rewrite the PR title and description** to describe what the whole PR does now. With squash
-   merge the title becomes the commit message on main. Keep `Closes #N`. No session links.
+   merge the title becomes the commit message on main. Keep `Closes #N`. Write no session link yourself.
 5. Mark the PR ready for review (out of draft).
