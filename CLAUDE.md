@@ -4,7 +4,7 @@ LSOS (Los Santos Operating System) is a static, browser-only GTA Online tracker:
 safes, cooldowns and weekly events. User data lives in `localStorage`; there is no backend.
 Svelte 5 + TypeScript + Vite. Public repository.
 
-**Next up: #1** (persisted state store), then #2 (clocks). Update this line when a PR finishes.
+**Next up: #2** (clocks). Update this line when a PR finishes.
 
 ## Where things are
 
@@ -15,6 +15,8 @@ Svelte 5 + TypeScript + Vite. Public repository.
 | Continue an unfinished PR                      | `docs/handoff/<file>.md` on the PR branch         |
 | Tabs and hash routing                          | `src/lib/tabs.ts`, `src/App.svelte`               |
 | Game logic (pure TS, unit-tested)              | `src/lib/`                                        |
+| Saved user state, migrations, export/import    | `src/lib/state.ts`, `src/lib/store.svelte.ts`     |
+| UI components (thin)                           | `src/components/`                                 |
 | Game data with sources                         | `src/data/` (decision 004)                        |
 | Theme tokens                                   | `src/app.css`                                     |
 | CI, templates                                  | `.github/`                                        |
