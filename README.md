@@ -11,8 +11,9 @@ is ready again.
 - **Static site, no account.** Everything you enter stays in your browser (`localStorage`).
   Nothing is sent anywhere. Export/import lets you back up or move your data.
 - **Time-based estimates.** LSOS can't see the game. Business production runs while LSOS is
-  open and not paused ("play time"). Real-world cooldowns such as the Lucky Wheel run on the wall
-  clock even when LSOS is closed.
+  open and tracking ("play time"). LSOS opens paused: press Start when you start playing, or
+  turn on tracking on open in Settings. Real-world cooldowns such as the Lucky Wheel run on the
+  wall clock even when LSOS is closed.
 - **Resync anytime.** When an estimate drifts from what the game shows, click the value and type
   the real one.
 - **Weekly events** (bonuses, discounts) come from a data file in this repo that's updated weekly.

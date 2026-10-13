@@ -1,5 +1,5 @@
 // The persisted root state, its versions and migrations (decision 006).
-import { defaultClock, type ClockState } from './clock'
+import { defaultClockSettings, type ClockSettings } from './clock'
 
 /** Bump when the stored shape changes, and add a migration from the previous version. */
 export const CURRENT_VERSION = 2
@@ -7,12 +7,12 @@ export const CURRENT_VERSION = 2
 /** All user state. Trackers add their own sections here as they are built. */
 export interface AppState {
   version: typeof CURRENT_VERSION
-  /** Play time and the pause toggle (decision 003). */
-  clock: ClockState
+  /** Clock settings (decision 008). Play time itself lasts one session and is not saved. */
+  clock: ClockSettings
 }
 
 export function defaultState(): AppState {
-  return { version: CURRENT_VERSION, clock: defaultClock() }
+  return { version: CURRENT_VERSION, clock: defaultClockSettings() }
 }
 
 export type StoredData = Record<string, unknown> & { version: number }
@@ -23,7 +23,7 @@ export type Migration = (data: StoredData) => Record<string, unknown>
 /** `MIGRATIONS[n]` upgrades version `n` to `n + 1`. Each one has a test with a stored sample. */
 export const MIGRATIONS: Readonly<Record<number, Migration>> = {
   // Version 2 adds the clock (issue #2).
-  1: (data) => ({ ...data, clock: defaultClock() }),
+  1: (data) => ({ ...data, clock: defaultClockSettings() }),
 }
 
 export type ParseResult =
@@ -97,20 +97,11 @@ function toState(data: StoredData): AppState | string {
   return { version: CURRENT_VERSION, clock }
 }
 
-function toClock(data: unknown): ClockState | string {
+function toClock(data: unknown): ClockSettings | string {
   if (!isRecord(data)) return 'The clock section is missing.'
-  const { playMs, paused, lastTickMs, unconfirmedMs } = data
-  if (!isDuration(playMs)) return 'The saved play time is not a valid number.'
-  if (typeof paused !== 'boolean') return 'The saved pause setting is not true or false.'
-  if (lastTickMs !== null && !isDuration(lastTickMs)) {
-    return 'The saved time of the last tick is not a valid number.'
-  }
-  if (!isDuration(unconfirmedMs)) return 'The saved unconfirmed time is not a valid number.'
-  return { playMs, paused, lastTickMs, unconfirmedMs }
-}
-
-function isDuration(value: unknown): value is number {
-  return typeof value === 'number' && Number.isFinite(value) && value >= 0
+  const { trackOnOpen } = data
+  if (typeof trackOnOpen !== 'boolean') return 'The saved tracking setting is not true or false.'
+  return { trackOnOpen }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

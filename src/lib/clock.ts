@@ -1,30 +1,43 @@
 // Play time and real time (decision 003). Pure logic: every function takes `now` (epoch ms).
 
-/** The saved part of the clocks. Real time needs no saved state: it is the wall clock. */
+/** The play clock of the current session. Kept in memory only; each session starts at zero. */
 export interface ClockState {
-  /** Total play time counted so far, in ms. */
+  /** Play time counted this session, in ms. */
   playMs: number
-  /** While paused, play time does not advance. Saved, so a reload stays paused. */
+  /** While paused, play time does not advance. */
   paused: boolean
-  /**
-   * Wall-clock time of the last tick while running, epoch ms. `null` while paused or after the
-   * tab was closed normally. Saved, so a tab the browser discarded and reloaded continues.
-   */
+  /** Wall-clock time of the last tick while running, epoch ms. `null` while paused or closed. */
   lastTickMs: number | null
   /** Long gaps waiting for the user to say whether they were playing (decision 008). */
   unconfirmedMs: number
 }
 
-export function defaultClock(): ClockState {
-  return { playMs: 0, paused: false, lastTickMs: null, unconfirmedMs: 0 }
+/** The saved clock setting. */
+export interface ClockSettings {
+  /** Start tracking as soon as LSOS opens, instead of paused. */
+  trackOnOpen: boolean
+}
+
+export function defaultClockSettings(): ClockSettings {
+  return { trackOnOpen: false }
+}
+
+/** A new session's clock: paused unless the user chose to track on open. */
+export function startSession(settings: ClockSettings, now: number): ClockState {
+  return {
+    playMs: 0,
+    paused: !settings.trackOnOpen,
+    lastTickMs: settings.trackOnOpen ? now : null,
+    unconfirmedMs: 0,
+  }
 }
 
 /**
  * Gaps between ticks up to this long are counted as play time; longer ones are asked about.
  * Chrome runs timers in hidden tabs only once a minute, aligned to the minute, so throttled gaps
  * can approach two minutes. Five minutes leaves room for that and for a busy machine.
- * Longer gaps come from a frozen or discarded tab (still playing) or a sleeping computer (not
- * playing), which LSOS cannot tell apart, so the user decides.
+ * Longer gaps come from a frozen tab (still playing) or a sleeping computer (not playing),
+ * which LSOS cannot tell apart, so the user decides.
  */
 export const MAX_TICK_GAP_MS = 5 * 60_000
 
@@ -33,24 +46,28 @@ export const TICK_INTERVAL_MS = 1000
 
 /**
  * Advances play time from timestamps, never from tick counts, so throttled ticks lose nothing.
- * The first tick after starting only starts measuring.
+ * Returns the play time counted by this tick, for trackers to add to their progress.
  */
-export function tick(clock: ClockState, now: number): void {
-  if (clock.paused) return
+export function tick(clock: ClockState, now: number): number {
+  if (clock.paused) return 0
+  let counted = 0
   if (clock.lastTickMs !== null) {
     const gap = now - clock.lastTickMs
     // A negative gap means the system clock was set back; nothing is counted.
     if (gap > MAX_TICK_GAP_MS) clock.unconfirmedMs += gap
-    else if (gap > 0) clock.playMs += gap
+    else if (gap > 0) counted = gap
   }
+  clock.playMs += counted
   clock.lastTickMs = now
+  return counted
 }
 
-/** Counts the time up to `now`, then stops play time. */
-export function pause(clock: ClockState, now: number): void {
-  tick(clock, now)
+/** Counts the time up to `now`, then stops play time. Returns the play time counted. */
+export function pause(clock: ClockState, now: number): number {
+  const counted = tick(clock, now)
   clock.paused = true
   clock.lastTickMs = null
+  return counted
 }
 
 /** Starts play time again from `now`; the paused stretch is not counted. */
@@ -60,18 +77,21 @@ export function resume(clock: ClockState, now: number): void {
 }
 
 /**
- * The tab is closing normally (`pagehide`): counts up to `now`, then forgets the last tick so
- * closed time is not counted. A discarded tab gets no `pagehide`, so its gap is kept.
+ * The page is being left (`pagehide`): counts up to `now`, then forgets the last tick, so time
+ * away is not counted if the page comes back from the back/forward cache.
  */
-export function close(clock: ClockState, now: number): void {
-  tick(clock, now)
+export function close(clock: ClockState, now: number): number {
+  const counted = tick(clock, now)
   clock.lastTickMs = null
+  return counted
 }
 
-/** The user was playing during the long gaps: count them. */
-export function confirmGaps(clock: ClockState): void {
-  clock.playMs += clock.unconfirmedMs
+/** The user was playing during the long gaps: count them. Returns the play time counted. */
+export function confirmGaps(clock: ClockState): number {
+  const counted = clock.unconfirmedMs
+  clock.playMs += counted
   clock.unconfirmedMs = 0
+  return counted
 }
 
 /** The user was not playing during the long gaps: drop them. */
@@ -79,29 +99,9 @@ export function dismissGaps(clock: ClockState): void {
   clock.unconfirmedMs = 0
 }
 
-/** A point in both clocks, stored by trackers to ask later how much time has passed. */
-export interface TimeMark {
-  /** `ClockState.playMs` at that moment. */
-  playMs: number
-  /** Wall-clock time, epoch ms. */
-  realMs: number
-}
-
-export function markNow(clock: ClockState, now: number): TimeMark {
-  return { playMs: clock.playMs, realMs: now }
-}
-
-export interface Elapsed {
-  playMs: number
-  realMs: number
-}
-
-/** Play and real time since `mark`. Never negative, even if the system clock was set back. */
-export function elapsedSince(mark: TimeMark, clock: ClockState, now: number): Elapsed {
-  return {
-    playMs: Math.max(0, clock.playMs - mark.playMs),
-    realMs: Math.max(0, now - mark.realMs),
-  }
+/** Real time since `sinceMs` (epoch ms). Never negative, even if the clock was set back. */
+export function realElapsed(sinceMs: number, now: number): number {
+  return Math.max(0, now - sinceMs)
 }
 
 /** A duration as `h:mm:ss`, e.g. `12:04:09`; hours grow past 99 as needed. */

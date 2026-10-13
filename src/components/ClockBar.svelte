@@ -1,11 +1,10 @@
 <script lang="ts">
   import { formatDuration } from '../lib/clock'
   import { answerGaps, clocks, togglePause } from '../lib/clock.svelte'
-  import { store } from '../lib/store.svelte'
 
-  const paused = $derived(store.state.clock.paused)
-  const playTime = $derived(formatDuration(store.state.clock.playMs))
-  const unconfirmed = $derived(store.state.clock.unconfirmedMs)
+  const paused = $derived(clocks.play.paused)
+  const playTime = $derived(formatDuration(clocks.play.playMs))
+  const unconfirmed = $derived(clocks.play.unconfirmedMs)
   const realTime = $derived(
     new Date(clocks.now).toLocaleTimeString([], {
       hour: '2-digit',
@@ -17,10 +16,10 @@
 
 <section class="clocks" aria-label="Clocks">
   <span class="indicator" class:paused role="status">{paused ? 'PAUSED' : 'TRACKING'}</span>
-  <span>Play time <strong>{playTime}</strong></span>
+  <span>Session play time <strong>{playTime}</strong></span>
   <span>Real time <strong>{realTime}</strong></span>
   <button type="button" aria-pressed={paused} onclick={togglePause}>
-    {paused ? 'Resume' : 'Pause'}
+    {paused ? 'Start' : 'Pause'}
   </button>
 </section>
 

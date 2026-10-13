@@ -14,7 +14,7 @@ Svelte 5 + TypeScript + Vite. Public repository.
 | What to work on                                | the issue named in "Next up", only that issue     |
 | Continue an unfinished PR                      | `docs/handoff/<file>.md` on the PR branch         |
 | Tabs and hash routing                          | `src/lib/tabs.ts`, `src/App.svelte`               |
-| Play/real clocks, `TimeMark` for trackers      | `src/lib/clock.ts` (decision 008)                 |
+| Play/real clocks, `onPlayTime` for trackers    | `src/lib/clock.ts`, `clock.svelte.ts` (dec. 008)  |
 | Game logic (pure TS, unit-tested)              | `src/lib/`                                        |
 | Saved user state, migrations, export/import    | `src/lib/state.ts`, `src/lib/store.svelte.ts`     |
 | UI components (thin)                           | `src/components/`                                 |

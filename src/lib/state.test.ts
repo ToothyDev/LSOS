@@ -20,34 +20,26 @@ describe('parseState', () => {
     expect(result.ok && result.state).toEqual(defaultState())
   })
 
-  it('migrates a version 1 sample, adding a running clock at zero', () => {
+  it('migrates a version 1 sample, starting paused by default', () => {
     const result = parseState('{"version":1}')
     expect(result).toEqual({
       ok: true,
       state: {
         version: 2,
-        clock: { playMs: 0, paused: false, lastTickMs: null, unconfirmedMs: 0 },
+        clock: { trackOnOpen: false },
       },
       fromVersion: 1,
     })
   })
 
-  it('keeps a saved clock', () => {
-    const clock = { playMs: 3723000, paused: false, lastTickMs: 1760000000000, unconfirmedMs: 5 }
-    const text = JSON.stringify({ version: 2, clock: { ...clock, extra: 1 } })
-    expect(parseState(text)).toMatchObject({ ok: true, state: { clock } })
+  it('keeps the saved clock setting', () => {
+    const text = '{"version":2,"clock":{"trackOnOpen":true,"playMs":5}}'
+    expect(parseState(text)).toMatchObject({ ok: true, state: { clock: { trackOnOpen: true } } })
   })
-
-  const clockText = (fields: object) =>
-    JSON.stringify({ version: 2, clock: { ...defaultState().clock, ...fields } })
 
   it.each([
     ['a missing clock', '{"version":2}', 'clock section is missing'],
-    ['a negative play time', clockText({ playMs: -1 }), 'play time'],
-    ['a text play time', clockText({ playMs: '5' }), 'play time'],
-    ['a bad pause flag', clockText({ paused: 'no' }), 'pause setting'],
-    ['a bad last tick', clockText({ lastTickMs: 'x' }), 'last tick'],
-    ['a missing unconfirmed time', clockText({ unconfirmedMs: undefined }), 'unconfirmed'],
+    ['a bad tracking setting', '{"version":2,"clock":{"trackOnOpen":"yes"}}', 'tracking setting'],
   ])('rejects %s', (_, text, message) => {
     const result = parseState(text)
     expect(result).toMatchObject({ ok: false, reason: 'invalid' })
