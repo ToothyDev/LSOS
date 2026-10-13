@@ -5,6 +5,7 @@
   --muted: #6f9a7a;
   --accent: #7dff9b;
   --line: #24402c;
+  --warn: #ffb454;
 
   color-scheme: dark;
   font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;

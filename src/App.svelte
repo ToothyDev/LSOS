@@ -1,4 +1,6 @@
 <script lang="ts">
+  import SaveStatus from './components/SaveStatus.svelte'
+  import Settings from './components/Settings.svelte'
   import { TABS, hashForTab, tabFromHash, type TabId } from './lib/tabs'
 
   let active: TabId = $state(tabFromHash(location.hash))
@@ -21,8 +23,14 @@
   </nav>
 </header>
 
+<SaveStatus />
+
 <main>
-  <p class="placeholder">&gt; {TABS.find((tab) => tab.id === active)?.label}: not built yet_</p>
+  {#if active === 'settings'}
+    <Settings />
+  {:else}
+    <p class="placeholder">&gt; {TABS.find((tab) => tab.id === active)?.label}: not built yet_</p>
+  {/if}
 </main>
 
 <style>
