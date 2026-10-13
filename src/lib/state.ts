@@ -99,12 +99,18 @@ function toState(data: StoredData): AppState | string {
 
 function toClock(data: unknown): ClockState | string {
   if (!isRecord(data)) return 'The clock section is missing.'
-  const { playMs, paused } = data
-  if (typeof playMs !== 'number' || !Number.isFinite(playMs) || playMs < 0) {
-    return 'The saved play time is not a valid number.'
-  }
+  const { playMs, paused, lastTickMs, unconfirmedMs } = data
+  if (!isDuration(playMs)) return 'The saved play time is not a valid number.'
   if (typeof paused !== 'boolean') return 'The saved pause setting is not true or false.'
-  return { playMs, paused }
+  if (lastTickMs !== null && !isDuration(lastTickMs)) {
+    return 'The saved time of the last tick is not a valid number.'
+  }
+  if (!isDuration(unconfirmedMs)) return 'The saved unconfirmed time is not a valid number.'
+  return { playMs, paused, lastTickMs, unconfirmedMs }
+}
+
+function isDuration(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

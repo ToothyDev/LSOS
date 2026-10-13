@@ -24,24 +24,30 @@ describe('parseState', () => {
     const result = parseState('{"version":1}')
     expect(result).toEqual({
       ok: true,
-      state: { version: 2, clock: { playMs: 0, paused: false } },
+      state: {
+        version: 2,
+        clock: { playMs: 0, paused: false, lastTickMs: null, unconfirmedMs: 0 },
+      },
       fromVersion: 1,
     })
   })
 
   it('keeps a saved clock', () => {
-    const text = '{"version":2,"clock":{"playMs":3723000,"paused":true,"extra":1}}'
-    expect(parseState(text)).toMatchObject({
-      ok: true,
-      state: { clock: { playMs: 3723000, paused: true } },
-    })
+    const clock = { playMs: 3723000, paused: false, lastTickMs: 1760000000000, unconfirmedMs: 5 }
+    const text = JSON.stringify({ version: 2, clock: { ...clock, extra: 1 } })
+    expect(parseState(text)).toMatchObject({ ok: true, state: { clock } })
   })
+
+  const clockText = (fields: object) =>
+    JSON.stringify({ version: 2, clock: { ...defaultState().clock, ...fields } })
 
   it.each([
     ['a missing clock', '{"version":2}', 'clock section is missing'],
-    ['a negative play time', '{"version":2,"clock":{"playMs":-1,"paused":false}}', 'play time'],
-    ['a text play time', '{"version":2,"clock":{"playMs":"5","paused":false}}', 'play time'],
-    ['a bad pause flag', '{"version":2,"clock":{"playMs":0,"paused":"no"}}', 'pause setting'],
+    ['a negative play time', clockText({ playMs: -1 }), 'play time'],
+    ['a text play time', clockText({ playMs: '5' }), 'play time'],
+    ['a bad pause flag', clockText({ paused: 'no' }), 'pause setting'],
+    ['a bad last tick', clockText({ lastTickMs: 'x' }), 'last tick'],
+    ['a missing unconfirmed time', clockText({ unconfirmedMs: undefined }), 'unconfirmed'],
   ])('rejects %s', (_, text, message) => {
     const result = parseState(text)
     expect(result).toMatchObject({ ok: false, reason: 'invalid' })

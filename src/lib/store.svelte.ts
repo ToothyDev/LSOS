@@ -35,8 +35,12 @@ $effect.root(() => {
 })
 window.addEventListener('pagehide', () => persistence.flush())
 
-/** Writes a pending save now, for code that changes state while the page is hiding. */
+/**
+ * Saves the current state now, for changes made while the page is hiding. The save effect runs
+ * only after the current task, which may never come for a page being closed or frozen.
+ */
 export function saveNow(): void {
+  persistence.queue($state.snapshot(store.state))
   persistence.flush()
 }
 
