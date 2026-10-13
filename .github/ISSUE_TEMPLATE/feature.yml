@@ -1,0 +1,14 @@
+name: Feature idea
+description: Something LSOS should track or do.
+labels: [feature]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What do you want to keep track of, and why?
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: How could it work?

@@ -1,0 +1,28 @@
+name: Wrong or missing game data
+description: A production rate, cooldown, payout or other GTA Online value is wrong or missing.
+labels: [data]
+body:
+  - type: input
+    id: what
+    attributes:
+      label: Which value
+      placeholder: e.g. Cocaine Lockup production time with Equipment Upgrade
+    validations:
+      required: true
+  - type: input
+    id: current
+    attributes:
+      label: What LSOS shows now
+  - type: input
+    id: correct
+    attributes:
+      label: Correct value
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: Source
+      description: A link (wiki, Newswire, datamine) or how you measured it in game.
+    validations:
+      required: true

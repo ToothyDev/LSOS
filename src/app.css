@@ -1,0 +1,18 @@
+/* Placeholder palette; the real theme is tracked in its own issue. */
+:root {
+  --bg: #0b0f0c;
+  --fg: #d7ffe0;
+  --muted: #6f9a7a;
+  --accent: #7dff9b;
+  --line: #24402c;
+
+  color-scheme: dark;
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--fg);
+}

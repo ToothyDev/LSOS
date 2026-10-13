@@ -1,0 +1,32 @@
+# Sets a "handoff" commit status: pending while the PR still carries a handoff file in
+# docs/handoff/, success once it is gone. Made a required check, it blocks merging an
+# unfinished PR without leaving a red X. See docs/handoff/README.md.
+name: Handoff gate
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  statuses: write
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Report handoff status
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if find docs/handoff -name '*.md' ! -name README.md | grep -q .; then
+            state=pending
+            description="Handoff still open: finish the PR before merging"
+          else
+            state=success
+            description="No open handoff"
+          fi
+          gh api "repos/$REPO/statuses/$SHA" -f state="$state" -f context=handoff -f description="$description"
