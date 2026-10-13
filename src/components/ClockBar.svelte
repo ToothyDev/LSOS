@@ -21,6 +21,12 @@
   <button type="button" aria-pressed={paused} onclick={togglePause}>
     {paused ? 'Start' : 'Pause'}
   </button>
+  {#if paused}
+    <span class="hint">
+      Press Start once you have loaded into a GTA Online session, not during loading screens: that
+      is when the game starts counting.
+    </span>
+  {/if}
 </section>
 
 {#if unconfirmed > 0}
@@ -52,6 +58,10 @@
     flex-wrap: wrap;
     gap: 0.5rem 1rem;
     padding: 0.5rem 1rem;
+  }
+
+  .hint {
+    color: var(--muted);
   }
 
   .indicator {

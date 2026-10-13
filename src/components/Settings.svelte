@@ -39,7 +39,11 @@
     <input type="checkbox" bind:checked={store.state.clock.trackOnOpen} />
     Start tracking play time when LSOS opens
   </label>
-  <p class="hint">Off: LSOS opens paused and you press Start when you start playing.</p>
+  <p class="hint">
+    Off (recommended): LSOS opens paused. Press Start once you have loaded into a GTA Online
+    session, since that is when the game starts counting. On: loading screens count as play time
+    too, unless you open LSOS only once you are in.
+  </p>
 </section>
 
 <section>

@@ -16,6 +16,8 @@ browser events, listeners), `src/components/ClockBar.svelte` (indicator, toggle,
   `realElapsed(sinceMs, now)`.
 - **LSOS opens paused** unless "Start tracking play time when LSOS opens" is on in Settings
   (`clock.trackOnOpen`, saved, off by default). Opening LSOS without playing then counts nothing.
+  While paused, the clock bar says to press Start once loaded into a GTA Online session, not
+  during loading screens: per the maintainer, that is close to when the game starts counting.
 - **Throttled ticks lose nothing.** Each tick adds the time since the previous one, so a hidden
   tab ticking once a minute (Chrome's intensive throttling, typical while a fullscreen game
   covers the browser) still counts every second.
