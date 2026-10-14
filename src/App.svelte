@@ -1,9 +1,12 @@
 <script lang="ts">
   import Boot from './components/Boot.svelte'
+  import Businesses from './components/Businesses.svelte'
   import ClockBar from './components/ClockBar.svelte'
   import SaveStatus from './components/SaveStatus.svelte'
   import Settings from './components/Settings.svelte'
   import TabBar from './components/ui/TabBar.svelte'
+  import { PROPERTIES } from './data/properties'
+  import { store } from './lib/store.svelte'
   import { TABS, tabFromHash } from './lib/tabs'
 
   let hash = $state(location.hash)
@@ -37,6 +40,12 @@
         {#await kitModule then { default: Kit }}
           <Kit />
         {/await}
+      {:else if active === 'businesses'}
+        <Businesses
+          catalog={PROPERTIES}
+          owned={store.state.properties}
+          onchange={(owned) => (store.state.properties = owned)}
+        />
       {:else if active === 'settings'}
         <Settings />
       {:else}

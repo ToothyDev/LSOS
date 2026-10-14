@@ -1,18 +1,21 @@
 // The persisted root state, its versions and migrations (decision 006).
 import { defaultClockSettings, type ClockSettings } from './clock'
+import { parseOwnedProperties, type OwnedProperties } from './properties'
 
 /** Bump when the stored shape changes, and add a migration from the previous version. */
-export const CURRENT_VERSION = 2
+export const CURRENT_VERSION = 3
 
 /** All user state. Trackers add their own sections here as they are built. */
 export interface AppState {
   version: typeof CURRENT_VERSION
   /** Clock settings (decision 008). Play time itself lasts one session and is not saved. */
   clock: ClockSettings
+  /** Owned properties and their upgrades (decision 011). */
+  properties: OwnedProperties
 }
 
 export function defaultState(): AppState {
-  return { version: CURRENT_VERSION, clock: defaultClockSettings() }
+  return { version: CURRENT_VERSION, clock: defaultClockSettings(), properties: {} }
 }
 
 export type StoredData = Record<string, unknown> & { version: number }
@@ -24,6 +27,8 @@ export type Migration = (data: StoredData) => Record<string, unknown>
 export const MIGRATIONS: Readonly<Record<number, Migration>> = {
   // Version 2 adds the clock (issue #2).
   1: (data) => ({ ...data, clock: defaultClockSettings() }),
+  // Version 3 adds owned properties and upgrades (issue #5); nothing is owned yet.
+  2: (data) => ({ ...data, properties: {} }),
 }
 
 export type ParseResult =
@@ -94,7 +99,9 @@ function toState(data: StoredData): AppState | string {
   if (data.version !== CURRENT_VERSION) return `Unexpected data version ${data.version}.`
   const clock = toClock(data.clock)
   if (typeof clock === 'string') return clock
-  return { version: CURRENT_VERSION, clock }
+  const properties = parseOwnedProperties(data.properties)
+  if (typeof properties === 'string') return properties
+  return { version: CURRENT_VERSION, clock, properties }
 }
 
 function toClock(data: unknown): ClockSettings | string {

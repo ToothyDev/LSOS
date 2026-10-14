@@ -1,7 +1,11 @@
 <script lang="ts">
   // Dev-only preview of the base components (open #/kit with `npm run dev`).
   // Sample numbers only: no game values here (decision 004).
+  import type { Property } from '../../data/properties'
+  import type { OwnedProperties } from '../../lib/properties'
   import type { Bars } from '../../lib/resync'
+  import Businesses from '../Businesses.svelte'
+  import PropertyList from '../PropertyList.svelte'
   import BusinessBars from './BusinessBars.svelte'
   import Button from './Button.svelte'
   import Countdown from './Countdown.svelte'
@@ -14,6 +18,31 @@
   let safe = $state(70_000)
   let bars = $state<Bars>({ stock: 60, supplies: 35 })
   let stockOnly = $state<Bars>({ stock: 45 })
+
+  // Sample properties for the Settings list and the Businesses tab; made up, not game data.
+  const sampleCatalog: Property[] = [
+    {
+      id: 'sample-a',
+      label: 'Sample business',
+      upgrades: [
+        { kind: 'toggle', id: 'equipment', label: 'Equipment upgrade' },
+        {
+          kind: 'choice',
+          id: 'worker',
+          label: 'Worker',
+          options: [
+            { id: 'none', label: 'Not hired' },
+            { id: 'a', label: 'Option A' },
+            { id: 'b', label: 'Option B' },
+          ],
+        },
+      ],
+      source: 'sample',
+      checked: '2026-10-14',
+    },
+    { id: 'sample-b', label: 'No upgrades', upgrades: [], source: 'sample', checked: '2026-10-14' },
+  ]
+  let owned = $state<OwnedProperties>({ 'sample-a': { owned: true, upgrades: {} } })
 
   // A real-time cooldown, as a tracker would keep it: the moment it is ready.
   let now = $state(Date.now())
@@ -80,12 +109,22 @@
       }}
     />
   </Panel>
+
+  <PropertyList catalog={sampleCatalog} {owned} onchange={(value) => (owned = value)} />
 </div>
+
+<h2>Businesses tab</h2>
+<Businesses catalog={sampleCatalog} {owned} onchange={(value) => (owned = value)} />
 
 <style>
   .grid {
     display: grid;
     gap: var(--space-5);
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+  }
+
+  h2 {
+    font-size: var(--text-lg);
+    margin: var(--space-6) 0 var(--space-4);
   }
 </style>
