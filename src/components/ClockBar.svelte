@@ -2,6 +2,7 @@
   import { formatDuration } from '../lib/clock'
   import { answerGaps, clocks, togglePause } from '../lib/clock.svelte'
   import Button from './ui/Button.svelte'
+  import Digits from './ui/Digits.svelte'
 
   let { title }: { title: string } = $props()
 
@@ -26,8 +27,8 @@
     <span class="indicator" class:paused role="status">
       <span class="dot" aria-hidden="true"></span>{paused ? 'Paused' : 'Tracking'}
     </span>
-    <span class="readout">Session play time <strong>{playTime}</strong></span>
-    <span class="readout">Real time <strong>{realTime}</strong></span>
+    <span class="readout">Session play time <strong><Digits text={playTime} /></strong></span>
+    <span class="readout">Real time <strong><Digits text={realTime} /></strong></span>
     <Button variant={paused ? 'primary' : 'ghost'} aria-pressed={paused} onclick={togglePause}>
       {paused ? 'Start' : 'Pause'}
     </Button>
@@ -87,7 +88,6 @@
   strong {
     color: var(--fg);
     font-size: var(--text-md);
-    font-variant-numeric: tabular-nums;
     font-weight: 500;
     margin-left: var(--space-1);
   }

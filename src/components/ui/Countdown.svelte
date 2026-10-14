@@ -1,5 +1,6 @@
 <script lang="ts">
   import { formatDuration } from '../../lib/clock'
+  import Digits from './Digits.svelte'
 
   interface Props {
     label: string
@@ -16,7 +17,9 @@
 
 <div class="countdown" class:ready>
   <span class="label">{label}</span>
-  <span class="time">{ready ? readyText : formatDuration(remainingMs)}</span>
+  <span class="time"
+    >{#if ready}{readyText}{:else}<Digits text={formatDuration(remainingMs)} />{/if}</span
+  >
 </div>
 
 <style>
@@ -38,7 +41,6 @@
   .time {
     color: var(--warn);
     font-size: var(--text-lg);
-    font-variant-numeric: tabular-nums;
   }
 
   .ready .time {
