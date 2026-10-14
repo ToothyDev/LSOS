@@ -1,7 +1,9 @@
 <script lang="ts">
   // Dev-only preview of the base components (open #/kit with `npm run dev`).
   // Sample numbers only: no game values here (decision 004).
+  import type { Production } from '../../data/production'
   import type { Property } from '../../data/properties'
+  import type { BusinessBarsById } from '../../lib/production'
   import type { OwnedProperties } from '../../lib/properties'
   import type { Bars } from '../../lib/resync'
   import Businesses from '../Businesses.svelte'
@@ -43,6 +45,23 @@
     { id: 'sample-b', label: 'No upgrades', upgrades: [], source: 'sample', checked: '2026-10-14' },
   ]
   let owned = $state<OwnedProperties>({ 'sample-a': { owned: true, upgrades: {} } })
+  // Made-up production for the sample business: runs without upgrades, value only with equipment.
+  const sampleProductions: Production[] = [
+    {
+      propertyId: 'sample-a',
+      unitName: 'crates',
+      maxUnits: 10,
+      farSaleBonus: 0.5,
+      farSaleLabel: 'far away',
+      rates: [
+        { upgrades: [], minutesPerUnit: 30, unitValue: 10_000, unitsPerFullSupplies: 4 },
+        { upgrades: ['equipment'], minutesPerUnit: 20, unitValue: 12_000 },
+      ],
+      source: 'sample',
+      checked: '2026-10-14',
+    },
+  ]
+  let businesses = $state<BusinessBarsById>({ 'sample-a': { stock: 20, supplies: 60 } })
 
   // A real-time cooldown, as a tracker would keep it: the moment it is ready.
   let now = $state(Date.now())
@@ -114,7 +133,15 @@
 </div>
 
 <h2>Businesses tab</h2>
-<Businesses catalog={sampleCatalog} {owned} onchange={(value) => (owned = value)} />
+<Businesses
+  catalog={sampleCatalog}
+  {owned}
+  onchange={(value) => (owned = value)}
+  productions={sampleProductions}
+  {businesses}
+  {now}
+  onresync={(id, value) => (businesses = { ...businesses, [id]: value })}
+/>
 
 <style>
   .grid {

@@ -5,7 +5,10 @@
   import SaveStatus from './components/SaveStatus.svelte'
   import Settings from './components/Settings.svelte'
   import TabBar from './components/ui/TabBar.svelte'
+  import { PRODUCTION } from './data/production'
   import { PROPERTIES } from './data/properties'
+  import { clocks } from './lib/clock.svelte'
+  import './lib/production.svelte'
   import { store } from './lib/store.svelte'
   import { TABS, tabFromHash } from './lib/tabs'
 
@@ -45,6 +48,11 @@
           catalog={PROPERTIES}
           owned={store.state.properties}
           onchange={(owned) => (store.state.properties = owned)}
+          productions={PRODUCTION}
+          businesses={store.state.businesses}
+          now={clocks.now}
+          onresync={(id, bars) =>
+            (store.state.businesses = { ...store.state.businesses, [id]: bars })}
         />
       {:else if active === 'settings'}
         <Settings />

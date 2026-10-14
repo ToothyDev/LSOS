@@ -20,6 +20,7 @@ Svelte 5 + TypeScript + Vite. Public repository.
 | Resync values; business bars (Sold, Raided)    | `ui/EditableValue`, `ui/BusinessBars` (dec. 010)  |
 | Game data with sources                         | `src/data/` (decision 004)                        |
 | Owned properties and upgrades                  | `data/properties.ts`, `lib/properties.ts` (011)   |
+| Business production (stock, supplies, value)   | `data/production.ts`, `lib/production.ts` (012)   |
 | Theme tokens                                   | `src/app.css` (decision 009)                      |
 | CI, templates                                  | `.github/`                                        |
 | Skills: `handoff`, `finish-pr`; agent: `scout` | `.claude/`                                        |

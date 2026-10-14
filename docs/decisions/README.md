@@ -22,3 +22,4 @@ free number, add one line below. **Replacing one:** write a new decision, then m
 - [009](009-terminal-design.md) Terminal look: tokens in `app.css`, self-hosted Oswald (OFL), browser-style tabs, base components in `src/components/ui/`
 - [010](010-resync.md) Resync: `EditableValue` for every tracked value, `BusinessBars` with Sold/Raided/Full and supply deliveries, undo keeps progress since
 - [011](011-owned-properties.md) Owned properties and upgrades: catalog in `src/data/properties.ts`, toggle/choice upgrades, Settings panel and Businesses gear
+- [012](012-business-production.md) Business production: rate per exact upgrade combination in `src/data/production.ts`, continuous on play time, unknown rates do not run

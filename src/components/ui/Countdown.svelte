@@ -5,20 +5,25 @@
   interface Props {
     label: string
     /** Time left; the caller computes it from the clock it tracks (decision 003). */
-    remainingMs: number
+    remainingMs: number | null
     /** Shown once the time is up. */
     readyText?: string
+    /** Shown instead of a time when it will not happen, e.g. "Supplies run out first". */
+    neverText?: string
   }
 
-  let { label, remainingMs, readyText = 'Ready' }: Props = $props()
+  let { label, remainingMs, readyText = 'Ready', neverText = 'Not running' }: Props = $props()
 
-  const ready = $derived(remainingMs <= 0)
+  const never = $derived(remainingMs === null)
+  const ready = $derived(remainingMs !== null && remainingMs <= 0)
 </script>
 
-<div class="countdown" class:ready>
+<div class="countdown" class:ready class:never>
   <span class="label">{label}</span>
   <span class="time"
-    >{#if ready}{readyText}{:else}<Digits text={formatDuration(remainingMs)} />{/if}</span
+    >{#if remainingMs === null}{neverText}{:else if ready}{readyText}{:else}<Digits
+        text={formatDuration(remainingMs)}
+      />{/if}</span
   >
 </div>
 
@@ -45,5 +50,10 @@
 
   .ready .time {
     color: var(--accent-text);
+  }
+
+  .never .time {
+    color: var(--muted);
+    font-size: var(--text-sm);
   }
 </style>
