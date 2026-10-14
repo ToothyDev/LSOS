@@ -14,8 +14,12 @@
 </nav>
 
 <style>
+  /* Overlaps the window's top border by 1px, so the active tab can hide it. */
   nav {
     display: flex;
+    margin-bottom: -1px;
+    position: relative;
+    z-index: 1;
     gap: 2px;
     overflow-x: auto;
     padding: var(--space-2) var(--space-2) 0;
@@ -26,7 +30,6 @@
     align-items: center;
     background: var(--bg);
     border: 1px solid var(--line);
-    border-bottom: none;
     border-radius: 6px 6px 0 0;
     color: var(--muted);
     display: flex;
@@ -37,7 +40,6 @@
     letter-spacing: var(--tracking-wide);
     min-width: max-content;
     padding: var(--space-2) var(--space-4);
-    position: relative;
     text-decoration: none;
     text-transform: uppercase;
     white-space: nowrap;
@@ -47,14 +49,12 @@
     color: var(--fg);
   }
 
-  /* Pull the active tab over the window's top border so they read as one piece. */
+  /* Same color as the portal bar under it, with no line between them: one piece. */
   a[aria-current='page'] {
-    background: var(--surface);
+    background: var(--panel);
+    border-bottom-color: var(--panel);
     border-top: 2px solid var(--accent);
     color: var(--fg);
-    margin-bottom: -1px;
-    padding-bottom: calc(var(--space-2) + 1px);
-    z-index: 1;
   }
 
   a:focus-visible {

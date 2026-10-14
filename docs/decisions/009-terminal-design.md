@@ -13,7 +13,8 @@
 - **Fonts:** Oswald (SIL Open Font License 1.1) for headings, labels and numbers, self-hosted
   through `@fontsource-variable/oswald`, so no request goes to a font CDN (decision 001: nothing
   is sent anywhere). Body text uses the system UI font, which reads better at small sizes.
-- **Tabs look like browser tabs:** the active tab joins the window below it. On phones the
+- **Tabs look like browser tabs:** the active tab has the color of the bar below it and no line
+  between them, so tab and window read as one piece. On phones the
   tabs shrink to fit and the strip scrolls sideways when they still do not.
 - **Base components** live in `src/components/ui/`: `Panel`, `Meter` (stock/supplies bar),
   `Countdown`, `TabBar`, `Button`, `NumberField`. Their logic (bar fill, parsing and clamping
