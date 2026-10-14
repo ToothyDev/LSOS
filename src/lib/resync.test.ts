@@ -18,6 +18,8 @@ describe('formatValue', () => {
     expect(formatValue(39.6, 'percent')).toBe('40%')
     expect(formatValue(1_234_567, 'money')).toBe('$1,234,567')
     expect(formatValue(65 * MIN, 'duration')).toBe('1:05')
+    expect(formatValue(11.7, 'crates')).toBe('11')
+    expect(formatValue(3.9999999, 'crates')).toBe('4')
   })
 
   it('rounds time left up to the minute, so 0:00 means done', () => {
@@ -48,8 +50,13 @@ describe('parseValue', () => {
     expect(parseValue('0', 'duration')).toBe(0)
   })
 
+  it('reads whole crates', () => {
+    expect(parseValue(' 12 ', 'crates')).toBe(12)
+    expect(parseValue('1.5', 'crates')).toBeNull()
+  })
+
   it('rejects empty, negative or malformed input', () => {
-    for (const unit of ['percent', 'money', 'duration'] as const) {
+    for (const unit of ['percent', 'money', 'duration', 'crates'] as const) {
       expect(parseValue('', unit)).toBeNull()
       expect(parseValue('-5', unit)).toBeNull()
       expect(parseValue('abc', unit)).toBeNull()

@@ -49,6 +49,7 @@
     percent: 'A percentage, e.g. 40',
     money: 'An amount, e.g. 120,000 or 120k',
     duration: 'Time left as h:mm, e.g. 1:05',
+    crates: 'Whole crates, e.g. 12',
   }
 
   const id = $props.id()
@@ -113,7 +114,7 @@
           aria-invalid={invalid}
           aria-describedby="{id}-hint"
           autocomplete="off"
-          inputmode={unit === 'duration' ? 'text' : 'decimal'}
+          inputmode={unit === 'duration' ? 'text' : unit === 'crates' ? 'numeric' : 'decimal'}
           oninput={() => (invalid = false)}
           onkeydown={(event) => {
             if (event.key === 'Escape') stopEditing()

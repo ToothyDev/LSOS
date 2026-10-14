@@ -21,6 +21,7 @@ Svelte 5 + TypeScript + Vite. Public repository.
 | Game data with sources                         | `src/data/` (decision 004)                        |
 | Owned properties and upgrades                  | `data/properties.ts`, `lib/properties.ts` (011)   |
 | Business production (stock, supplies, value)   | `data/production.ts`, `lib/production.ts` (012)   |
+| Nightclub warehouse goods                      | `data/nightclub.ts`, `lib/nightclub.ts` (015)     |
 | Business card order (drag, keys)               | `lib/order.ts`, `ui/Panel` `move` (decision 014)  |
 | Theme tokens                                   | `src/app.css` (decision 009)                      |
 | CI, templates                                  | `.github/`                                        |

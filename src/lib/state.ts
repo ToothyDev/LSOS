@@ -1,11 +1,12 @@
 // The persisted root state, its versions and migrations (decision 006).
 import { defaultClockSettings, type ClockSettings } from './clock'
+import { parseGoodsStock, type GoodsStock } from './nightclub'
 import { parseOrder } from './order'
 import { parseBusinessBars, type BusinessBarsById } from './production'
 import { parseOwnedProperties, type OwnedProperties } from './properties'
 
 /** Bump when the stored shape changes, and add a migration from the previous version. */
-export const CURRENT_VERSION = 5
+export const CURRENT_VERSION = 6
 
 /** All user state. Trackers add their own sections here as they are built. */
 export interface AppState {
@@ -18,6 +19,8 @@ export interface AppState {
   businesses: BusinessBarsById
   /** Property ids in the order the user dragged the business cards into (issue #30). */
   businessOrder: string[]
+  /** Nightclub warehouse crates by goods id, as of the last play time counted (issue #7). */
+  nightclub: GoodsStock
 }
 
 export function defaultState(): AppState {
@@ -27,6 +30,7 @@ export function defaultState(): AppState {
     properties: {},
     businesses: {},
     businessOrder: [],
+    nightclub: {},
   }
 }
 
@@ -45,6 +49,8 @@ export const MIGRATIONS: Readonly<Record<number, Migration>> = {
   3: (data) => ({ ...data, businesses: {} }),
   // Version 5 adds the order of the business cards (issue #30); catalog order until moved.
   4: (data) => ({ ...data, businessOrder: [] }),
+  // Version 6 adds the nightclub warehouse stock (issue #7); empty until set or produced.
+  5: (data) => ({ ...data, nightclub: {} }),
 }
 
 export type ParseResult =
@@ -121,7 +127,9 @@ function toState(data: StoredData): AppState | string {
   if (typeof businesses === 'string') return businesses
   const businessOrder = parseOrder(data.businessOrder)
   if (typeof businessOrder === 'string') return businessOrder
-  return { version: CURRENT_VERSION, clock, properties, businesses, businessOrder }
+  const nightclub = parseGoodsStock(data.nightclub)
+  if (typeof nightclub === 'string') return nightclub
+  return { version: CURRENT_VERSION, clock, properties, businesses, businessOrder, nightclub }
 }
 
 function toClock(data: unknown): ClockSettings | string {

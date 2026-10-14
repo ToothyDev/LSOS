@@ -5,6 +5,7 @@
   import SaveStatus from './components/SaveStatus.svelte'
   import Settings from './components/Settings.svelte'
   import TabBar from './components/ui/TabBar.svelte'
+  import { GOODS } from './data/nightclub'
   import { PRODUCTION } from './data/production'
   import { PROPERTIES } from './data/properties'
   import { clocks } from './lib/clock.svelte'
@@ -55,6 +56,10 @@
             (store.state.businesses = { ...store.state.businesses, [id]: bars })}
           order={store.state.businessOrder}
           onorder={(order) => (store.state.businessOrder = order)}
+          goods={GOODS}
+          nightclubStock={store.state.nightclub}
+          onnightclub={(id, crates) =>
+            (store.state.nightclub = { ...store.state.nightclub, [id]: crates })}
         />
       {:else if active === 'settings'}
         <Settings />
