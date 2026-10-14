@@ -99,10 +99,17 @@ export interface Bars {
 
 const PERCENT: ValueBounds = { min: 0, max: 100 }
 
-/** The bars after an event such as a sale or a raid: the bars it empties go to zero. */
-export function applyEvent(bars: Bars, empties: readonly (keyof Bars)[]): Bars {
+/**
+ * The bars after an event such as a sale or a raid: the bars it empties go to zero, and a
+ * delivery on its way is dropped if the event cancels it.
+ */
+export function applyEvent(
+  bars: Bars,
+  event: { empties: readonly ('stock' | 'supplies')[]; cancelsDelivery: boolean },
+): Bars {
   const next = { ...bars }
-  for (const bar of empties) if (next[bar] !== undefined) next[bar] = 0
+  for (const bar of event.empties) if (next[bar] !== undefined) next[bar] = 0
+  if (event.cancelsDelivery) delete next.suppliesDueAt
   return next
 }
 

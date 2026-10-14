@@ -28,7 +28,7 @@
   supplies to 100%. Trackers store bars as set and settle them whenever they read them, so a
   delivery that arrives while nobody looks still counts. The wait is 10 minutes for every
   business and runs on real time for now; which clock the game uses is not confirmed. A raid
-  leaves a pending delivery as it is (also not confirmed).
+  also cancels a delivery on its way.
 - What each event does, and the delivery, are game data in `src/data/business-events.ts`
   (decision 004).
 - **Undo takes back the last edit or preset** of that value; in `BusinessBars` one Undo covers

@@ -86,16 +86,25 @@ describe('undoValue', () => {
 })
 
 describe('applyEvent', () => {
+  const sold = { empties: ['stock'] as const, cancelsDelivery: false }
+  const raided = { empties: ['stock', 'supplies'] as const, cancelsDelivery: true }
+
   it('empties the listed bars and keeps the rest', () => {
-    expect(applyEvent({ stock: 80, supplies: 40 }, ['stock'])).toEqual({ stock: 0, supplies: 40 })
-    expect(applyEvent({ stock: 80, supplies: 40 }, ['stock', 'supplies'])).toEqual({
+    expect(applyEvent({ stock: 80, supplies: 40 }, sold)).toEqual({ stock: 0, supplies: 40 })
+    expect(applyEvent({ stock: 80, supplies: 40 }, raided)).toEqual({
       stock: 0,
       supplies: 0,
     })
   })
 
   it('does not add a supplies bar to a business without one', () => {
-    expect(applyEvent({ stock: 80 }, ['stock', 'supplies'])).toEqual({ stock: 0 })
+    expect(applyEvent({ stock: 80 }, raided)).toEqual({ stock: 0 })
+  })
+
+  it('drops a pending delivery only if the event cancels it', () => {
+    const pending = { stock: 80, supplies: 40, suppliesDueAt: 5 }
+    expect(applyEvent(pending, sold)).toEqual({ stock: 0, supplies: 40, suppliesDueAt: 5 })
+    expect(applyEvent(pending, raided)).toEqual({ stock: 0, supplies: 0 })
   })
 })
 
@@ -137,7 +146,7 @@ describe('buying supplies', () => {
     expect(undoBars({ before, after }, after)).toEqual(before)
 
     const pending = { stock: 20, supplies: 5, suppliesDueAt: T }
-    const raided = { stock: 0, supplies: 0, suppliesDueAt: T }
+    const raided = { stock: 0, supplies: 0 }
     expect(undoBars({ before: pending, after: raided }, raided)).toEqual(pending)
   })
 })

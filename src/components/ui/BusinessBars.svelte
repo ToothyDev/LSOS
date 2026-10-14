@@ -96,9 +96,7 @@
   {/if}
   <div class="actions">
     {#each events as event (event.label)}
-      <Button onclick={() => set(applyEvent(bars, event.empties), event.label)}
-        >{event.label}</Button
-      >
+      <Button onclick={() => set(applyEvent(bars, event), event.label)}>{event.label}</Button>
     {/each}
     {#if last}
       <Button onclick={undo} title="Take back the last change ({last.label})">Undo</Button>
