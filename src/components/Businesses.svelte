@@ -8,7 +8,7 @@
   import { cubicOut } from 'svelte/easing'
   import type { Production } from '../data/production'
   import type { Property } from '../data/properties'
-  import { applyOrder, moveId, saveOrder, swapAt } from '../lib/order'
+  import { applyOrder, cardAt, moveId, saveOrder, swapAt, type CardBox } from '../lib/order'
   import { emptyBars, matchingRate, rateFor, type BusinessBarsById } from '../lib/production'
   import { ownedProperties, upgradeValue, type OwnedProperties } from '../lib/properties'
   import type { Bars } from '../lib/resync'
@@ -84,14 +84,31 @@
     lift = { x: 0, y: 0 }
   }
 
+  // A swap needs the pointer this far inside the other card (share of its size per side).
+  const SWAP_INSET = 0.2
+
+  /** The card slots where they end up, in viewport pixels: offsets skip the slide transforms. */
+  function slots(): CardBox[] {
+    const cards = [...document.querySelectorAll<HTMLElement>('[data-card]')]
+    const parent = cards[0]?.offsetParent
+    if (!parent) return []
+    const origin = parent.getBoundingClientRect()
+    return cards.map((card) => ({
+      id: card.dataset.card!,
+      left: origin.left + parent.clientLeft + card.offsetLeft,
+      top: origin.top + parent.clientTop + card.offsetTop,
+      width: card.offsetWidth,
+      height: card.offsetHeight,
+    }))
+  }
+
   // The rest of a drag is followed on the window, where the pointer goes when it leaves the
-  // handle. The lifted card ignores the pointer, so this finds the slot under it.
+  // handle.
   async function drag(event: PointerEvent) {
     if (moving === null || !preview) return
     const { clientX: x, clientY: y } = event
-    const target = document.elementFromPoint(x, y)?.closest<HTMLElement>('[data-card]')
-      ?.dataset.card
-    if (target !== undefined && target !== moving) {
+    const target = cardAt(slots(), x, y, SWAP_INSET)
+    if (target !== null && target !== moving) {
       preview = swapAt(sorted, moving, preview.indexOf(target))
       await tick()
     }

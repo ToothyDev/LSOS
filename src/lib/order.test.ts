@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyOrder, moveId, parseOrder, saveOrder, swapAt } from './order'
+import { applyOrder, cardAt, moveId, parseOrder, saveOrder, swapAt } from './order'
 
 describe('applyOrder', () => {
   it('puts saved ids first in saved order, the rest after in their own order', () => {
@@ -41,6 +41,25 @@ describe('swapAt', () => {
     expect(swapAt(['a', 'b'], 'a', 0)).toEqual(['a', 'b'])
     expect(swapAt(['a', 'b'], 'a', 2)).toEqual(['a', 'b'])
     expect(swapAt(['a', 'b'], 'x', 0)).toEqual(['a', 'b'])
+  })
+})
+
+describe('cardAt', () => {
+  const boxes = [
+    { id: 'a', left: 0, top: 0, width: 100, height: 200 },
+    { id: 'b', left: 120, top: 0, width: 100, height: 200 },
+  ]
+
+  it('finds the card whose middle the point is in', () => {
+    expect(cardAt(boxes, 50, 100, 0.2)).toBe('a')
+    expect(cardAt(boxes, 140, 40, 0.2)).toBe('b')
+  })
+
+  it('finds nothing near an edge or between cards', () => {
+    expect(cardAt(boxes, 90, 100, 0.2)).toBeNull()
+    expect(cardAt(boxes, 130, 100, 0.2)).toBeNull()
+    expect(cardAt(boxes, 50, 30, 0.2)).toBeNull()
+    expect(cardAt(boxes, 110, 100, 0.2)).toBeNull()
   })
 })
 

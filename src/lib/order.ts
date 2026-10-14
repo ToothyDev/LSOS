@@ -31,6 +31,35 @@ export function swapAt(ids: readonly string[], id: string, index: number): strin
   return next
 }
 
+export interface CardBox {
+  id: string
+  left: number
+  top: number
+  width: number
+  height: number
+}
+
+/**
+ * The card whose middle the point is in: each box shrunk by `inset` (a share of its width and
+ * height) on every side. Near an edge nothing counts, so a dragged card does not flick back
+ * and forth between two places while the pointer rests on their border.
+ */
+export function cardAt(
+  boxes: readonly CardBox[],
+  x: number,
+  y: number,
+  inset: number,
+): string | null {
+  const box = boxes.find(
+    (b) =>
+      x >= b.left + b.width * inset &&
+      x <= b.left + b.width * (1 - inset) &&
+      y >= b.top + b.height * inset &&
+      y <= b.top + b.height * (1 - inset),
+  )
+  return box?.id ?? null
+}
+
 /**
  * The order to save after the shown cards were rearranged to `shown`: the shown ids, then the
  * saved ids not shown now (e.g. a business sold for now), so owning it again restores its place

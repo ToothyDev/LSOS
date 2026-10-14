@@ -11,8 +11,10 @@
   phone: pressing the handle lifts the card, which then sticks to the pointer while its slot
   stays outlined. Over another card, the two swap: that card slides into the empty slot and
   nothing else moves (`swapAt`; issue #30 review: shifting every card in between made them race
-  along the rows like one long list). Releasing saves the order and the card glides into its
-  slot; a cancelled pointer leaves the order as it was. The handle has `touch-action: none`, so
+  along the rows like one long list). A swap needs the pointer in the middle of the other
+  card (20% in from each side, `cardAt`), measured where cards end up rather than mid-slide, so
+  a pointer resting on a border does not flick the cards back and forth. Releasing saves the
+  order and the card glides into its slot; a cancelled pointer leaves the order as it was. The handle has `touch-action: none`, so
   a touch that starts on a title bar drags instead of scrolling.
 - **Keyboard:** with the handle focused, arrow keys move the card one place back or forward
   (reading order, since the grid wraps), Home/End to the first or last place. A polite live
