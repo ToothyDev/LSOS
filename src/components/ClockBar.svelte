@@ -10,6 +10,8 @@
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
+      // Always 24h: browsers expose only their language, not the OS 12h/24h setting.
+      hourCycle: 'h23',
     }),
   )
 </script>
