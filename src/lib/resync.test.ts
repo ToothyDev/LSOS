@@ -5,6 +5,7 @@ import {
   clampValue,
   formatValue,
   parseValue,
+  recordEdit,
   settleBars,
   undoBars,
   undoValue,
@@ -148,5 +149,37 @@ describe('buying supplies', () => {
     const pending = { stock: 20, supplies: 5, suppliesDueAt: T }
     const raided = { stock: 0, supplies: 0 }
     expect(undoBars({ before: pending, after: raided }, raided)).toEqual(pending)
+  })
+})
+
+describe('recordEdit', () => {
+  it('extends the last edit for a change in the same group', () => {
+    const first = recordEdit(null, { stock: 40 }, { stock: 45 }, 'stock was 40%', 'stock')
+    const second = recordEdit(first, { stock: 45 }, { stock: 46 }, 'stock was 45%', 'stock')
+    expect(second).toEqual({
+      before: { stock: 40 },
+      after: { stock: 46 },
+      label: 'stock was 40%',
+      group: 'stock',
+    })
+    expect(undoBars(second, { stock: 50 })).toEqual({ stock: 44 })
+  })
+
+  it('starts a new edit for another group or an ungrouped change', () => {
+    const drag = recordEdit(
+      null,
+      { stock: 40, supplies: 10 },
+      { stock: 45, supplies: 10 },
+      'a',
+      'stock',
+    )
+    const other = recordEdit(drag, drag.after, { stock: 45, supplies: 20 }, 'b', 'supplies')
+    expect(other.before).toEqual({ stock: 45, supplies: 10 })
+    const typed = recordEdit(other, other.after, { stock: 0, supplies: 20 }, 'c')
+    expect(typed.before).toEqual({ stock: 45, supplies: 20 })
+    expect(recordEdit(typed, typed.after, { stock: 1, supplies: 20 }, 'd').before).toEqual({
+      stock: 0,
+      supplies: 20,
+    })
   })
 })

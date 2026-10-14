@@ -145,3 +145,27 @@ export function undoBars(edit: { before: Bars; after: Bars }, current: Bars): Ba
   }
   return next
 }
+
+/** The last change to a business's bars, for its one Undo (decision 010). */
+export interface BarsEdit {
+  before: Bars
+  after: Bars
+  label: string
+  /** Changes with the same group in a row form one edit, e.g. dragging and nudging one bar. */
+  group?: string
+}
+
+/**
+ * Records a change from `before` to `after`. A change in the same `group` as the last edit
+ * extends it, so Undo takes back the whole run; any other change starts a new edit.
+ */
+export function recordEdit(
+  last: BarsEdit | null,
+  before: Bars,
+  after: Bars,
+  label: string,
+  group?: string,
+): BarsEdit {
+  if (group !== undefined && last?.group === group) return { ...last, after }
+  return { before: { ...before }, after, label, group }
+}

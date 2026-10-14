@@ -61,6 +61,7 @@
       checked: '2026-10-14',
     },
   ]
+  let businessOrder = $state<string[]>([])
   let businesses = $state<BusinessBarsById>({ 'sample-a': { stock: 20, supplies: 60 } })
 
   // A real-time cooldown, as a tracker would keep it: the moment it is ready.
@@ -77,10 +78,13 @@
     <Meter label="Stock" value={amount} max={100} />
     <Meter label="Supplies" value={15} max={100} kind="supplies" valueText="15 / 100" />
     <Meter label="Empty" value={0} max={100} kind="supplies" />
+    <Meter label="Five segments" value={amount} max={100} segments={5} />
     {#snippet footer()}
       <Button variant="primary">Primary</Button>
       <Button>Ghost</Button>
       <Button disabled>Disabled</Button>
+      <Button variant="primary" aria-pressed="true">Owned</Button>
+      <Button aria-pressed="false">Not owned</Button>
     {/snippet}
   </Panel>
 
@@ -141,6 +145,8 @@
   {businesses}
   {now}
   onresync={(id, value) => (businesses = { ...businesses, [id]: value })}
+  order={businessOrder}
+  onorder={(value) => (businessOrder = value)}
 />
 
 <style>

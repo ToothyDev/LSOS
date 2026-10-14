@@ -44,3 +44,13 @@ export const SUPPLY_PURCHASE = {
     'Community wiki (gta.wiki, Business Supplies) also says about ten minutes for MC businesses.',
   checked: '2026-10-14',
 }
+
+/** The stock and supplies bars are split into equal segments, as on the in-game HUD. */
+export const BAR_SEGMENTS = {
+  count: 5,
+  source:
+    'gta.wiki, Business Supplies: both bars "are broken up into five segments" (MC businesses). ' +
+    'Bunker: segments seen in play (issue #32); gta.wiki, Supplies: most resupply missions fill ' +
+    '"1/5th, or 20 units".',
+  checked: '2026-10-14',
+}

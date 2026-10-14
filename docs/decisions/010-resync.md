@@ -29,10 +29,21 @@
   delivery that arrives while nobody looks still counts. The wait is 10 minutes for every
   business and runs on real time for now; which clock the game uses is not confirmed. A raid
   also cancels a delivery on its way.
+- **Segmented bars, drag to resync** (issue #32): stock and supplies bars are split into five
+  segments like in game (`BAR_SEGMENTS` in `src/data/business-events.ts`), in the resync
+  controls only; collapsed cards keep a plain bar to stay clean. Each segment is its own box
+  with an edge (`--track-edge`, 3.4:1 on the panel), so empty segments are easy to see.
+  In `BusinessBars` each bar is also a slider (`Meter` with `onset`): drag its handle with mouse,
+  pen or touch, or use the keys (arrows step 1% to the next whole percent, Page Up/Down jump to
+  the next segment edge, Home/End to 0/100%). A drag rounds to whole percent and snaps to a
+  segment edge from up to 1.5% away (`dragValue`/`keyValue` in `src/lib/ui.ts`), so 19% and 21%
+  are reached by key or typing. It commits once, on release, and shows the level under the
+  pointer as the value while dragging. Typing stays for exact values.
 - What each event does, and the delivery, are game data in `src/data/business-events.ts`
   (decision 004).
 - **Undo takes back the last edit or preset** of that value; in `BusinessBars` one Undo covers
-  the last change to either bar, events included. It subtracts what the edit changed
+  the last change to either bar, events included. Dragging and key steps on one bar in a row
+  are one change (`recordEdit`), so Undo takes back the whole adjustment, not the last 1%. It subtracts what the edit changed
   rather than restoring the old number, so progress counted since is kept: a cooldown mistyped
   as 1:30 instead of 2:00 and undone ten minutes later shows 1:50. The undo lives in the
   component for the session and is not saved.

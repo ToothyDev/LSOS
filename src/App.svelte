@@ -53,6 +53,8 @@
           now={clocks.now}
           onresync={(id, bars) =>
             (store.state.businesses = { ...store.state.businesses, [id]: bars })}
+          order={store.state.businessOrder}
+          onorder={(order) => (store.state.businessOrder = order)}
         />
       {:else if active === 'settings'}
         <Settings />

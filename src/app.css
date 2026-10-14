@@ -25,6 +25,8 @@
   --supplies: #3f6db8;
   --supplies-text: #8fb2ee;
   --track: #2b343e;
+  /* Edge of an empty bar segment: 3.4:1 on --panel, so the segments read before they fill. */
+  --track-edge: #6b7a88;
   --warn: #f0b450;
   --danger: #ef7a6e;
   --focus: #ffd75e;

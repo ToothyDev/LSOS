@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { meterFraction } from '../../lib/ui'
+  import { dragValue, keyValue, meterFraction } from '../../lib/ui'
 
   interface Props {
     label: string
@@ -11,12 +11,76 @@
     valueText?: string
     /** Only the bar, for when the label and value are shown next to it (e.g. by EditableValue). */
     bare?: boolean
+    /** Equal segments the bar is split into, like the in-game business bars. */
+    segments?: number
+    /**
+     * Makes the bar a slider: drag its handle or use the keys, and this gets the new value
+     * (rounded to 1% of max, segment edges snap; decision 010). Called once per drag, on release.
+     */
+    onset?: (value: number) => void
+    /** While dragging, the value under the pointer; null once the drag ends. */
+    onpreview?: (value: number | null) => void
   }
 
-  let { label, value, max, kind = 'stock', valueText, bare = false }: Props = $props()
+  let {
+    label,
+    value,
+    max,
+    kind = 'stock',
+    valueText,
+    bare = false,
+    segments,
+    onset,
+    onpreview,
+  }: Props = $props()
 
-  const fraction = $derived(meterFraction(value, max))
-  const text = $derived(valueText ?? `${Math.round(fraction * 100)}%`)
+  let track = $state<HTMLDivElement>()
+  let dragging = $state<number | null>(null)
+
+  const shown = $derived(dragging ?? value)
+  const fraction = $derived(meterFraction(shown, max))
+  // While dragging, the percentage under the pointer replaces any custom text.
+  const text = $derived(
+    dragging === null && valueText !== undefined ? valueText : `${Math.round(fraction * 100)}%`,
+  )
+  const scale = $derived({ max, segments })
+
+  function at(event: PointerEvent): number {
+    const rect = track!.getBoundingClientRect()
+    return dragValue((event.clientX - rect.left) / rect.width, scale)
+  }
+
+  function preview(next: number | null) {
+    dragging = next
+    onpreview?.(next)
+  }
+
+  function start(event: PointerEvent) {
+    if (!onset || event.button !== 0) return
+    const slider = event.currentTarget as HTMLElement
+    slider.setPointerCapture(event.pointerId)
+    slider.focus()
+    event.preventDefault()
+    preview(at(event))
+  }
+
+  function move(event: PointerEvent) {
+    if (dragging !== null) preview(at(event))
+  }
+
+  function end() {
+    if (dragging === null) return
+    const next = dragging
+    preview(null)
+    if (next !== value) onset?.(next)
+  }
+
+  function key(event: KeyboardEvent) {
+    const next = keyValue(shown, event.key, scale)
+    if (next === null) return
+    event.preventDefault()
+    if (next !== value) onset?.(next)
+  }
 </script>
 
 <div class="meter {kind}">
@@ -26,18 +90,60 @@
       <span class="value">{text}</span>
     </div>
   {/if}
-  <div
-    class="track"
-    role="meter"
-    aria-label={label}
-    aria-valuemin={0}
-    aria-valuemax={max}
-    aria-valuenow={value}
-    aria-valuetext={text}
-  >
-    <div class="fill" style:width="{fraction * 100}%"></div>
-  </div>
+  {#if onset}
+    <div
+      class="slider"
+      role="slider"
+      tabindex="0"
+      aria-label={label}
+      aria-valuemin={0}
+      aria-valuemax={max}
+      aria-valuenow={Math.round(shown)}
+      aria-valuetext={text}
+      onpointerdown={start}
+      onpointermove={move}
+      onpointerup={end}
+      onpointercancel={() => preview(null)}
+      onlostpointercapture={end}
+      onkeydown={key}
+    >
+      {@render bar()}
+      <div class="handle" style:left="{fraction * 100}%"></div>
+    </div>
+  {:else}
+    <div
+      role="meter"
+      aria-label={label}
+      aria-valuemin={0}
+      aria-valuemax={max}
+      aria-valuenow={value}
+      aria-valuetext={text}
+    >
+      {@render bar()}
+    </div>
+  {/if}
 </div>
+
+{#snippet bar()}
+  {#if segments && segments > 1}
+    <!-- Separate boxes like the in-game HUD, each filled by its share of the value. -->
+    <div class="segments" bind:this={track}>
+      {#each { length: segments }, i (i)}
+        <div class="track segment">
+          <div
+            class="fill"
+            class:dragging={dragging !== null}
+            style:width="{meterFraction(fraction * segments - i, 1) * 100}%"
+          ></div>
+        </div>
+      {/each}
+    </div>
+  {:else}
+    <div class="track" bind:this={track}>
+      <div class="fill" class:dragging={dragging !== null} style:width="{fraction * 100}%"></div>
+    </div>
+  {/if}
+{/snippet}
 
 <style>
   .meter {
@@ -77,11 +183,16 @@
     border-radius: var(--radius);
     height: var(--bar-height);
     overflow: hidden;
+    position: relative;
   }
 
   .fill {
     height: 100%;
     transition: width 0.3s;
+  }
+
+  .fill.dragging {
+    transition: none;
   }
 
   .stock .fill {
@@ -90,5 +201,38 @@
 
   .supplies .fill {
     background: var(--supplies);
+  }
+
+  .segments {
+    display: flex;
+    gap: 4px;
+  }
+
+  /* Taller than a plain bar, with an edge so empty segments stand out from the panel. */
+  .segment {
+    box-shadow: inset 0 0 0 1px var(--track-edge);
+    flex: 1;
+    height: calc(var(--bar-height) + 0.25rem);
+  }
+
+  /* Taller than the bar to give fingers and the pointer room; vertical scrolling still works. */
+  .slider {
+    border-radius: var(--radius);
+    cursor: ew-resize;
+    padding: var(--space-2) 0;
+    position: relative;
+    touch-action: pan-y;
+  }
+
+  .handle {
+    background: var(--fg);
+    border: 1px solid var(--bg);
+    border-radius: var(--radius);
+    height: 1.25rem;
+    pointer-events: none;
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 0.5rem;
   }
 </style>

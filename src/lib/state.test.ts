@@ -25,10 +25,11 @@ describe('parseState', () => {
     expect(result).toEqual({
       ok: true,
       state: {
-        version: 4,
+        version: 5,
         clock: { trackOnOpen: false },
         properties: {},
         businesses: {},
+        businessOrder: [],
       },
       fromVersion: 1,
     })
@@ -38,7 +39,13 @@ describe('parseState', () => {
     const result = parseState('{"version":2,"clock":{"trackOnOpen":true}}')
     expect(result).toEqual({
       ok: true,
-      state: { version: 4, clock: { trackOnOpen: true }, properties: {}, businesses: {} },
+      state: {
+        version: 5,
+        clock: { trackOnOpen: true },
+        properties: {},
+        businesses: {},
+        businessOrder: [],
+      },
       fromVersion: 2,
     })
   })
@@ -50,14 +57,39 @@ describe('parseState', () => {
     )
     expect(result).toEqual({
       ok: true,
-      state: { version: 4, clock: { trackOnOpen: false }, properties, businesses: {} },
+      state: {
+        version: 5,
+        clock: { trackOnOpen: false },
+        properties,
+        businesses: {},
+        businessOrder: [],
+      },
       fromVersion: 3,
+    })
+  })
+
+  it('migrates a version 4 sample, keeping the catalog order of the cards', () => {
+    const properties = { bunker: { owned: true, upgrades: {} } }
+    const businesses = { bunker: { stock: 30, supplies: 80 } }
+    const result = parseState(
+      JSON.stringify({ version: 4, clock: { trackOnOpen: true }, properties, businesses }),
+    )
+    expect(result).toEqual({
+      ok: true,
+      state: {
+        version: 5,
+        clock: { trackOnOpen: true },
+        properties,
+        businesses,
+        businessOrder: [],
+      },
+      fromVersion: 4,
     })
   })
 
   it('keeps the saved clock setting', () => {
     const text =
-      '{"version":4,"clock":{"trackOnOpen":true,"playMs":5},"properties":{},"businesses":{}}'
+      '{"version":5,"clock":{"trackOnOpen":true,"playMs":5},"properties":{},"businesses":{},"businessOrder":[]}'
     expect(parseState(text)).toMatchObject({ ok: true, state: { clock: { trackOnOpen: true } } })
   })
 
@@ -73,31 +105,42 @@ describe('parseState', () => {
     expect(parseState(text)).toMatchObject({ ok: true, state: { businesses } })
   })
 
+  it('keeps the saved card order', () => {
+    const businessOrder = ['bunker', 'mc-weed']
+    const text = JSON.stringify({ ...defaultState(), businessOrder })
+    expect(parseState(text)).toMatchObject({ ok: true, state: { businessOrder } })
+  })
+
   it.each([
     [
       'a missing clock',
-      '{"version":4,"properties":{},"businesses":{}}',
+      '{"version":5,"properties":{},"businesses":{},"businessOrder":[]}',
       'clock section is missing',
     ],
     [
       'a bad tracking setting',
-      '{"version":4,"clock":{"trackOnOpen":"yes"},"properties":{},"businesses":{}}',
+      '{"version":5,"clock":{"trackOnOpen":"yes"},"properties":{},"businesses":{},"businessOrder":[]}',
       'tracking setting',
     ],
     [
       'missing properties',
-      '{"version":4,"clock":{"trackOnOpen":false},"businesses":{}}',
+      '{"version":5,"clock":{"trackOnOpen":false},"businesses":{},"businessOrder":[]}',
       'properties section',
     ],
     [
       'missing businesses',
-      '{"version":4,"clock":{"trackOnOpen":false},"properties":{}}',
+      '{"version":5,"clock":{"trackOnOpen":false},"properties":{},"businessOrder":[]}',
       'businesses section',
     ],
     [
       'stock over 100%',
-      '{"version":4,"clock":{"trackOnOpen":false},"properties":{},"businesses":{"bunker":{"stock":120}}}',
+      '{"version":5,"clock":{"trackOnOpen":false},"properties":{},"businesses":{"bunker":{"stock":120}},"businessOrder":[]}',
       'business "bunker"',
+    ],
+    [
+      'a card order that is not a list',
+      '{"version":5,"clock":{"trackOnOpen":false},"properties":{},"businesses":{},"businessOrder":"bunker"}',
+      'card order',
     ],
   ])('rejects %s', (_, text, message) => {
     const result = parseState(text)
