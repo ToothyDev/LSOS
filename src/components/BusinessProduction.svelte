@@ -3,7 +3,13 @@
   // only that; `editing` adds the resync controls. Logic: lib/production.ts.
   import { SUPPLY_PURCHASE } from '../data/business-events'
   import type { Production, ProductionRate } from '../data/production'
-  import { forecast, stockUnits, stockValue, type KnownRate } from '../lib/production'
+  import {
+    estimatedParts,
+    forecast,
+    stockUnits,
+    stockValue,
+    type KnownRate,
+  } from '../lib/production'
   import { formatValue, settleBars, type Bars } from '../lib/resync'
   import BusinessBars from './ui/BusinessBars.svelte'
   import Countdown from './ui/Countdown.svelte'
@@ -30,18 +36,27 @@
   const value = $derived(rate ? stockValue(current, production, rate) : null)
   const ahead = $derived(running ? forecast(current, production, running) : null)
   const percent = (value: number) => formatValue(value, 'percent')
+  // Numbers resting on estimated rates say so (decision 013). The value also counts units made
+  // at an estimated rate.
+  const estimated = $derived(estimatedParts(rate))
+  const est = (label: string, isEstimate: boolean) => (isEstimate ? `${label} (est.)` : label)
 </script>
 
 {#if editing}
   <BusinessBars {bars} {now} {onresync} />
 {:else}
   <Meter
-    label="Stock"
+    label={est('Stock', estimated.production)}
     value={current.stock}
     max={100}
     valueText="{units} / {production.maxUnits} {production.unitName} · {percent(current.stock)}"
   />
-  <Meter label="Supplies" value={current.supplies ?? 0} max={100} kind="supplies" />
+  <Meter
+    label={est('Supplies', estimated.production)}
+    value={current.supplies ?? 0}
+    max={100}
+    kind="supplies"
+  />
   {#if current.suppliesDueAt !== undefined}
     <Countdown label="Supplies arrive in" remainingMs={current.suppliesDueAt - now} />
   {/if}
@@ -49,10 +64,14 @@
 
 {#if value}
   <div class="facts">
-    <span class="label">Value</span>
-    <span class="value" title="Sold {production.farSaleLabel}: {formatValue(value.far, 'money')}">
-      {formatValue(value.nearby, 'money')}
-      <span class="far">· {formatValue(value.far, 'money')} far</span>
+    <span class="label">{est('Value', estimated.value || estimated.production)}</span>
+    <!-- Far sales pay more, so that is the headline; nearby is the alternative. -->
+    <span
+      class="value"
+      title="Sold {production.farSaleLabel}; {formatValue(value.nearby, 'money')} sold nearby"
+    >
+      {formatValue(value.far, 'money')} far
+      <span class="alt">· {formatValue(value.nearby, 'money')} nearby</span>
     </span>
   </div>
 {/if}
@@ -60,17 +79,33 @@
 {#if ahead}
   <!-- Only what happens first: the other one cannot happen before it. Play time. -->
   {#if ahead.fullInMs !== null}
-    <Countdown label="Full in" remainingMs={ahead.fullInMs} readyText="Full" />
+    <Countdown
+      label={est('Full in', estimated.production)}
+      remainingMs={ahead.fullInMs}
+      readyText="Full"
+    />
   {:else}
-    <Countdown label="Supplies out in" remainingMs={ahead.suppliesOutInMs ?? 0} readyText="Out" />
+    <Countdown
+      label={est('Supplies out in', estimated.production)}
+      remainingMs={ahead.suppliesOutInMs ?? 0}
+      readyText="Out"
+      readyTone="bad"
+    />
+  {/if}
+  {#if rate?.estimate}
+    <p class="note" role="note">
+      <strong>Estimate.</strong> No reliable data for these upgrades. {rate.estimate.how}
+    </p>
   {/if}
 {:else}
-  <p class="hint">
+  <p class="note" role="note">
+    <strong>Not tracked.</strong>
     {#if rate}
-      Supply use with these upgrades is not known yet: stock does not rise on its own.
+      There is no reliable data on how fast this business uses supplies with these upgrades.
     {:else}
-      No production data for these upgrades yet: stock does not rise on its own.
+      There is no reliable data for this combination of upgrades.
     {/if}
+    Stock and supplies stay where you set them.
   </p>
 {/if}
 
@@ -95,13 +130,19 @@
     text-align: right;
   }
 
-  .far,
-  .hint {
+  .alt {
     color: var(--muted);
     font-size: var(--text-sm);
   }
 
-  .hint {
+  .note {
+    border-left: 3px solid var(--warn);
+    font-size: var(--text-sm);
     margin: 0;
+    padding-left: var(--space-2);
+  }
+
+  .note strong {
+    color: var(--warn);
   }
 </style>

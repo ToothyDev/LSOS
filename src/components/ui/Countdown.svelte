@@ -8,14 +8,16 @@
     remainingMs: number
     /** Shown once the time is up. */
     readyText?: string
+    /** Whether the time being up is good news (green) or bad news (red, e.g. supplies out). */
+    readyTone?: 'good' | 'bad'
   }
 
-  let { label, remainingMs, readyText = 'Ready' }: Props = $props()
+  let { label, remainingMs, readyText = 'Ready', readyTone = 'good' }: Props = $props()
 
   const ready = $derived(remainingMs <= 0)
 </script>
 
-<div class="countdown" class:ready>
+<div class="countdown" class:ready class:bad={readyTone === 'bad'}>
   <span class="label">{label}</span>
   <span class="time"
     >{#if ready}{readyText}{:else}<Digits text={formatDuration(remainingMs)} />{/if}</span
@@ -45,5 +47,9 @@
 
   .ready .time {
     color: var(--accent-text);
+  }
+
+  .ready.bad .time {
+    color: var(--danger);
   }
 </style>

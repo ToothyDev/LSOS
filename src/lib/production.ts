@@ -6,7 +6,7 @@ import { isOwned, upgradeValue, type OwnedProperties } from './properties'
 import { settleBars, type Bars } from './resync'
 
 /** A rate with everything needed to run production on its own. */
-export type KnownRate = Required<ProductionRate>
+export type KnownRate = ProductionRate & { unitsPerFullSupplies: number }
 
 const MINUTE_MS = 60_000
 
@@ -45,6 +45,21 @@ export function rateFor(
 ): KnownRate | undefined {
   const rate = matchingRate(production, owned, property)
   return rate?.unitsPerFullSupplies === undefined ? undefined : (rate as KnownRate)
+}
+
+/**
+ * Which shown numbers rest on estimated values (decision 013): the value, and everything that
+ * moves with production (bars, stock count, countdowns).
+ */
+export function estimatedParts(rate: ProductionRate | undefined): {
+  value: boolean
+  production: boolean
+} {
+  const fields = rate?.estimate?.fields ?? []
+  return {
+    value: fields.includes('unitValue'),
+    production: fields.includes('minutesPerUnit') || fields.includes('unitsPerFullSupplies'),
+  }
 }
 
 /** Play time per unit, and percent of each bar one unit adds or uses. */

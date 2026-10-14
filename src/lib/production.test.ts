@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { PRODUCTION } from '../data/production'
+import { PRODUCTION, type Production } from '../data/production'
 import { PROPERTIES } from '../data/properties'
 import {
+  estimatedParts,
   forecast,
   matchingRate,
   parseBusinessBars,
@@ -55,15 +56,48 @@ describe('rateFor', () => {
   })
 
   it('has no rate for a combination the data does not list', () => {
+    const rates = cocaine.rates.filter((r) => r.upgrades.join() !== 'staff')
+    const partial: Production = { ...cocaine, rates }
     const owned = owning('mc-cocaine', { staff: true })
-    expect(matchingRate(cocaine, owned, property('mc-cocaine'))).toBeUndefined()
-    expect(rateFor(cocaine, owned, property('mc-cocaine'))).toBeUndefined()
+    expect(matchingRate(partial, owned, property('mc-cocaine'))).toBeUndefined()
+    expect(rateFor(partial, owned, property('mc-cocaine'))).toBeUndefined()
   })
 
   it('has no running rate while supply use is unknown, but still the value', () => {
-    const owned = owning('mc-cocaine', { equipment: true })
-    expect(matchingRate(cocaine, owned, property('mc-cocaine'))?.unitValue).toBe(31_000)
-    expect(rateFor(cocaine, owned, property('mc-cocaine'))).toBeUndefined()
+    const { unitsPerFullSupplies: _, ...noSupplies } = cocaine.rates[0]!
+    const partial: Production = { ...cocaine, rates: [noSupplies] }
+    expect(matchingRate(partial, owning('mc-cocaine'), property('mc-cocaine'))?.unitValue).toBe(
+      27_000,
+    )
+    expect(rateFor(partial, owning('mc-cocaine'), property('mc-cocaine'))).toBeUndefined()
+  })
+})
+
+describe('MC estimates (decision 013)', () => {
+  const rate = (upgrades: Record<string, boolean>) =>
+    rateFor(cocaine, owning('mc-cocaine', upgrades), property('mc-cocaine'))!
+
+  it('keeps sourced values sourced', () => {
+    expect(rate({ equipment: true, staff: true }).estimate).toBeUndefined()
+    expect(estimatedParts(rate({ equipment: true, staff: true }))).toEqual({
+      value: false,
+      production: false,
+    })
+  })
+
+  it('estimates supply use: as with both upgrades with equipment, half without', () => {
+    expect(rate({ equipment: true })).toMatchObject({ minutesPerUnit: 40, unitsPerFullSupplies: 4 })
+    expect(rate({})).toMatchObject({ minutesPerUnit: 50, unitsPerFullSupplies: 2 })
+    expect(estimatedParts(rate({}))).toEqual({ value: false, production: true })
+  })
+
+  it('estimates staff only as equipment only, with supplies as without equipment', () => {
+    expect(rate({ staff: true })).toMatchObject({
+      minutesPerUnit: 40,
+      unitValue: 31_000,
+      unitsPerFullSupplies: 2,
+    })
+    expect(estimatedParts(rate({ staff: true }))).toEqual({ value: true, production: true })
   })
 })
 
