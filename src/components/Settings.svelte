@@ -1,6 +1,8 @@
 <script lang="ts">
   import { exportFileName } from '../lib/state'
   import { exportText, importText, store } from '../lib/store.svelte'
+  import Button from './ui/Button.svelte'
+  import Panel from './ui/Panel.svelte'
 
   let fileInput: HTMLInputElement
   let message: { text: string; error: boolean } | null = $state(null)
@@ -33,77 +35,75 @@
   }
 </script>
 
-<section>
-  <h2>Clock</h2>
-  <label>
-    <input type="checkbox" bind:checked={store.state.clock.trackOnOpen} />
-    Start tracking play time when LSOS opens
-  </label>
-  <p class="hint">
-    Off (recommended): LSOS opens paused. Press Start once you have loaded into a GTA Online
-    session, since that is when the game starts counting. On: loading screens count as play time
-    too, unless you open LSOS only once you are in.
-  </p>
-</section>
+<div class="grid">
+  <Panel title="Clock">
+    <label>
+      <input type="checkbox" bind:checked={store.state.clock.trackOnOpen} />
+      Start tracking play time when LSOS opens
+    </label>
+    <p class="hint">
+      Off (recommended): LSOS opens paused. Press Start once you have loaded into a GTA Online
+      session, since that is when the game starts counting. On: loading screens count as play time
+      too, unless you open LSOS only once you are in.
+    </p>
+  </Panel>
 
-<section>
-  <h2>Backup</h2>
-  <p>
-    Your data lives only in this browser. Export it to keep a copy or to move to another device.
-  </p>
-  <div class="actions">
-    <button type="button" onclick={exportBackup}>Export</button>
-    <button type="button" onclick={() => fileInput.click()}>Import</button>
-    <input
-      bind:this={fileInput}
-      type="file"
-      accept=".json,application/json"
-      hidden
-      onchange={importBackup}
-    />
-  </div>
-  {#if message}
-    <p class:error={message.error} role="status">{message.text}</p>
-  {/if}
-</section>
+  <Panel title="Backup">
+    <p>
+      Your data lives only in this browser. Export it to keep a copy or to move to another device.
+    </p>
+    <div class="actions">
+      <Button variant="primary" onclick={exportBackup}>Export</Button>
+      <Button onclick={() => fileInput.click()}>Import</Button>
+      <input
+        bind:this={fileInput}
+        type="file"
+        accept=".json,application/json"
+        hidden
+        onchange={importBackup}
+      />
+    </div>
+    {#if message}
+      <p class:error={message.error} role="status">{message.text}</p>
+    {/if}
+  </Panel>
+</div>
 
 <style>
-  h2 {
-    font-size: 1rem;
-    text-transform: uppercase;
+  .grid {
+    display: grid;
+    gap: var(--space-5);
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 1fr));
+  }
+
+  p {
+    margin: 0;
   }
 
   .actions {
     display: flex;
-    gap: 0.5rem;
-  }
-
-  button {
-    background: none;
-    border: 1px solid var(--accent);
-    color: var(--accent);
-    cursor: pointer;
-    font: inherit;
-    padding: 0.25rem 0.75rem;
-    text-transform: uppercase;
+    gap: var(--space-2);
   }
 
   label {
     align-items: center;
     cursor: pointer;
     display: flex;
-    gap: 0.5rem;
+    gap: var(--space-2);
   }
 
   input[type='checkbox'] {
     accent-color: var(--accent);
+    height: 1.125rem;
+    width: 1.125rem;
   }
 
   .hint {
     color: var(--muted);
+    font-size: var(--text-sm);
   }
 
   .error {
-    color: var(--warn);
+    color: var(--danger);
   }
 </style>

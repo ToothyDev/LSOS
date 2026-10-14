@@ -1,5 +1,8 @@
 # LSOS: Los Santos Operating System
 
+> **Vibe coded:** this whole project is written by AI
+> ([Claude Code](https://claude.com/claude-code)).
+
 A GTA Online companion that runs in your browser. Keep it open while you play, and it tracks your
 businesses, safes and cooldowns, so you know when stock is full, a safe needs emptying or a heist
 is ready again.

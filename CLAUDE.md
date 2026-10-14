@@ -4,22 +4,21 @@ LSOS (Los Santos Operating System) is a static, browser-only GTA Online tracker:
 safes, cooldowns and weekly events. User data lives in `localStorage`; there is no backend.
 Svelte 5 + TypeScript + Vite. Public repository.
 
-**Next up: #3** (terminal design). Update this line when a PR finishes.
-
 ## Where things are
 
 | Need                                           | Look in                                           |
 | ---------------------------------------------- | ------------------------------------------------- |
 | Why something is built the way it is           | `docs/decisions/README.md` (index, then one file) |
-| What to work on                                | the issue named in "Next up", only that issue     |
+| What to work on                                | the issue the maintainer names, only that issue   |
 | Continue an unfinished PR                      | `docs/handoff/<file>.md` on the PR branch         |
 | Tabs and hash routing                          | `src/lib/tabs.ts`, `src/App.svelte`               |
 | Play/real clocks, `onPlayTime` for trackers    | `src/lib/clock.ts`, `clock.svelte.ts` (dec. 008)  |
 | Game logic (pure TS, unit-tested)              | `src/lib/`                                        |
 | Saved user state, migrations, export/import    | `src/lib/state.ts`, `src/lib/store.svelte.ts`     |
 | UI components (thin)                           | `src/components/`                                 |
+| Base UI kit (panel, meter, button...), preview | `src/components/ui/`, `#/kit` in dev (dec. 009)   |
 | Game data with sources                         | `src/data/` (decision 004)                        |
-| Theme tokens                                   | `src/app.css`                                     |
+| Theme tokens                                   | `src/app.css` (decision 009)                      |
 | CI, templates                                  | `.github/`                                        |
 | Skills: `handoff`, `finish-pr`; agent: `scout` | `.claude/`                                        |
 
@@ -36,8 +35,8 @@ npm run format                      # fix formatting
 
 1. Trust the SessionStart hook: no output means dependencies and git are in order. Merge `main`
    only when it says the branch is behind and the task needs it.
-2. Take the **Next up** issue. Read only that issue (body + comments), never the whole list
-   unless asked to triage. Skip issues labelled `waiting-on-maintainer` or `decision-needed`
+2. Take the issue the maintainer names. Read only that issue (body + comments), never the whole
+   list unless asked to triage. Skip issues labelled `waiting-on-maintainer` or `decision-needed`
    and say so. If the branch has a handoff, read it and only what it lists.
 3. **One issue per session, one issue per PR.** Branch: `claude/<issue>-<few-words>`. Rename a
    random session branch before its first push; never rename a pushed branch.
