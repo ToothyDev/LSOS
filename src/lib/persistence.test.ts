@@ -133,7 +133,7 @@ describe('save', () => {
 
     clock.runAll()
     expect(storage.writes).toBe(1)
-    expect(JSON.parse(storage.stored!)).toEqual({ version: CURRENT_VERSION, n: 2 })
+    expect(JSON.parse(storage.stored!)).toEqual({ ...defaultState(), n: 2 })
   })
 
   it('writes a pending save on flush and cancels the timer', () => {

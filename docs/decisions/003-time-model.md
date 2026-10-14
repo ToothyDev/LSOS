@@ -1,6 +1,6 @@
 # 003: Two clocks, play time and real time
 
-2026-10-13, project bootstrap
+2026-10-13, project bootstrap. How play time is kept between sessions: changed by decision 008.
 
 ## Decision
 
@@ -23,7 +23,8 @@ Each tracker declares which clock it uses, and the data for it cites why (decisi
 - If the gap between two ticks is too large to be throttling (e.g. the computer slept), it is not
   counted. The exact threshold is set when the clock is built and must exceed browser background
   throttling (about one minute).
-- Closing the tab stops play time. Reopening resumes from the saved total.
+- Closing the tab stops play time. (Decision 008: play time is not kept between sessions;
+  trackers save their own progress.)
 - A pause toggle covers "LSOS open, but not playing".
 
 ## Resync

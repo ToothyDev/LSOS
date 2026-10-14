@@ -1,15 +1,18 @@
 // The persisted root state, its versions and migrations (decision 006).
+import { defaultClockSettings, type ClockSettings } from './clock'
 
 /** Bump when the stored shape changes, and add a migration from the previous version. */
-export const CURRENT_VERSION = 1
+export const CURRENT_VERSION = 2
 
 /** All user state. Trackers add their own sections here as they are built. */
 export interface AppState {
   version: typeof CURRENT_VERSION
+  /** Clock settings (decision 008). Play time itself lasts one session and is not saved. */
+  clock: ClockSettings
 }
 
 export function defaultState(): AppState {
-  return { version: CURRENT_VERSION }
+  return { version: CURRENT_VERSION, clock: defaultClockSettings() }
 }
 
 export type StoredData = Record<string, unknown> & { version: number }
@@ -18,7 +21,10 @@ export type StoredData = Record<string, unknown> & { version: number }
 export type Migration = (data: StoredData) => Record<string, unknown>
 
 /** `MIGRATIONS[n]` upgrades version `n` to `n + 1`. Each one has a test with a stored sample. */
-export const MIGRATIONS: Readonly<Record<number, Migration>> = {}
+export const MIGRATIONS: Readonly<Record<number, Migration>> = {
+  // Version 2 adds the clock (issue #2).
+  1: (data) => ({ ...data, clock: defaultClockSettings() }),
+}
 
 export type ParseResult =
   | { ok: true; state: AppState; fromVersion: number }
@@ -86,7 +92,16 @@ export function exportFileName(now: Date): string {
 /** Checks current-version data and keeps only known fields. Returns an error message if bad. */
 function toState(data: StoredData): AppState | string {
   if (data.version !== CURRENT_VERSION) return `Unexpected data version ${data.version}.`
-  return { version: CURRENT_VERSION }
+  const clock = toClock(data.clock)
+  if (typeof clock === 'string') return clock
+  return { version: CURRENT_VERSION, clock }
+}
+
+function toClock(data: unknown): ClockSettings | string {
+  if (!isRecord(data)) return 'The clock section is missing.'
+  const { trackOnOpen } = data
+  if (typeof trackOnOpen !== 'boolean') return 'The saved tracking setting is not true or false.'
+  return { trackOnOpen }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

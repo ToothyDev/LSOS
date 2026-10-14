@@ -34,6 +34,19 @@
 </script>
 
 <section>
+  <h2>Clock</h2>
+  <label>
+    <input type="checkbox" bind:checked={store.state.clock.trackOnOpen} />
+    Start tracking play time when LSOS opens
+  </label>
+  <p class="hint">
+    Off (recommended): LSOS opens paused. Press Start once you have loaded into a GTA Online
+    session, since that is when the game starts counting. On: loading screens count as play time
+    too, unless you open LSOS only once you are in.
+  </p>
+</section>
+
+<section>
   <h2>Backup</h2>
   <p>
     Your data lives only in this browser. Export it to keep a copy or to move to another device.
@@ -73,6 +86,21 @@
     font: inherit;
     padding: 0.25rem 0.75rem;
     text-transform: uppercase;
+  }
+
+  label {
+    align-items: center;
+    cursor: pointer;
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  input[type='checkbox'] {
+    accent-color: var(--accent);
+  }
+
+  .hint {
+    color: var(--muted);
   }
 
   .error {
