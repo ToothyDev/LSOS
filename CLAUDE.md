@@ -41,8 +41,9 @@ npm run format                      # fix formatting
 1. Trust the SessionStart hook: no output means dependencies and git are in order. Merge `main`
    only when it says the branch is behind and the task needs it.
 2. Take the issue the maintainer names. Read only that issue (body + comments), never the whole
-   list unless asked to triage. Skip issues labelled `decision-needed` and say so. If the branch
-   has a handoff, read it and only what it lists.
+   list unless asked to triage. Labelled `decision-needed`: don't build yet; lay out the open
+   decision with options and a recommendation, ask, and wait for the answer. If the branch has a
+   handoff, read it and only what it lists.
 3. **One issue per session, one issue per PR.** Branch: `claude/<issue>-<few-words>`. Rename a
    random session branch before its first push; never rename a pushed branch.
 4. Small steps; run only the affected tests while iterating, `npm run verify` before committing.
