@@ -15,6 +15,7 @@
 - **Only ownership is needed.** The source says technicians need no supplies, so goods do not
   depend on the linked business's stock or supplies. Goods whose business is not owned do not
   run and the card says "Locked". Two technicians on one type count once (the game allows one).
+  A shut-down business locks its goods too; marking one shut down is issue #38.
 - **Saved state** (version 6): `nightclub` maps a goods id to crates, fractions included. Crates,
   not percent, so changing the floors keeps the count the game shows. Stock above the capacity
   (fewer floors set) stays until changed.
