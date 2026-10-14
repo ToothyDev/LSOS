@@ -194,6 +194,7 @@
     const parts = property.upgrades.flatMap((upgrade) => {
       const value = upgradeValue(owned, property.id, upgrade)
       if (upgrade.kind === 'toggle') return value === true ? [upgrade.label] : []
+      if (upgrade.kind === 'count') return [`${upgrade.label}: ${value}`]
       if (upgrade.summary === false || value === upgrade.options[0]?.id) return []
       const option = upgrade.options.find((o) => o.id === value)
       return option ? [`${upgrade.label}: ${option.label}`] : []

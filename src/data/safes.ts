@@ -14,11 +14,18 @@ export type SafePayout =
   /** By popularity: the row with the highest `from` at or below it. */
   | { kind: 'popularity'; rows: readonly PayoutRow[] }
   /**
-   * `perStep` for each full step of a choice upgrade whose option ids are counts, up to `max`;
-   * e.g. $500 per 5 security contracts.
+   * `base` plus `perStep` for each full step of a count upgrade, up to `max`; e.g. $500 per 5
+   * security contracts.
    */
-  | { kind: 'steps'; upgrade: string; perStep: number; stepSize: number; max: number }
-  /** `full` with every floor slot filled (option "full"), else that share of the `slots`. */
+  | {
+      kind: 'steps'
+      upgrade: string
+      base: number
+      perStep: number
+      stepSize: number
+      max: number
+    }
+  /** `full` with all `slots` filled (a count upgrade), else that share of it. */
   | { kind: 'slots'; upgrade: string; full: number; slots: number }
   /** A fixed amount, or another with an upgrade bought. */
   | { kind: 'fixed'; amount: number; withUpgrade?: { upgrade: string; amount: number } }
@@ -126,14 +133,22 @@ export const SAFES: readonly Safe[] = [
   {
     propertyId: 'agency',
     capacity: 250_000,
-    payout: { kind: 'steps', upgrade: 'contracts', perStep: 500, stepSize: 5, max: 20_000 },
+    payout: {
+      kind: 'steps',
+      upgrade: 'contracts',
+      base: 250,
+      perStep: 500,
+      stepSize: 5,
+      max: 20_000,
+    },
     estimate:
-      'The payout per contract is a best estimate: $500 for every 5 security contracts, ' +
-      'no base payout.',
+      'The payout is a best estimate: $250 base plus $500 for every 5 security contracts, ' +
+      'up to $20,000.',
     source:
       'gta.wiki, Security Contracts: safe holds $250,000, payout capped at $20,000 per day ' +
       '(201 contracts), rising with contracts done. Steps of $500 per 5 contracts: gtaboss, ' +
-      'How to complete Security Contracts. Step and base payout unconfirmed (issue #40).',
+      'How to complete Security Contracts. Base $250: sportskeeda, GTA Online Agency passive ' +
+      'income guide. Step and base payout unconfirmed (issue #40).',
     checked: SAFES_CHECKED,
   },
   {

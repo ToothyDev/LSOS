@@ -48,26 +48,35 @@ describe('dailyPayout', () => {
     expect(dailyPayout(...nightclub, 3)).toBe(1_500)
   })
 
-  it('pays the agency $500 per 5 contracts, up to $20,000', () => {
-    const agency = (contracts: string) =>
-      dailyPayout(safe('agency'), owning('agency', { contracts }), property('agency'))
-    expect(agency('0')).toBe(0)
-    expect(agency('5')).toBe(500)
-    expect(agency('100')).toBe(10_000)
-    expect(agency('200')).toBe(20_000)
+  it('pays the agency $250 plus $500 per 5 contracts, up to $20,000', () => {
+    const agency = (contracts?: number) =>
+      dailyPayout(
+        safe('agency'),
+        owning('agency', contracts === undefined ? {} : { contracts }),
+        property('agency'),
+      )
+    expect(agency()).toBe(250)
+    expect(agency(4)).toBe(250)
+    expect(agency(5)).toBe(750)
+    expect(agency(100)).toBe(10_250)
+    expect(agency(195)).toBe(19_750)
+    expect(agency(201)).toBe(20_000)
+    expect(agency(500)).toBe(20_000)
   })
 
   it('pays the arcade $5,000 when full, else its share of 35 slots', () => {
-    const arcade = (slots?: string) =>
+    const arcade = (slots?: number) =>
       dailyPayout(
         safe('arcade'),
-        owning('arcade', slots ? { 'floor-slots': slots } : {}),
+        owning('arcade', slots === undefined ? {} : { 'floor-slots': slots }),
         property('arcade'),
       )
     expect(arcade()).toBe(5_000)
-    expect(arcade('full')).toBe(5_000)
-    expect(arcade('14')).toBe(2_000)
-    expect(arcade('0')).toBe(0)
+    expect(arcade(35)).toBe(5_000)
+    expect(arcade(14)).toBe(2_000)
+    expect(arcade(0)).toBe(0)
+    // Out of range reads as the default: all filled.
+    expect(arcade(40)).toBe(5_000)
   })
 
   it('pays the salvage yard its 0% reputation amount, more with Staff', () => {
@@ -108,7 +117,7 @@ describe('upgrades', () => {
     expect(parts('nightclub')).toEqual({ payout: false, popularity: true })
     expect(parts('agency')).toEqual({ payout: true, popularity: false })
     expect(parts('arcade')).toEqual({ payout: false, popularity: false })
-    expect(parts('arcade', { 'floor-slots': '20' })).toEqual({ payout: true, popularity: false })
+    expect(parts('arcade', { 'floor-slots': 20 })).toEqual({ payout: true, popularity: false })
     expect(parts('salvage-yard').payout).toBe(true)
   })
 })
@@ -180,19 +189,23 @@ describe('forecasts', () => {
     expect(nextPayoutInMs({ money: 0, sinceMs: 30 * MIN })).toBe(18 * MIN)
   })
 
-  it('counts the days until full as popularity falls', () => {
-    // 50k at 100%, then 45k at 90%, 24k at 80%, 22k at 70%: full on the 4th payout.
+  it('counts the days until full as if popularity stayed where it is', () => {
+    // 50k a day at 100%: 130k needs 3 payouts.
     const state = { money: 120_000, sinceMs: 0, popularity: 100 }
-    expect(fullInMs(state, ...nightclub)).toBe(4 * DAY_MS)
-    // Down to $1,500 a day at 0%: 10 payouts make $185,100, then 30 more at $1,500.
-    expect(fullInMs({ ...state, money: 21_000 }, ...nightclub)).toBe(40 * DAY_MS)
+    expect(fullInMs(state, ...nightclub)).toBe(3 * DAY_MS)
+    // 25k a day at 85%: 6 payouts.
+    expect(fullInMs({ ...state, popularity: 85 }, ...nightclub)).toBe(6 * DAY_MS)
     expect(fullInMs({ ...state, money: 200_000, sinceMs: 18 * MIN }, ...nightclub)).toBe(30 * MIN)
   })
 
   it('is 0 when full and null when nothing is paid', () => {
     expect(fullInMs({ money: 250_000, sinceMs: 0, popularity: 0 }, ...nightclub)).toBe(0)
-    const agency = [safe('agency'), owning('agency'), property('agency')] as const
-    expect(fullInMs({ money: 0, sinceMs: 0 }, ...agency)).toBeNull()
+    const arcade = [
+      safe('arcade'),
+      owning('arcade', { 'floor-slots': 0 }),
+      property('arcade'),
+    ] as const
+    expect(fullInMs({ money: 0, sinceMs: 0 }, ...arcade)).toBeNull()
   })
 })
 

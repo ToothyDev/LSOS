@@ -2,6 +2,7 @@
   // Owned yes/no and the upgrades of one property (decision 011).
   import type { Property } from '../data/properties'
   import Button from './ui/Button.svelte'
+  import NumberField from './ui/NumberField.svelte'
   import {
     isOwned,
     setOwned,
@@ -47,6 +48,16 @@
             />
             {upgrade.label}
           </label>
+        {:else if upgrade.kind === 'count'}
+          <div class="count">
+            <NumberField
+              label={upgrade.label}
+              value={upgradeValue(owned, property.id, upgrade) as number}
+              min={0}
+              max={upgrade.max}
+              onchange={(value) => onchange(setUpgrade(owned, property.id, upgrade.id, value))}
+            />
+          </div>
         {:else}
           <div class="choice">
             <label for="{id}-{upgrade.id}">{upgrade.label}</label>
@@ -106,7 +117,8 @@
     padding-left: var(--space-3);
   }
 
-  .upgrades > label {
+  .upgrades > label,
+  .count {
     grid-column: 1 / -1;
   }
 

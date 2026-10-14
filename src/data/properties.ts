@@ -19,6 +19,8 @@ export type Upgrade =
       /** False to leave it out of the card's upgrade summary, when the card shows it anyway. */
       summary?: false
     }
+  /** A whole number typed in, e.g. security contracts done. */
+  | { kind: 'count'; id: string; label: string; max?: number; default: number }
 
 export interface Property {
   /** Stable id, saved in user data: never change or reuse it. */
@@ -121,18 +123,13 @@ export const PROPERTIES: readonly Property[] = [
     id: 'arcade',
     label: 'Arcade',
     upgrades: [
+      // A machine that takes two slots counts as two.
       {
-        kind: 'choice',
+        kind: 'count',
         id: 'floor-slots',
-        label: 'Floor slots filled',
-        // A machine that takes two slots counts as two.
-        options: [
-          { id: 'full', label: `All ${ARCADE_SLOTS}` },
-          ...Array.from({ length: ARCADE_SLOTS }, (_, i) => {
-            const n = String(ARCADE_SLOTS - 1 - i)
-            return { id: n, label: n }
-          }),
-        ],
+        label: `Floor slots filled (of ${ARCADE_SLOTS})`,
+        max: ARCADE_SLOTS,
+        default: ARCADE_SLOTS,
       },
     ],
     card: false,
@@ -142,18 +139,7 @@ export const PROPERTIES: readonly Property[] = [
   {
     id: 'agency',
     label: 'Agency',
-    upgrades: [
-      {
-        kind: 'choice',
-        id: 'contracts',
-        label: 'Security contracts done',
-        // The payout rises every 5 contracts and stops at 200.
-        options: Array.from({ length: 41 }, (_, i) => ({
-          id: String(i * 5),
-          label: i === 40 ? '200 or more' : `${i * 5} to ${i * 5 + 4}`,
-        })),
-      },
-    ],
+    upgrades: [{ kind: 'count', id: 'contracts', label: 'Security contracts done', default: 0 }],
     card: false,
     source: SAFES.find((safe) => safe.propertyId === 'agency')!.source,
     checked: SAFES_CHECKED,

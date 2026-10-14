@@ -18,13 +18,20 @@
   disagree, the wiki only says Staff reduces it; issue #41). Boosts: Maxed (a new DJ fills the bar),
   Promotion +25% (sourced), DJ +10% (switching back, sourced), Event +10% (Marcel's jobs,
   estimate). Below the top payout the card warns "Payout cut".
-- **Agency:** $500 per 5 security contracts (setting in steps of 5), at most $20,000; no base
-  payout. Step size and base are estimates (issue #40).
-- **Arcade:** $5,000 with all 35 floor slots filled; fewer slots get an even share
-  ($5,000 × filled / 35), marked as an estimate (issue #42). A machine taking two slots counts as two.
+- **Agency:** $250 base plus $500 per 5 security contracts, at most $20,000. Contracts done is
+  typed as a number. Step size and base are estimates (issue #40).
+- **Count settings:** a third upgrade kind next to toggle and choice (decision 011): a whole
+  number typed in (`NumberField`), with a default and an optional maximum, saved as a number.
+  Used for contracts done and arcade floor slots; long dropdowns were hard to use.
+- **Arcade:** $5,000 with all 35 floor slots filled (the default); fewer slots get an even
+  share ($5,000 × filled / 35), marked as an estimate (issue #42). A machine taking two slots counts as two.
 - **Salvage Yard:** too little documented to track reputation (its decay has no source), so it
   pays the 0% reputation amount ($250, $300 with Staff). $250,000 with the Wall Safe, $100,000
   without (issue #43).
+- **"Full in"** assumes popularity stays where it is now, so it grows as popularity falls
+  instead of resting on the estimated loss.
+- **Popularity bar** is split into five segments in the edit controls, like the business bars
+  (decision 010).
 - **Estimates** follow decision 013: numbers that rest on them say "(est.)" and each card with
   one carries a small best-estimate note.
 - **Resync** uses `EditableValue` (decision 010): safe money (Collected, Full), popularity (also

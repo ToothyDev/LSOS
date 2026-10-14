@@ -48,13 +48,12 @@ export function dailyPayout(
     case 'popularity':
       return payout.rows.find((row) => popularity >= row.from)?.amount ?? 0
     case 'steps': {
-      const count = Number(upgrade(owned, property, payout.upgrade))
-      return Math.min(payout.max, Math.floor(count / payout.stepSize) * payout.perStep)
+      const steps = Math.floor(Number(upgrade(owned, property, payout.upgrade)) / payout.stepSize)
+      return Math.min(payout.max, payout.base + steps * payout.perStep)
     }
     case 'slots': {
-      const filled = upgrade(owned, property, payout.upgrade)
-      if (filled === 'full') return payout.full
-      return Math.round((payout.full * Number(filled)) / payout.slots)
+      const filled = Math.min(payout.slots, Number(upgrade(owned, property, payout.upgrade)))
+      return Math.round((payout.full * filled) / payout.slots)
     }
     case 'fixed':
       return payout.withUpgrade && upgrade(owned, property, payout.withUpgrade.upgrade) === true
@@ -91,7 +90,7 @@ export function estimatedParts(
     payout:
       payout.kind === 'steps' ||
       payout.kind === 'fixed' ||
-      (payout.kind === 'slots' && upgrade(owned, property, payout.upgrade) !== 'full'),
+      (payout.kind === 'slots' && Number(upgrade(owned, property, payout.upgrade)) < payout.slots),
     popularity: safe.popularity !== undefined,
   }
 }
@@ -127,8 +126,8 @@ export function nextPayoutInMs(state: SafeState): number {
 }
 
 /**
- * Play time until the safe is full, counting popularity falling day by day. 0 when full; null
- * if it never fills (nothing paid, or not before payouts stop).
+ * Play time until the safe is full if popularity stays where it is now, so the time grows as
+ * popularity falls. 0 when full; null if nothing is paid.
  */
 export function fullInMs(
   state: SafeState,
@@ -138,19 +137,10 @@ export function fullInMs(
 ): number | null {
   const cap = capacity(safe, owned, property)
   if (state.money >= cap) return 0
-  const loss = popularityLoss(safe, owned, property)
-  let { money, popularity } = state
-  let ms = nextPayoutInMs(state)
-  // Payouts never rise as popularity falls, so this ends once the safe is full or a day pays
-  // nothing (at most capacity / smallest payout days).
-  for (;;) {
-    const paid = dailyPayout(safe, owned, property, popularity)
-    if (paid <= 0) return null
-    money += paid
-    if (money >= cap) return ms
-    if (popularity !== undefined) popularity = Math.max(0, popularity - loss)
-    ms += DAY_MS
-  }
+  const paid = dailyPayout(safe, owned, property, state.popularity)
+  if (paid <= 0) return null
+  const payouts = Math.ceil((cap - state.money) / paid)
+  return nextPayoutInMs(state) + (payouts - 1) * DAY_MS
 }
 
 /**
