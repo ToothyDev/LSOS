@@ -24,11 +24,7 @@ export function warehouseSetup(owned: OwnedProperties, nightclub: Property): War
     const upgrade = nightclub.upgrades.find((u) => u.id === id)
     return upgrade ? upgradeValue(owned, nightclub.id, upgrade) : undefined
   }
-  const picks: string[] = []
-  for (let i = 1; i <= MAX_TECHNICIANS; i++) {
-    const pick = value(`technician-${i}`)
-    if (typeof pick === 'string' && pick !== 'none') picks.push(pick)
-  }
+  const picks = technicianPicks(owned, nightclub).filter((pick) => pick !== 'none')
   const assigned = [...new Set(picks)]
   return {
     floors: Number(value('floors')) || 1,
@@ -38,11 +34,18 @@ export function warehouseSetup(owned: OwnedProperties, nightclub: Property): War
   }
 }
 
-/** Crates that fit, and whether that is an estimate: the source gives 1 and 5 floors only. */
-export function capacity(goods: Goods, floors: number): { crates: number; estimated: boolean } {
-  if (floors <= 1) return { crates: goods.capacity.oneFloor, estimated: false }
-  if (floors >= 5) return { crates: goods.capacity.fiveFloors, estimated: false }
-  return { crates: goods.capacity.oneFloor * floors, estimated: true }
+/** What each technician is on, `technician-1` first: a goods id, or 'none'. */
+export function technicianPicks(owned: OwnedProperties, nightclub: Property): string[] {
+  return Array.from({ length: MAX_TECHNICIANS }, (_, i) => {
+    const upgrade = nightclub.upgrades.find((u) => u.id === `technician-${i + 1}`)
+    const value = upgrade ? upgradeValue(owned, nightclub.id, upgrade) : 'none'
+    return typeof value === 'string' ? value : 'none'
+  })
+}
+
+/** Crates that fit with this many warehouse floors. */
+export function capacity(goods: Goods, floors: number): number {
+  return goods.cratesPerFloor * floors
 }
 
 export function msPerCrate(goods: Goods, equipment: boolean): number {
@@ -67,13 +70,25 @@ export function wholeCrates(stock: number): number {
 
 /** Play time until these goods are full; 0 when full. */
 export function fullInMs(goods: Goods, stock: number, setup: WarehouseSetup): number {
-  const room = capacity(goods, setup.floors).crates - stock
+  const room = capacity(goods, setup.floors) - stock
   return Math.max(0, room) * msPerCrate(goods, setup.equipment)
 }
 
 /** Sale value of the whole crates in stock. */
 export function goodsValue(goods: Goods, stock: number): number {
   return wholeCrates(stock) * goods.crateValue
+}
+
+/** Goods a technician is on that are full: the technician makes nothing until they are sold. */
+export function fullGoods(
+  catalog: readonly Goods[],
+  stock: GoodsStock,
+  setup: WarehouseSetup,
+  owned: OwnedProperties,
+): string[] {
+  return catalog
+    .filter((g) => isProducing(g, setup, owned) && fullInMs(g, stock[g.id] ?? 0, setup) <= 0)
+    .map((g) => g.id)
 }
 
 /** The producing goods that fill up next (not full yet), if any. */
@@ -111,7 +126,7 @@ export function produceGoods(
   for (const goods of catalog) {
     if (!isProducing(goods, setup, owned)) continue
     const before = stock[goods.id] ?? 0
-    const cap = capacity(goods, setup.floors).crates
+    const cap = capacity(goods, setup.floors)
     if (before >= cap) continue
     const after = Math.min(cap, before + playMs / msPerCrate(goods, setup.equipment))
     next = { ...next, [goods.id]: after }
@@ -135,4 +150,72 @@ export function parseGoodsStock(data: unknown): GoodsStock | string {
     result[id] = crates
   }
   return result
+}
+
+/** Sale value made per hour of play time while not full. */
+export function valuePerHour(goods: Goods, equipment: boolean): number {
+  return (goods.crateValue * 60 * MINUTE_MS) / msPerCrate(goods, equipment)
+}
+
+/** One technician moved to other goods. `from` is 'none' if they were not assigned. */
+export interface TechnicianMove {
+  technician: number
+  from: string
+  to: string
+}
+
+export interface TechnicianSuggestion {
+  /** The technician choices after the moves, one per technician (`technician-1` first). */
+  picks: string[]
+  moves: TechnicianMove[]
+  /** Value per hour of play time it adds. */
+  gainPerHour: number
+}
+
+/**
+ * The assignment that makes the most money per hour from what the user owns: the unlocked goods
+ * that are not full, best value per hour first, one per available technician (Yohan always,
+ * the others once hired). Technicians already on one of those goods stay. Undefined if the
+ * current assignment earns as much.
+ */
+export function suggestTechnicians(
+  catalog: readonly Goods[],
+  stock: GoodsStock,
+  owned: OwnedProperties,
+  nightclub: Property,
+): TechnicianSuggestion | undefined {
+  const setup = warehouseSetup(owned, nightclub)
+  const picks = technicianPicks(owned, nightclub)
+  const available = picks.flatMap((pick, i) => (i === 0 || pick !== 'none' ? [i] : []))
+  const earning = (g: Goods) => isUnlocked(g, owned) && fullInMs(g, stock[g.id] ?? 0, setup) > 0
+  const rate = (g: Goods) => valuePerHour(g, setup.equipment)
+  const best = catalog
+    .filter(earning)
+    .sort((a, b) => rate(b) - rate(a))
+    .slice(0, available.length)
+  const total = (ids: Iterable<string>) =>
+    [...ids].reduce((sum, id) => {
+      const g = catalog.find((c) => c.id === id)
+      return g && earning(g) ? sum + rate(g) : sum
+    }, 0)
+  const now = total(new Set(picks))
+  const gainPerHour = total(best.map((g) => g.id)) - now
+  if (gainPerHour <= 0) return undefined
+
+  const next = [...picks]
+  const kept = new Set<string>()
+  const free: number[] = []
+  for (const i of available) {
+    const pick = picks[i]!
+    if (best.some((g) => g.id === pick) && !kept.has(pick)) kept.add(pick)
+    else free.push(i)
+  }
+  const missing = best.filter((g) => !kept.has(g.id))
+  const moves: TechnicianMove[] = []
+  missing.forEach((g, n) => {
+    const i = free[n]!
+    moves.push({ technician: i + 1, from: picks[i]!, to: g.id })
+    next[i] = g.id
+  })
+  return { picks: next, moves, gainPerHour }
 }

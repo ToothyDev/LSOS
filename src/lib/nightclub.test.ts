@@ -3,11 +3,14 @@ import { GOODS, NIGHTCLUB_ID } from '../data/nightclub'
 import { PROPERTIES } from '../data/properties'
 import {
   capacity,
+  fullGoods,
   fullInMs,
   goodsValue,
   nextToFill,
   parseGoodsStock,
   produceGoods,
+  suggestTechnicians,
+  valuePerHour,
   warehouseSetup,
   wholeCrates,
 } from './nightclub'
@@ -67,10 +70,10 @@ describe('warehouseSetup', () => {
 })
 
 describe('capacity', () => {
-  it('is sourced for one and five floors, estimated in between', () => {
-    expect(capacity(goods('cargo'), 1)).toEqual({ crates: 10, estimated: false })
-    expect(capacity(goods('cargo'), 3)).toEqual({ crates: 30, estimated: true })
-    expect(capacity(goods('cargo'), 5)).toEqual({ crates: 50, estimated: false })
+  it('grows by the same amount per floor', () => {
+    expect(capacity(goods('cargo'), 1)).toBe(10)
+    expect(capacity(goods('cargo'), 3)).toBe(30)
+    expect(capacity(goods('cargo'), 5)).toBe(50)
   })
 })
 
@@ -132,6 +135,10 @@ describe('forecast and value', () => {
     expect(nextToFill(GOODS, { cash: 40, imports: 10 }, setup, owned)).toBeUndefined()
   })
 
+  it('lists the producing goods that are full', () => {
+    expect(fullGoods(GOODS, { cash: 40, imports: 3, organic: 80 }, setup, owned)).toEqual(['cash'])
+  })
+
   it('values whole crates only', () => {
     expect(wholeCrates(3.9999999)).toBe(4)
     expect(goodsValue(goods('imports'), 2.5)).toBe(54_000)
@@ -147,5 +154,57 @@ describe('parseGoodsStock', () => {
     expect(parseGoodsStock(null)).toBeTypeOf('string')
     expect(parseGoodsStock({ cash: -1 })).toBeTypeOf('string')
     expect(parseGoodsStock({ cash: '3' })).toBeTypeOf('string')
+  })
+})
+
+describe('valuePerHour', () => {
+  it('matches the per-hour values the source lists with equipment', () => {
+    expect(valuePerHour(goods('imports'), true)).toBe(13_500)
+    expect(valuePerHour(goods('cash'), true)).toBe(9_450)
+    expect(Math.floor(valuePerHour(goods('cargo'), true))).toBe(8_571)
+  })
+})
+
+describe('suggestTechnicians', () => {
+  const all = ['mc-cash', 'mc-cocaine', 'mc-meth', 'mc-weed', 'mc-documents', 'bunker', 'hangar']
+
+  it('moves technicians to the best goods the user owns, keeping the ones already there', () => {
+    const owned = owning(
+      {
+        equipment: true,
+        'technician-1': 'cash',
+        'technician-2': 'organic',
+        'technician-3': 'printing',
+      },
+      all,
+    )
+    const suggestion = suggestTechnicians(GOODS, {}, owned, nightclub)!
+    // Best three: imports 13,500/h, pharma 11,475/h, cash 9,450/h. Cash stays with Yohan.
+    expect(suggestion.picks).toEqual(['cash', 'imports', 'pharma', 'none', 'none'])
+    expect(suggestion.moves).toEqual([
+      { technician: 2, from: 'organic', to: 'imports' },
+      { technician: 3, from: 'printing', to: 'pharma' },
+    ])
+    expect(suggestion.gainPerHour).toBe(13_500 + 11_475 - 6_075 - 5_400)
+  })
+
+  it('skips goods that are full or locked and never hires', () => {
+    const owned = owning({ 'technician-1': 'organic' }, ['mc-weed', 'mc-cash', 'mc-cocaine'])
+    const suggestion = suggestTechnicians(GOODS, { imports: 2 }, owned, nightclub)!
+    expect(suggestion.picks).toEqual(['cash', 'none', 'none', 'none', 'none'])
+  })
+
+  it('has nothing to suggest once the setup is the best', () => {
+    const owned = owning({ 'technician-1': 'cash', 'technician-2': 'imports' }, all)
+    // Imports stays with technician 2; Yohan moves from cash to pharma.
+    expect(suggestTechnicians(GOODS, {}, owned, nightclub)?.picks).toEqual([
+      'pharma',
+      'imports',
+      'none',
+      'none',
+      'none',
+    ])
+    const best = owning({ 'technician-1': 'pharma', 'technician-2': 'imports' }, all)
+    expect(suggestTechnicians(GOODS, {}, best, nightclub)).toBeUndefined()
   })
 })

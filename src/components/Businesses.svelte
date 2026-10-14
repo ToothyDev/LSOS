@@ -55,7 +55,9 @@
     nightclubStock = {},
     onnightclub = () => {},
   }: Props = $props()
-  const ownedList = $derived(ownedProperties(catalog, owned))
+  const ownedList = $derived(
+    ownedProperties(catalog, owned).filter((property) => property.card !== false),
+  )
   const sorted = $derived(
     applyOrder(
       ownedList.map((property) => property.id),
@@ -191,7 +193,7 @@
     const parts = property.upgrades.flatMap((upgrade) => {
       const value = upgradeValue(owned, property.id, upgrade)
       if (upgrade.kind === 'toggle') return value === true ? [upgrade.label] : []
-      if (value === upgrade.options[0]?.id) return []
+      if (upgrade.summary === false || value === upgrade.options[0]?.id) return []
       const option = upgrade.options.find((o) => o.id === value)
       return option ? [`${upgrade.label}: ${option.label}`] : []
     })
@@ -244,6 +246,7 @@
                 {goods}
                 nightclub={property}
                 {owned}
+                {onchange}
                 stock={nightclubStock}
                 editing={editing === property.id}
                 onresync={onnightclub}

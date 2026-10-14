@@ -11,13 +11,22 @@ export type Upgrade =
   /** Bought or not, e.g. an equipment upgrade. */
   | { kind: 'toggle'; id: string; label: string }
   /** One of several options; the first one is the default, e.g. "Not hired". */
-  | { kind: 'choice'; id: string; label: string; options: readonly UpgradeOption[] }
+  | {
+      kind: 'choice'
+      id: string
+      label: string
+      options: readonly UpgradeOption[]
+      /** False to leave it out of the card's upgrade summary, when the card shows it anyway. */
+      summary?: false
+    }
 
 export interface Property {
   /** Stable id, saved in user data: never change or reuse it. */
   id: string
   label: string
   upgrades: readonly Upgrade[]
+  /** False for properties that only unlock something elsewhere: no card on the Businesses tab. */
+  card?: false
   source: string
   checked: string
 }
@@ -59,6 +68,7 @@ export const PROPERTIES: readonly Property[] = [
     id: 'special-cargo',
     label: 'Special Cargo Warehouse',
     upgrades: [],
+    card: false,
     source: NIGHTCLUB_SOURCE,
     checked: NIGHTCLUB_CHECKED,
   },
@@ -66,6 +76,7 @@ export const PROPERTIES: readonly Property[] = [
     id: 'hangar',
     label: 'Hangar',
     upgrades: [],
+    card: false,
     source: NIGHTCLUB_SOURCE,
     checked: NIGHTCLUB_CHECKED,
   },
@@ -89,6 +100,8 @@ export const PROPERTIES: readonly Property[] = [
         id: `technician-${i + 1}`,
         // Yohan comes with the club; the others are hired.
         label: i === 0 ? 'Technician 1 (Yohan)' : `Technician ${i + 1}`,
+        // The warehouse rows already show what is being made.
+        summary: false,
         options: [
           { id: 'none', label: i === 0 ? 'Not assigned' : 'Not hired' },
           ...GOODS.map((goods) => ({ id: goods.id, label: goods.label })),
