@@ -24,4 +24,4 @@ free number, add one line below. **Replacing one:** write a new decision, then m
 - [011](011-owned-properties.md) Owned properties and upgrades: catalog in `src/data/properties.ts`, toggle/choice upgrades, Settings panel and Businesses gear
 - [012](012-business-production.md) Business production: rate per exact upgrade combination in `src/data/production.ts`, continuous on play time, unknown rates do not run
 - [013](013-marked-estimates.md) Missing game values may be estimated by a stated rule from sourced ones, marked "(est.)" wherever shown
-- [014](014-card-order.md) Business cards can be reordered by dragging their title bar or with arrow keys; order saved as property ids
+- [014](014-card-order.md) Business cards: drag a title bar to lift a card and swap it with another, or move it with arrow keys; order saved as property ids

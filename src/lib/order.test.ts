@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyOrder, moveId, parseOrder, saveOrder } from './order'
+import { applyOrder, moveId, parseOrder, saveOrder, swapAt } from './order'
 
 describe('applyOrder', () => {
   it('puts saved ids first in saved order, the rest after in their own order', () => {
@@ -28,6 +28,19 @@ describe('moveId', () => {
 
   it('leaves the list alone for an unknown id', () => {
     expect(moveId(['a', 'b'], 'x', 0)).toEqual(['a', 'b'])
+  })
+})
+
+describe('swapAt', () => {
+  it('swaps the id with the one at the index, leaving the rest in place', () => {
+    expect(swapAt(['a', 'b', 'c', 'd', 'e'], 'a', 3)).toEqual(['d', 'b', 'c', 'a', 'e'])
+    expect(swapAt(['a', 'b', 'c'], 'c', 0)).toEqual(['c', 'b', 'a'])
+  })
+
+  it('leaves the list alone at its own index, out of range or for an unknown id', () => {
+    expect(swapAt(['a', 'b'], 'a', 0)).toEqual(['a', 'b'])
+    expect(swapAt(['a', 'b'], 'a', 2)).toEqual(['a', 'b'])
+    expect(swapAt(['a', 'b'], 'x', 0)).toEqual(['a', 'b'])
   })
 })
 

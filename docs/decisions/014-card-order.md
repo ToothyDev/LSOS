@@ -7,12 +7,13 @@
 - **The title bar is the handle.** `Panel` takes an optional `move` prop: its title bar (with the
   dot grips of the in-game cards) becomes a focusable handle with a grab cursor. The Businesses
   tab passes it for every card; other panels stay fixed.
-- **Pointer drag** (mouse, pen and touch alike, through pointer events): pressing the handle
-  picks the card up and highlights it; while the pointer moves over another card, the dragged
-  card takes that card's place, and the others slide aside (`animate:flip`). The drag is followed
-  on the window, since the moving card would lose pointer capture. Releasing saves the order;
-  a cancelled pointer leaves it as it was. The handle has `touch-action: none`, so a touch that
-  starts on a title bar drags instead of scrolling.
+- **Pointer drag** (mouse, pen and touch alike, through pointer events), like moving apps on a
+  phone: pressing the handle lifts the card, which then sticks to the pointer while its slot
+  stays outlined. Over another card, the two swap: that card slides into the empty slot and
+  nothing else moves (`swapAt`; issue #30 review: shifting every card in between made them race
+  along the rows like one long list). Releasing saves the order and the card glides into its
+  slot; a cancelled pointer leaves the order as it was. The handle has `touch-action: none`, so
+  a touch that starts on a title bar drags instead of scrolling.
 - **Keyboard:** with the handle focused, arrow keys move the card one place back or forward
   (reading order, since the grid wraps), Home/End to the first or last place. A polite live
   region says where it went, and focus stays on the handle.
