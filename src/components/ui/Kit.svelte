@@ -3,11 +3,21 @@
   // Sample numbers only: no game values here (decision 004).
   import Button from './Button.svelte'
   import Countdown from './Countdown.svelte'
+  import EditableValue from './EditableValue.svelte'
   import Meter from './Meter.svelte'
   import NumberField from './NumberField.svelte'
   import Panel from './Panel.svelte'
 
   let amount = $state(40)
+  let safe = $state(70_000)
+
+  // A real-time cooldown, as a tracker would keep it: the moment it is ready.
+  let now = $state(Date.now())
+  let readyAt = $state(Date.now() + 90 * 60_000)
+  $effect(() => {
+    const timer = setInterval(() => (now = Date.now()), 1000)
+    return () => clearInterval(timer)
+  })
 </script>
 
 <div class="grid">
@@ -34,6 +44,41 @@
       min={0}
       max={100}
       onchange={(value) => (amount = value)}
+    />
+  </Panel>
+
+  <Panel title="Resync">
+    <Meter label="Stock" value={amount} max={100} />
+    <EditableValue
+      label="Stock"
+      value={amount}
+      unit="percent"
+      min={0}
+      max={100}
+      presets={[
+        { label: 'Sold', value: 0 },
+        { label: 'Full', value: 100 },
+      ]}
+      onresync={(value) => (amount = value)}
+    />
+    <EditableValue
+      label="Safe"
+      value={safe}
+      unit="money"
+      min={0}
+      presets={[{ label: 'Collected', value: 0 }]}
+      onresync={(value) => (safe = value)}
+    />
+    <EditableValue
+      label="Cooldown"
+      value={Math.max(0, readyAt - now)}
+      unit="duration"
+      min={0}
+      presets={[{ label: 'Ready', value: 0 }]}
+      onresync={(value) => {
+        now = Date.now()
+        readyAt = now + value
+      }}
     />
   </Panel>
 </div>

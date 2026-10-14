@@ -17,6 +17,7 @@ Svelte 5 + TypeScript + Vite. Public repository.
 | Saved user state, migrations, export/import    | `src/lib/state.ts`, `src/lib/store.svelte.ts`     |
 | UI components (thin)                           | `src/components/`                                 |
 | Base UI kit (panel, meter, button...), preview | `src/components/ui/`, `#/kit` in dev (dec. 009)   |
+| Resync a tracked value (edit, presets, undo)   | `ui/EditableValue.svelte`, `lib/resync.ts` (010)  |
 | Game data with sources                         | `src/data/` (decision 004)                        |
 | Theme tokens                                   | `src/app.css` (decision 009)                      |
 | CI, templates                                  | `.github/`                                        |
