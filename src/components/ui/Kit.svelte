@@ -77,6 +77,7 @@
     <Meter label="Stock" value={amount} max={100} />
     <Meter label="Supplies" value={15} max={100} kind="supplies" valueText="15 / 100" />
     <Meter label="Empty" value={0} max={100} kind="supplies" />
+    <Meter label="Five segments" value={amount} max={100} segments={5} />
     {#snippet footer()}
       <Button variant="primary">Primary</Button>
       <Button>Ghost</Button>
