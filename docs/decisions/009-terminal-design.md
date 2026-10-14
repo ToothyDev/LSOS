@@ -22,6 +22,9 @@
   `Countdown`, `TabBar`, `Button`, `NumberField`. Their logic (bar fill, parsing and clamping
   typed numbers) is in `src/lib/ui.ts` with tests. `Countdown` takes the remaining time as a
   prop; the caller computes it from its clock (decision 003).
+- **Boot sequence:** on open, a terminal overlay (`src/components/Boot.svelte`) shows three
+  status lines and a filling bar for about a second, then fades into the app. Decorative: the
+  app renders underneath, any click or key skips it, and it is left out for reduced motion.
 - **Component preview:** `#/kit` shows the base components with sample numbers, only under
   `npm run dev`. It is not a tab and the module is left out of production builds.
 

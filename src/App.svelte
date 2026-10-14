@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Boot from './components/Boot.svelte'
   import ClockBar from './components/ClockBar.svelte'
   import SaveStatus from './components/SaveStatus.svelte'
   import Settings from './components/Settings.svelte'
@@ -58,6 +59,8 @@
     </a>
   </footer>
 </div>
+
+<Boot />
 
 <style>
   .terminal {
