@@ -6,7 +6,9 @@
 
 - **Look:** modelled loosely on the GTA Online Master Control Terminal: slate panels, a title
   between two green bars, green for stock, blue for supplies, condensed capitals with wide
-  letter spacing. No Rockstar logos, artwork or game screenshots anywhere in the repo.
+  letter spacing, and faint horizontal scan lines over the whole screen (7% dark, every 3px,
+  matched to a close-up of the in-game screen; stronger ones distract from the text). No
+  Rockstar logos, artwork or game screenshots anywhere in the repo.
 - **Tokens** (colors, type scale, spacing) are CSS custom properties in `src/app.css`.
   Components use tokens only. Every text/background pair keeps WCAG AA contrast (4.5:1);
   keyboard focus is a yellow `--focus` outline on every focusable element.
