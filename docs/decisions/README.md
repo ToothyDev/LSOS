@@ -20,4 +20,4 @@ free number, add one line below. **Replacing one:** write a new decision, then m
 - [007](007-state-store.md) State store: unreadable data blocks saving like a newer version; import overrides
 - [008](008-clock-details.md) Clock details: session play time, opens paused (setting), throttled ticks counted, long gaps asked about
 - [009](009-terminal-design.md) Terminal look: tokens in `app.css`, self-hosted Oswald (OFL), browser-style tabs, base components in `src/components/ui/`
-- [010](010-resync.md) Resync: `EditableValue` for every tracked value, `BusinessBars` with Sold/Raided/Full, undo keeps progress since
+- [010](010-resync.md) Resync: `EditableValue` for every tracked value, `BusinessBars` with Sold/Raided/Full and supply deliveries, undo keeps progress since

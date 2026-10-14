@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { applyEvent, clampValue, formatValue, parseValue, undoBars, undoValue } from './resync'
+import {
+  applyEvent,
+  buySupplies,
+  clampValue,
+  formatValue,
+  parseValue,
+  settleBars,
+  undoBars,
+  undoValue,
+} from './resync'
 
 const MIN = 60_000
 
@@ -100,5 +109,35 @@ describe('undoBars', () => {
   it('clamps each bar to 0..100 and leaves untouched bars alone', () => {
     const edit = { before: { stock: 90, supplies: 50 }, after: { stock: 10, supplies: 50 } }
     expect(undoBars(edit, { stock: 30, supplies: 45 })).toEqual({ stock: 100, supplies: 45 })
+  })
+})
+
+describe('buying supplies', () => {
+  const T = 1_000_000
+  const DELIVERY = 10 * MIN
+
+  it('schedules a delivery and changes nothing until it arrives', () => {
+    const bought = buySupplies({ stock: 20, supplies: 5 }, T, DELIVERY)
+    expect(bought).toEqual({ stock: 20, supplies: 5, suppliesDueAt: T + DELIVERY })
+    expect(settleBars(bought, T + DELIVERY - 1, 100)).toBe(bought)
+  })
+
+  it('fills supplies once the delivery is due', () => {
+    const bought = buySupplies({ stock: 20, supplies: 5 }, T, DELIVERY)
+    expect(settleBars(bought, T + DELIVERY, 100)).toEqual({ stock: 20, supplies: 100 })
+  })
+
+  it('does nothing for a business without supplies', () => {
+    expect(buySupplies({ stock: 20 }, T, DELIVERY)).toEqual({ stock: 20 })
+  })
+
+  it('undo cancels a pending delivery and restores one an edit replaced', () => {
+    const before = { stock: 20, supplies: 5 }
+    const after = buySupplies(before, T, DELIVERY)
+    expect(undoBars({ before, after }, after)).toEqual(before)
+
+    const pending = { stock: 20, supplies: 5, suppliesDueAt: T }
+    const raided = { stock: 0, supplies: 0, suppliesDueAt: T }
+    expect(undoBars({ before: pending, after: raided }, raided)).toEqual(pending)
   })
 })

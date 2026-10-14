@@ -52,11 +52,11 @@
   </Panel>
 
   <Panel title="Business bars">
-    <BusinessBars {bars} onresync={(value) => (bars = value)} />
+    <BusinessBars {bars} {now} onresync={(value) => (bars = value)} />
   </Panel>
 
   <Panel title="Stock only">
-    <BusinessBars bars={stockOnly} onresync={(value) => (stockOnly = value)} />
+    <BusinessBars bars={stockOnly} {now} onresync={(value) => (stockOnly = value)} />
   </Panel>
 
   <Panel title="Resync">

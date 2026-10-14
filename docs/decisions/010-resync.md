@@ -19,11 +19,18 @@
 - **Presets** are one-click values passed in by the tracker ("Full" sets a bar to 100%,
   "Collected" empties a safe).
 - **Business bars** (`src/components/ui/BusinessBars.svelte`): stock and, if the business has
-  one, supplies, each an `EditableValue` with its meter and "Full", plus the business events
-  "Sold" (empties stock) and "Raided" (a successful police raid empties stock and supplies).
-  What each event empties is game data in `src/data/business-events.ts` (decision 004); Raided
-  is hidden for a business without supplies. Trackers pass the bars in percent and store what
-  comes back.
+  one, supplies, each an `EditableValue` with its meter, plus the business events "Sold"
+  (empties stock) and "Raided" (a successful police raid empties stock and supplies). Stock has
+  "Full". Raided is hidden for a business without supplies. Trackers pass the bars in percent
+  and store what comes back.
+- **Supplies bought** starts a delivery instead of filling at once: the bars keep
+  `suppliesDueAt` (wall-clock time), the panel counts down, and once due `settleBars` fills
+  supplies to 100%. Trackers store bars as set and settle them whenever they read them, so a
+  delivery that arrives while nobody looks still counts. The wait is 10 minutes for every
+  business and runs on real time for now; which clock the game uses is not confirmed. A raid
+  leaves a pending delivery as it is (also not confirmed).
+- What each event does, and the delivery, are game data in `src/data/business-events.ts`
+  (decision 004).
 - **Undo takes back the last edit or preset** of that value; in `BusinessBars` one Undo covers
   the last change to either bar, events included. It subtracts what the edit changed
   rather than restoring the old number, so progress counted since is kept: a cooldown mistyped

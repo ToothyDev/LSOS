@@ -93,6 +93,8 @@ export function undoValue(edit: Resync, current: number, bounds: ValueBounds = {
 export interface Bars {
   stock: number
   supplies?: number
+  /** Wall-clock time bought supplies arrive, while a delivery is on its way. */
+  suppliesDueAt?: number
 }
 
 const PERCENT: ValueBounds = { min: 0, max: 100 }
@@ -104,9 +106,29 @@ export function applyEvent(bars: Bars, empties: readonly (keyof Bars)[]): Bars {
   return next
 }
 
+/** The bars after buying supplies at `now`: a delivery arrives `deliveryMs` later. */
+export function buySupplies(bars: Bars, now: number, deliveryMs: number): Bars {
+  if (bars.supplies === undefined) return bars
+  return { ...bars, suppliesDueAt: now + deliveryMs }
+}
+
+/**
+ * The bars as of `now`: a delivery that has arrived fills supplies to `fillsTo` and is done.
+ * Trackers store bars as they were set and settle them whenever they read them.
+ */
+export function settleBars(bars: Bars, now: number, fillsTo: number): Bars {
+  if (bars.suppliesDueAt === undefined || now < bars.suppliesDueAt) return bars
+  const { suppliesDueAt: _, ...rest } = bars
+  return rest.supplies === undefined ? rest : { ...rest, supplies: fillsTo }
+}
+
 /** `undoValue` for each bar, for an edit or event that changed several at once. */
 export function undoBars(edit: { before: Bars; after: Bars }, current: Bars): Bars {
   const next = { ...current }
+  if (edit.before.suppliesDueAt !== edit.after.suppliesDueAt) {
+    if (edit.before.suppliesDueAt === undefined) delete next.suppliesDueAt
+    else next.suppliesDueAt = edit.before.suppliesDueAt
+  }
   for (const bar of ['stock', 'supplies'] as const) {
     const before = edit.before[bar]
     const after = edit.after[bar]

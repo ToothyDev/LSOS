@@ -1,18 +1,32 @@
 <script lang="ts">
-  import { BUSINESS_EVENTS } from '../../data/business-events'
-  import { applyEvent, formatValue, undoBars, type Bars } from '../../lib/resync'
+  import { BUSINESS_EVENTS, SUPPLY_PURCHASE } from '../../data/business-events'
+  import {
+    applyEvent,
+    buySupplies,
+    formatValue,
+    settleBars,
+    undoBars,
+    type Bars,
+  } from '../../lib/resync'
   import Button from './Button.svelte'
+  import Countdown from './Countdown.svelte'
   import EditableValue from './EditableValue.svelte'
   import Meter from './Meter.svelte'
 
   interface Props {
     /** Stock and supplies in percent; leave supplies out for a business with only a stock bar. */
     bars: Bars
+    /** Wall-clock time, for supply deliveries (real time until confirmed, issue #4). */
+    now: number
     /** Called with the corrected bars; the tracker stores them as of now (decision 003). */
     onresync: (bars: Bars) => void
   }
 
-  let { bars, onresync }: Props = $props()
+  let { bars: stored, now, onresync }: Props = $props()
+
+  // The bars as of now, with an arrived delivery filled in. Every change starts from these.
+  const bars = $derived(settleBars(stored, now, SUPPLY_PURCHASE.fillsTo))
+  const dueAt = $derived(bars.suppliesDueAt)
 
   const events = $derived(
     Object.values(BUSINESS_EVENTS).filter(
@@ -24,7 +38,12 @@
   let last = $state<{ before: Bars; after: Bars; label: string } | null>(null)
 
   function set(after: Bars, label: string) {
-    if (after.stock === bars.stock && after.supplies === bars.supplies) return
+    if (
+      after.stock === bars.stock &&
+      after.supplies === bars.supplies &&
+      after.suppliesDueAt === bars.suppliesDueAt
+    )
+      return
     last = { before: { ...bars }, after, label }
     onresync(after)
   }
@@ -36,6 +55,10 @@
   }
 
   const FULL = [{ label: 'Full', value: 100 }]
+
+  function buy() {
+    set(buySupplies(bars, now, SUPPLY_PURCHASE.deliveryMs), SUPPLY_PURCHASE.label)
+  }
 </script>
 
 <div class="bars">
@@ -58,12 +81,17 @@
       unit="percent"
       min={0}
       max={100}
-      presets={FULL}
       undoable={false}
       onresync={(supplies) =>
         set({ ...bars, supplies }, `supplies was ${formatValue(bars.supplies ?? 0, 'percent')}`)}
     >
       <Meter label="Supplies" value={bars.supplies} max={100} kind="supplies" bare />
+      {#if dueAt !== undefined}
+        <Countdown label="Supplies arrive in" remainingMs={dueAt - now} />
+      {/if}
+      <div class="actions">
+        <Button onclick={buy} disabled={dueAt !== undefined}>{SUPPLY_PURCHASE.label}</Button>
+      </div>
     </EditableValue>
   {/if}
   <div class="actions">

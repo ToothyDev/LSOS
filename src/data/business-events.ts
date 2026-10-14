@@ -24,3 +24,17 @@ export const BUSINESS_EVENTS: Record<'sold' | 'raided', BusinessEvent> = {
     checked: '2026-10-14',
   },
 }
+
+/** Buying supplies: they arrive after a delay and fill the supplies bar. */
+export const SUPPLY_PURCHASE = {
+  label: 'Supplies bought',
+  deliveryMs: 10 * 60_000,
+  /** Supplies after delivery, in percent. */
+  fillsTo: 100,
+  /** Not confirmed yet which clock the wait runs on; real time until it is (issue #4). */
+  clock: 'real' as const,
+  source:
+    'Maintainer, from play (issue #4): about 10 minutes for every business, then supplies are full. ' +
+    'Community wiki (gta.wiki, Business Supplies) also says about ten minutes for MC businesses.',
+  checked: '2026-10-14',
+}
