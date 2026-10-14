@@ -21,7 +21,7 @@
 - **Production is continuous** on play time, like decision 012; count and value use whole crates.
 - **Capacity for 2 to 4 floors is an estimate** (decision 013): every floor holds as much as the
   first, as the source's one- and five-floor numbers (exactly five times) suggest. The source's
-  "each subsequent floor doubles that storage capacity" contradicts its own table and is not used.
+  "each subsequent floor doubles that storage capacity" contradicts its own table and is not used. Open question: issue #35.
 - **UI:** collapsed, the card shows a row per goods type that is being made or has stock: bar,
   crates and value, and "Full in" (play time); the next to fill gets an accent edge and "Next
   full in". A total value follows. "Edit" lists all seven types as `EditableValue` fields in
