@@ -1,8 +1,13 @@
 <script lang="ts">
   // The owned businesses, each with a gear to change what is owned and upgraded (decision 011),
-  // and its stock and supplies if LSOS has production data for it (issue #6).
+  // and its stock and supplies if LSOS has production data for it (issue #6). Cards move by
+  // dragging their title bar or with its arrow keys (issue #30).
+  import { tick } from 'svelte'
+  import type { HTMLAttributes } from 'svelte/elements'
+  import { flip } from 'svelte/animate'
   import type { Production } from '../data/production'
   import type { Property } from '../data/properties'
+  import { applyOrder, moveId, saveOrder } from '../lib/order'
   import { emptyBars, matchingRate, rateFor, type BusinessBarsById } from '../lib/production'
   import { ownedProperties, upgradeValue, type OwnedProperties } from '../lib/properties'
   import type { Bars } from '../lib/resync'
@@ -22,6 +27,9 @@
     /** Wall-clock time, for supply deliveries. */
     now?: number
     onresync?: (propertyId: string, bars: Bars) => void
+    /** Saved card order: property ids (issue #30). */
+    order?: readonly string[]
+    onorder?: (order: string[]) => void
   }
 
   let {
@@ -32,8 +40,86 @@
     businesses = {},
     now = 0,
     onresync = () => {},
+    order = [],
+    onorder = () => {},
   }: Props = $props()
-  const shown = $derived(ownedProperties(catalog, owned))
+  const ownedList = $derived(ownedProperties(catalog, owned))
+  const sorted = $derived(
+    applyOrder(
+      ownedList.map((property) => property.id),
+      order,
+    ),
+  )
+  // While a card is dragged: the order as it would drop now. Saved on release.
+  let preview = $state<string[] | null>(null)
+  let moving = $state<string | null>(null)
+  // The card last moved past, so a swap that leaves the pointer over it does not swap back.
+  let passed: string | null = null
+  let announcement = $state('')
+  const shown = $derived(
+    (preview ?? sorted).flatMap((id) => ownedList.filter((property) => property.id === id)),
+  )
+
+  function save(ids: string[]) {
+    if (ids.join() !== sorted.join()) onorder(saveOrder(ids, order))
+  }
+
+  function stopMoving() {
+    moving = null
+    preview = null
+  }
+
+  // The rest of a drag is followed on the window: the dragged card moves in the page, which
+  // would end pointer capture on its handle.
+  function drag(event: PointerEvent) {
+    if (moving === null || !preview) return
+    const target = document
+      .elementFromPoint(event.clientX, event.clientY)
+      ?.closest<HTMLElement>('[data-card]')?.dataset.card
+    if (target === undefined || target === passed) return
+    passed = target
+    if (target !== moving) preview = moveId(preview, moving, preview.indexOf(target))
+  }
+
+  function drop() {
+    if (moving === null || !preview) return
+    save(preview)
+    stopMoving()
+  }
+
+  /** Handlers for the title bar of one card. */
+  function handle(id: string): HTMLAttributes<HTMLDivElement> {
+    return {
+      onpointerdown: (event) => {
+        if (event.button !== 0) return
+        event.preventDefault()
+        moving = id
+        preview = [...sorted]
+        passed = id
+      },
+      onkeydown: async (event) => {
+        const from = sorted.indexOf(id)
+        const to =
+          event.key === 'ArrowLeft' || event.key === 'ArrowUp'
+            ? from - 1
+            : event.key === 'ArrowRight' || event.key === 'ArrowDown'
+              ? from + 1
+              : event.key === 'Home'
+                ? 0
+                : event.key === 'End'
+                  ? sorted.length - 1
+                  : null
+        if (to === null) return
+        event.preventDefault()
+        const next = moveId(sorted, id, to)
+        save(next)
+        announcement = `${ownedList.find((p) => p.id === id)?.label} moved to place ${next.indexOf(id) + 1} of ${next.length}.`
+        // Moving the card in the page can take the focus away from its handle.
+        await tick()
+        document.querySelector<HTMLElement>(`[data-card="${id}"] [data-move-handle]`)?.focus()
+      },
+    }
+  }
   let open = $state<string | null>(null)
   // Cards start collapsed: bars, value and next countdown only (issue #6).
   let editing = $state<string | null>(null)
@@ -51,6 +137,8 @@
   }
 </script>
 
+<svelte:window onpointermove={drag} onpointerup={drop} onpointercancel={stopMoving} />
+
 {#if shown.length === 0}
   <p class="empty">
     {#if catalog.length === 0}
@@ -64,47 +152,50 @@
   <div class="grid">
     {#each shown as property (property.id)}
       {@const production = productions.find((p) => p.propertyId === property.id)}
-      <Panel title={property.label}>
-        {#if open === property.id}
-          <PropertySettings {property} {owned} {onchange} />
-        {:else}
-          <p class="hint">{summary(property)}</p>
-        {/if}
-        {#if production}
-          <BusinessProduction
-            {production}
-            rate={matchingRate(production, owned, property)}
-            running={rateFor(production, owned, property)}
-            bars={businesses[property.id] ?? emptyBars()}
-            {now}
-            editing={editing === property.id}
-            onresync={(bars) => onresync(property.id, bars)}
-          />
-        {/if}
-        {#snippet footer()}
-          {#if production}
-            <Button
-              aria-expanded={editing === property.id}
-              onclick={() => (editing = editing === property.id ? null : property.id)}
-              >{editing === property.id ? 'Done' : 'Edit'}</Button
-            >
+      <div class="card" data-card={property.id} animate:flip={{ duration: 150 }}>
+        <Panel title={property.label} move={handle(property.id)} moving={moving === property.id}>
+          {#if open === property.id}
+            <PropertySettings {property} {owned} {onchange} />
+          {:else}
+            <p class="hint">{summary(property)}</p>
           {/if}
-          <Button
-            aria-label="Settings for {property.label}"
-            aria-expanded={open === property.id}
-            onclick={() => (open = open === property.id ? null : property.id)}
-          >
-            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-              <path
-                fill="currentColor"
-                d="M19.14 12.94a7.07 7.07 0 0 0 0-1.88l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7 7 0 0 0-1.62-.94l-.36-2.54a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.54a7 7 0 0 0-1.62.94l-2.39-.96a.5.5 0 0 0-.6.22L2.71 8.84a.5.5 0 0 0 .12.64l2.03 1.58a7.07 7.07 0 0 0 0 1.88l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32a.5.5 0 0 0 .6.22l2.39-.96a7 7 0 0 0 1.62.94l.36 2.54a.5.5 0 0 0 .5.42h3.84a.5.5 0 0 0 .5-.42l.36-2.54a7 7 0 0 0 1.62-.94l2.39.96a.5.5 0 0 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64zM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7z"
-              />
-            </svg>
-          </Button>
-        {/snippet}
-      </Panel>
+          {#if production}
+            <BusinessProduction
+              {production}
+              rate={matchingRate(production, owned, property)}
+              running={rateFor(production, owned, property)}
+              bars={businesses[property.id] ?? emptyBars()}
+              {now}
+              editing={editing === property.id}
+              onresync={(bars) => onresync(property.id, bars)}
+            />
+          {/if}
+          {#snippet footer()}
+            {#if production}
+              <Button
+                aria-expanded={editing === property.id}
+                onclick={() => (editing = editing === property.id ? null : property.id)}
+                >{editing === property.id ? 'Done' : 'Edit'}</Button
+              >
+            {/if}
+            <Button
+              aria-label="Settings for {property.label}"
+              aria-expanded={open === property.id}
+              onclick={() => (open = open === property.id ? null : property.id)}
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M19.14 12.94a7.07 7.07 0 0 0 0-1.88l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7 7 0 0 0-1.62-.94l-.36-2.54a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.54a7 7 0 0 0-1.62.94l-2.39-.96a.5.5 0 0 0-.6.22L2.71 8.84a.5.5 0 0 0 .12.64l2.03 1.58a7.07 7.07 0 0 0 0 1.88l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32a.5.5 0 0 0 .6.22l2.39-.96a7 7 0 0 0 1.62.94l.36 2.54a.5.5 0 0 0 .5.42h3.84a.5.5 0 0 0 .5-.42l.36-2.54a7 7 0 0 0 1.62-.94l2.39.96a.5.5 0 0 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64zM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7z"
+                />
+              </svg>
+            </Button>
+          {/snippet}
+        </Panel>
+      </div>
     {/each}
   </div>
+  <p class="announcement" aria-live="polite">{announcement}</p>
 {/if}
 
 <style>
@@ -114,8 +205,22 @@
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
   }
 
+  /* Lets the panel fill its grid cell. */
+  .card {
+    display: grid;
+  }
+
   p {
     margin: 0;
+  }
+
+  .announcement {
+    clip-path: inset(50%);
+    height: 1px;
+    overflow: hidden;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
   }
 
   .empty {

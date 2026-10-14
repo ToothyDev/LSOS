@@ -1,10 +1,11 @@
 // The persisted root state, its versions and migrations (decision 006).
 import { defaultClockSettings, type ClockSettings } from './clock'
+import { parseOrder } from './order'
 import { parseBusinessBars, type BusinessBarsById } from './production'
 import { parseOwnedProperties, type OwnedProperties } from './properties'
 
 /** Bump when the stored shape changes, and add a migration from the previous version. */
-export const CURRENT_VERSION = 4
+export const CURRENT_VERSION = 5
 
 /** All user state. Trackers add their own sections here as they are built. */
 export interface AppState {
@@ -15,6 +16,8 @@ export interface AppState {
   properties: OwnedProperties
   /** Stock and supplies of each business, as of the last play time counted (issue #6). */
   businesses: BusinessBarsById
+  /** Property ids in the order the user dragged the business cards into (issue #30). */
+  businessOrder: string[]
 }
 
 export function defaultState(): AppState {
@@ -23,6 +26,7 @@ export function defaultState(): AppState {
     clock: defaultClockSettings(),
     properties: {},
     businesses: {},
+    businessOrder: [],
   }
 }
 
@@ -39,6 +43,8 @@ export const MIGRATIONS: Readonly<Record<number, Migration>> = {
   2: (data) => ({ ...data, properties: {} }),
   // Version 4 adds business stock and supplies (issue #6); nothing is tracked yet.
   3: (data) => ({ ...data, businesses: {} }),
+  // Version 5 adds the order of the business cards (issue #30); catalog order until moved.
+  4: (data) => ({ ...data, businessOrder: [] }),
 }
 
 export type ParseResult =
@@ -113,7 +119,9 @@ function toState(data: StoredData): AppState | string {
   if (typeof properties === 'string') return properties
   const businesses = parseBusinessBars(data.businesses)
   if (typeof businesses === 'string') return businesses
-  return { version: CURRENT_VERSION, clock, properties, businesses }
+  const businessOrder = parseOrder(data.businessOrder)
+  if (typeof businessOrder === 'string') return businessOrder
+  return { version: CURRENT_VERSION, clock, properties, businesses, businessOrder }
 }
 
 function toClock(data: unknown): ClockSettings | string {

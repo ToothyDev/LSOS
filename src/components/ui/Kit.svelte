@@ -61,6 +61,7 @@
       checked: '2026-10-14',
     },
   ]
+  let businessOrder = $state<string[]>([])
   let businesses = $state<BusinessBarsById>({ 'sample-a': { stock: 20, supplies: 60 } })
 
   // A real-time cooldown, as a tracker would keep it: the moment it is ready.
@@ -144,6 +145,8 @@
   {businesses}
   {now}
   onresync={(id, value) => (businesses = { ...businesses, [id]: value })}
+  order={businessOrder}
+  onorder={(value) => (businessOrder = value)}
 />
 
 <style>
