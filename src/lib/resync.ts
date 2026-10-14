@@ -2,8 +2,11 @@
 // The tracker stores the typed value as of now and keeps counting from there; this module only
 // parses, formats and undoes what the user types.
 
-/** percent: stock and supplies. money: safes, in dollars. duration: time left, in milliseconds. */
-export type ValueUnit = 'percent' | 'money' | 'duration'
+/**
+ * percent: stock and supplies. money: safes, in dollars. duration: time left, in milliseconds.
+ * crates: nightclub goods, whole crates as the game shows them.
+ */
+export type ValueUnit = 'percent' | 'money' | 'duration' | 'crates'
 
 export interface ValueBounds {
   min?: number
@@ -38,6 +41,9 @@ export function formatValue(value: number, unit: ValueUnit): string {
       const minutes = Math.ceil(Math.max(0, value) / MINUTE_MS)
       return `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')}`
     }
+    case 'crates':
+      // Whole crates made so far; the margin keeps 3.9999... at 4 after float math.
+      return String(Math.floor(value + 1e-6))
   }
 }
 
@@ -48,6 +54,7 @@ export function formatValue(value: number, unit: ValueUnit): string {
  * - percent: "40" or "40%"
  * - money: "120000", "$120,000", "120k", "1.2m"
  * - duration: "1:05" (h:mm) or "45" (minutes); returns milliseconds
+ * - crates: a whole number, e.g. "12"
  */
 export function parseValue(text: string, unit: ValueUnit): number | null {
   const trimmed = text.trim().toLowerCase()
@@ -72,6 +79,8 @@ export function parseValue(text: string, unit: ValueUnit): number | null {
       const minutes = nonNegative(trimmed)
       return minutes === null ? null : Math.round(minutes * MINUTE_MS)
     }
+    case 'crates':
+      return /^\d+$/.test(trimmed) ? Number(trimmed) : null
   }
 }
 

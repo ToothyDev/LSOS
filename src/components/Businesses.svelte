@@ -1,19 +1,23 @@
 <script lang="ts">
   // The owned businesses, each with a gear to change what is owned and upgraded (decision 011),
   // and its stock and supplies if LSOS has production data for it (issue #6). Cards move by
-  // dragging their title bar or with its arrow keys (issue #30).
+  // dragging their title bar or with its arrow keys (issue #30). The nightclub shows its
+  // warehouse goods (issue #7).
   import { tick } from 'svelte'
   import type { HTMLAttributes } from 'svelte/elements'
   import { flip } from 'svelte/animate'
   import { cubicOut } from 'svelte/easing'
+  import { NIGHTCLUB_ID, type Goods } from '../data/nightclub'
   import type { Production } from '../data/production'
   import type { Property } from '../data/properties'
   import { applyOrder, cardAt, moveId, saveOrder, swapAt, type CardBox } from '../lib/order'
   import { emptyBars, matchingRate, rateFor, type BusinessBarsById } from '../lib/production'
   import { ownedProperties, upgradeValue, type OwnedProperties } from '../lib/properties'
+  import type { GoodsStock } from '../lib/nightclub'
   import type { Bars } from '../lib/resync'
   import { hashForTab } from '../lib/tabs'
   import BusinessProduction from './BusinessProduction.svelte'
+  import NightclubWarehouse from './NightclubWarehouse.svelte'
   import PropertySettings from './PropertySettings.svelte'
   import Button from './ui/Button.svelte'
   import Panel from './ui/Panel.svelte'
@@ -31,6 +35,10 @@
     /** Saved card order: property ids (issue #30). */
     order?: readonly string[]
     onorder?: (order: string[]) => void
+    /** Nightclub warehouse goods and their saved crates (issue #7). */
+    goods?: readonly Goods[]
+    nightclubStock?: GoodsStock
+    onnightclub?: (goodsId: string, crates: number) => void
   }
 
   let {
@@ -43,8 +51,13 @@
     onresync = () => {},
     order = [],
     onorder = () => {},
+    goods = [],
+    nightclubStock = {},
+    onnightclub = () => {},
   }: Props = $props()
-  const ownedList = $derived(ownedProperties(catalog, owned))
+  const ownedList = $derived(
+    ownedProperties(catalog, owned).filter((property) => property.card !== false),
+  )
   const sorted = $derived(
     applyOrder(
       ownedList.map((property) => property.id),
@@ -180,7 +193,7 @@
     const parts = property.upgrades.flatMap((upgrade) => {
       const value = upgradeValue(owned, property.id, upgrade)
       if (upgrade.kind === 'toggle') return value === true ? [upgrade.label] : []
-      if (value === upgrade.options[0]?.id) return []
+      if (upgrade.summary === false || value === upgrade.options[0]?.id) return []
       const option = upgrade.options.find((o) => o.id === value)
       return option ? [`${upgrade.label}: ${option.label}`] : []
     })
@@ -203,6 +216,7 @@
   <div class="grid">
     {#each shown as property (property.id)}
       {@const production = productions.find((p) => p.propertyId === property.id)}
+      {@const warehouse = property.id === NIGHTCLUB_ID && goods.length > 0}
       <div class="card" class:slot={moving === property.id} data-card={property.id} animate:slide>
         <div
           class="lift"
@@ -227,8 +241,19 @@
                 onresync={(bars) => onresync(property.id, bars)}
               />
             {/if}
+            {#if warehouse}
+              <NightclubWarehouse
+                {goods}
+                nightclub={property}
+                {owned}
+                {onchange}
+                stock={nightclubStock}
+                editing={editing === property.id}
+                onresync={onnightclub}
+              />
+            {/if}
             {#snippet footer()}
-              {#if production}
+              {#if production || warehouse}
                 <Button
                   aria-expanded={editing === property.id}
                   onclick={() => (editing = editing === property.id ? null : property.id)}

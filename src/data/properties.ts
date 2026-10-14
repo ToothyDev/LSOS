@@ -11,16 +11,33 @@ export type Upgrade =
   /** Bought or not, e.g. an equipment upgrade. */
   | { kind: 'toggle'; id: string; label: string }
   /** One of several options; the first one is the default, e.g. "Not hired". */
-  | { kind: 'choice'; id: string; label: string; options: readonly UpgradeOption[] }
+  | {
+      kind: 'choice'
+      id: string
+      label: string
+      options: readonly UpgradeOption[]
+      /** False to leave it out of the card's upgrade summary, when the card shows it anyway. */
+      summary?: false
+    }
 
 export interface Property {
   /** Stable id, saved in user data: never change or reuse it. */
   id: string
   label: string
   upgrades: readonly Upgrade[]
+  /** False for properties that only unlock something elsewhere: no card on the Businesses tab. */
+  card?: false
   source: string
   checked: string
 }
+
+import {
+  GOODS,
+  MAX_FLOORS,
+  MAX_TECHNICIANS,
+  NIGHTCLUB_CHECKED,
+  NIGHTCLUB_SOURCE,
+} from './nightclub'
 
 // Equipment and staff speed up production and raise the value; equipment also makes supplies
 // last longer. The security upgrade only changes raids, which LSOS does not predict: left out.
@@ -45,6 +62,54 @@ export const PROPERTIES: readonly Property[] = [
     upgrades: PRODUCTION_UPGRADES,
     source: BUNKER_SOURCE,
     checked: '2026-10-14',
+  },
+  // Only owned or not: owning either unlocks Cargo and Shipments in the nightclub (issue #7).
+  {
+    id: 'special-cargo',
+    label: 'Special Cargo Warehouse',
+    upgrades: [],
+    card: false,
+    source: NIGHTCLUB_SOURCE,
+    checked: NIGHTCLUB_CHECKED,
+  },
+  {
+    id: 'hangar',
+    label: 'Hangar',
+    upgrades: [],
+    card: false,
+    source: NIGHTCLUB_SOURCE,
+    checked: NIGHTCLUB_CHECKED,
+  },
+  {
+    id: 'nightclub',
+    label: 'Nightclub',
+    // Staff and security upgrades only change popularity and raids: left out.
+    upgrades: [
+      { kind: 'toggle', id: 'equipment', label: 'Equipment' },
+      {
+        kind: 'choice',
+        id: 'floors',
+        label: 'Warehouse floors',
+        options: Array.from({ length: MAX_FLOORS }, (_, i) => ({
+          id: String(i + 1),
+          label: String(i + 1),
+        })),
+      },
+      ...Array.from({ length: MAX_TECHNICIANS }, (_, i): Upgrade => ({
+        kind: 'choice',
+        id: `technician-${i + 1}`,
+        // Yohan comes with the club; the others are hired.
+        label: i === 0 ? 'Technician 1 (Yohan)' : `Technician ${i + 1}`,
+        // The warehouse rows already show what is being made.
+        summary: false,
+        options: [
+          { id: 'none', label: i === 0 ? 'Not assigned' : 'Not hired' },
+          ...GOODS.map((goods) => ({ id: goods.id, label: goods.label })),
+        ],
+      })),
+    ],
+    source: NIGHTCLUB_SOURCE,
+    checked: NIGHTCLUB_CHECKED,
   },
 ]
 

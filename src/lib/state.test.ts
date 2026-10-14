@@ -25,11 +25,12 @@ describe('parseState', () => {
     expect(result).toEqual({
       ok: true,
       state: {
-        version: 5,
+        version: 6,
         clock: { trackOnOpen: false },
         properties: {},
         businesses: {},
         businessOrder: [],
+        nightclub: {},
       },
       fromVersion: 1,
     })
@@ -40,11 +41,12 @@ describe('parseState', () => {
     expect(result).toEqual({
       ok: true,
       state: {
-        version: 5,
+        version: 6,
         clock: { trackOnOpen: true },
         properties: {},
         businesses: {},
         businessOrder: [],
+        nightclub: {},
       },
       fromVersion: 2,
     })
@@ -58,11 +60,12 @@ describe('parseState', () => {
     expect(result).toEqual({
       ok: true,
       state: {
-        version: 5,
+        version: 6,
         clock: { trackOnOpen: false },
         properties,
         businesses: {},
         businessOrder: [],
+        nightclub: {},
       },
       fromVersion: 3,
     })
@@ -77,19 +80,41 @@ describe('parseState', () => {
     expect(result).toEqual({
       ok: true,
       state: {
-        version: 5,
+        version: 6,
         clock: { trackOnOpen: true },
         properties,
         businesses,
         businessOrder: [],
+        nightclub: {},
       },
       fromVersion: 4,
     })
   })
 
+  it('migrates a version 5 sample, with an empty nightclub warehouse', () => {
+    const properties = { nightclub: { owned: true, upgrades: { 'technician-1': 'cash' } } }
+    const sample = {
+      version: 5,
+      clock: { trackOnOpen: false },
+      properties,
+      businesses: {},
+      businessOrder: ['bunker'],
+    }
+    expect(parseState(JSON.stringify(sample))).toEqual({
+      ok: true,
+      state: { ...sample, version: 6, nightclub: {} },
+      fromVersion: 5,
+    })
+  })
+
+  it('keeps saved nightclub stock', () => {
+    const text = JSON.stringify({ ...defaultState(), nightclub: { cash: 12.5 } })
+    expect(parseState(text)).toMatchObject({ ok: true, state: { nightclub: { cash: 12.5 } } })
+  })
+
   it('keeps the saved clock setting', () => {
     const text =
-      '{"version":5,"clock":{"trackOnOpen":true,"playMs":5},"properties":{},"businesses":{},"businessOrder":[]}'
+      '{"version":6,"clock":{"trackOnOpen":true,"playMs":5},"properties":{},"businesses":{},"businessOrder":[],"nightclub":{}}'
     expect(parseState(text)).toMatchObject({ ok: true, state: { clock: { trackOnOpen: true } } })
   })
 
@@ -114,27 +139,27 @@ describe('parseState', () => {
   it.each([
     [
       'a missing clock',
-      '{"version":5,"properties":{},"businesses":{},"businessOrder":[]}',
+      '{"version":5,"properties":{},"businesses":{},"businessOrder":[],"nightclub":{}}',
       'clock section is missing',
     ],
     [
       'a bad tracking setting',
-      '{"version":5,"clock":{"trackOnOpen":"yes"},"properties":{},"businesses":{},"businessOrder":[]}',
+      '{"version":5,"clock":{"trackOnOpen":"yes"},"properties":{},"businesses":{},"businessOrder":[],"nightclub":{}}',
       'tracking setting',
     ],
     [
       'missing properties',
-      '{"version":5,"clock":{"trackOnOpen":false},"businesses":{},"businessOrder":[]}',
+      '{"version":5,"clock":{"trackOnOpen":false},"businesses":{},"businessOrder":[],"nightclub":{}}',
       'properties section',
     ],
     [
       'missing businesses',
-      '{"version":5,"clock":{"trackOnOpen":false},"properties":{},"businessOrder":[]}',
+      '{"version":5,"clock":{"trackOnOpen":false},"properties":{},"businessOrder":[],"nightclub":{}}',
       'businesses section',
     ],
     [
       'stock over 100%',
-      '{"version":5,"clock":{"trackOnOpen":false},"properties":{},"businesses":{"bunker":{"stock":120}},"businessOrder":[]}',
+      '{"version":5,"clock":{"trackOnOpen":false},"properties":{},"businesses":{"bunker":{"stock":120}},"businessOrder":[],"nightclub":{}}',
       'business "bunker"',
     ],
     [

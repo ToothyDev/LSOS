@@ -25,3 +25,4 @@ free number, add one line below. **Replacing one:** write a new decision, then m
 - [012](012-business-production.md) Business production: rate per exact upgrade combination in `src/data/production.ts`, continuous on play time, unknown rates do not run
 - [013](013-marked-estimates.md) Missing game values may be estimated by a stated rule from sourced ones, marked "(est.)" wherever shown
 - [014](014-card-order.md) Business cards: drag a title bar to lift a card and swap it with another, or move it with arrow keys; order saved as property ids
+- [015](015-nightclub-warehouse.md) Nightclub warehouse: goods per technician on play time, saved in crates, unlocked by owning the business, best technician setup by value per hour

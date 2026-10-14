@@ -95,21 +95,23 @@
     text-transform: uppercase;
   }
 
+  /* Labels in one column and selects in the other, so every choice lines up. */
   .upgrades {
+    align-items: center;
     border-left: 2px solid var(--line);
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2);
+    display: grid;
+    gap: var(--space-2) var(--space-3);
+    grid-template-columns: auto minmax(0, 1fr);
     margin-left: 0.5rem;
     padding-left: var(--space-3);
   }
 
+  .upgrades > label {
+    grid-column: 1 / -1;
+  }
+
   .choice {
-    align-items: center;
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
-    justify-content: space-between;
+    display: contents;
   }
 
   input[type='checkbox'] {
@@ -126,7 +128,9 @@
     color: var(--fg);
     font: inherit;
     min-height: 2.25rem;
+    min-width: 0;
     padding: var(--space-1) var(--space-2);
+    width: 100%;
   }
 
   select:hover {
