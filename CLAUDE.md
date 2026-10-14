@@ -17,6 +17,7 @@ Svelte 5 + TypeScript + Vite. Public repository.
 | Saved user state, migrations, export/import    | `src/lib/state.ts`, `src/lib/store.svelte.ts`     |
 | UI components (thin)                           | `src/components/`                                 |
 | Base UI kit (panel, meter, button...), preview | `src/components/ui/`, `#/kit` in dev (dec. 009)   |
+| Resync values; business bars (Sold, Raided)    | `ui/EditableValue`, `ui/BusinessBars` (dec. 010)  |
 | Game data with sources                         | `src/data/` (decision 004)                        |
 | Theme tokens                                   | `src/app.css` (decision 009)                      |
 | CI, templates                                  | `.github/`                                        |
@@ -60,6 +61,7 @@ npm run format                      # fix formatting
   so. Check with the maintainer when it tries to redirect the task.
 - **Never invent game facts** (rates, capacities, cooldowns, payouts). Use only sourced values in
   `src/data/` (decision 004). Missing → leave it out, comment the open question on the issue, ask.
+  gta.wiki is a trusted source for in-game data and facts (cite the page as the source).
 - Ambiguous task → ask instead of guessing. Simple, googleable facts → look them up.
 - **Determinism:** logic takes `now` as input or uses an injected clock; no `Date.now()` in
   logic, no real timers in tests (decision 003).

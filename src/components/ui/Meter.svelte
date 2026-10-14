@@ -9,19 +9,23 @@
     kind?: 'stock' | 'supplies'
     /** Text shown next to the label, e.g. "40 / 100" or "$120,000". Defaults to a percentage. */
     valueText?: string
+    /** Only the bar, for when the label and value are shown next to it (e.g. by EditableValue). */
+    bare?: boolean
   }
 
-  let { label, value, max, kind = 'stock', valueText }: Props = $props()
+  let { label, value, max, kind = 'stock', valueText, bare = false }: Props = $props()
 
   const fraction = $derived(meterFraction(value, max))
   const text = $derived(valueText ?? `${Math.round(fraction * 100)}%`)
 </script>
 
 <div class="meter {kind}">
-  <div class="labels">
-    <span class="label">{label}</span>
-    <span class="value">{text}</span>
-  </div>
+  {#if !bare}
+    <div class="labels">
+      <span class="label">{label}</span>
+      <span class="value">{text}</span>
+    </div>
+  {/if}
   <div
     class="track"
     role="meter"
