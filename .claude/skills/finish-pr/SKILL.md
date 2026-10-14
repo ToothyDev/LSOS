@@ -14,7 +14,7 @@ description: Get a PR ready to merge - empty the handoff, update docs, verify, r
    Then delete the handoff file. The `handoff` status check turns green once it is gone.
 
 2. **Update docs.** README if what LSOS does or how it is used changed. `CLAUDE.md` if the map,
-   commands or workflow changed, and its "Next up" line.
+   commands or workflow changed.
 3. **Verify.** `npm run verify 2>&1 | tail -n 5` must pass.
 4. **Rewrite the PR title and description** to describe what the whole PR does now. With squash
    merge the title becomes the commit message on main. Keep `Closes #N`. Write no session link yourself.
