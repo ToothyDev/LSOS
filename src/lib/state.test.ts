@@ -25,21 +25,42 @@ describe('parseState', () => {
     expect(result).toEqual({
       ok: true,
       state: {
-        version: 2,
+        version: 3,
         clock: { trackOnOpen: false },
+        properties: {},
       },
       fromVersion: 1,
     })
   })
 
+  it('migrates a version 2 sample, owning nothing', () => {
+    const result = parseState('{"version":2,"clock":{"trackOnOpen":true}}')
+    expect(result).toEqual({
+      ok: true,
+      state: { version: 3, clock: { trackOnOpen: true }, properties: {} },
+      fromVersion: 2,
+    })
+  })
+
   it('keeps the saved clock setting', () => {
-    const text = '{"version":2,"clock":{"trackOnOpen":true,"playMs":5}}'
+    const text = '{"version":3,"clock":{"trackOnOpen":true,"playMs":5},"properties":{}}'
     expect(parseState(text)).toMatchObject({ ok: true, state: { clock: { trackOnOpen: true } } })
   })
 
+  it('keeps saved properties', () => {
+    const properties = { lab: { owned: true, upgrades: { equipment: true, tech: 'cash' } } }
+    const text = JSON.stringify({ ...defaultState(), properties })
+    expect(parseState(text)).toMatchObject({ ok: true, state: { properties } })
+  })
+
   it.each([
-    ['a missing clock', '{"version":2}', 'clock section is missing'],
-    ['a bad tracking setting', '{"version":2,"clock":{"trackOnOpen":"yes"}}', 'tracking setting'],
+    ['a missing clock', '{"version":3,"properties":{}}', 'clock section is missing'],
+    [
+      'a bad tracking setting',
+      '{"version":3,"clock":{"trackOnOpen":"yes"},"properties":{}}',
+      'tracking setting',
+    ],
+    ['missing properties', '{"version":3,"clock":{"trackOnOpen":false}}', 'properties section'],
   ])('rejects %s', (_, text, message) => {
     const result = parseState(text)
     expect(result).toMatchObject({ ok: false, reason: 'invalid' })

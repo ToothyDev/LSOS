@@ -1,6 +1,8 @@
 <script lang="ts">
+  import { PROPERTIES } from '../data/properties'
   import { exportFileName } from '../lib/state'
   import { exportText, importText, store } from '../lib/store.svelte'
+  import PropertyList from './PropertyList.svelte'
   import Button from './ui/Button.svelte'
   import Panel from './ui/Panel.svelte'
 
@@ -36,6 +38,12 @@
 </script>
 
 <div class="grid">
+  <PropertyList
+    catalog={PROPERTIES}
+    owned={store.state.properties}
+    onchange={(owned) => (store.state.properties = owned)}
+  />
+
   <Panel title="Clock">
     <label>
       <input type="checkbox" bind:checked={store.state.clock.trackOnOpen} />
