@@ -3,7 +3,11 @@
   import type { HTMLButtonAttributes } from 'svelte/elements'
 
   interface Props extends HTMLButtonAttributes {
-    /** primary: filled green, for the main action. ghost: outlined, for everything else. */
+    /**
+     * primary: filled green, for the main action. ghost: outlined, for everything else.
+     * A toggle button passes `aria-pressed`: not pressed reads muted, so pair it with `primary`
+     * when pressed and `ghost` when not.
+     */
     variant?: 'primary' | 'ghost'
     children: Snippet
   }
@@ -42,6 +46,10 @@
 
   button.primary:hover {
     background: var(--accent-hover);
+  }
+
+  button[aria-pressed='false'] {
+    color: var(--muted);
   }
 
   button:disabled {

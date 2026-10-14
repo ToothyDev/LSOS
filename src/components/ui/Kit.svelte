@@ -81,6 +81,8 @@
       <Button variant="primary">Primary</Button>
       <Button>Ghost</Button>
       <Button disabled>Disabled</Button>
+      <Button variant="primary" aria-pressed="true">Owned</Button>
+      <Button aria-pressed="false">Not owned</Button>
     {/snippet}
   </Panel>
 

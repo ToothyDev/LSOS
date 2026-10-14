@@ -1,6 +1,7 @@
 <script lang="ts">
   // Owned yes/no and the upgrades of one property (decision 011).
   import type { Property } from '../data/properties'
+  import Button from './ui/Button.svelte'
   import {
     isOwned,
     setOwned,
@@ -17,19 +18,23 @@
 
   let { property, owned, onchange }: Props = $props()
   const id = $props.id()
+  const isPropertyOwned = $derived(isOwned(owned, property.id))
 </script>
 
 <div class="property">
-  <label class="owned">
-    <input
-      type="checkbox"
-      checked={isOwned(owned, property.id)}
-      onchange={(event) => onchange(setOwned(owned, property.id, event.currentTarget.checked))}
-    />
-    <span>Own {property.label}</span>
-  </label>
+  <div class="owned">
+    <span id="{id}-name" class="name">{property.label}</span>
+    <Button
+      variant={isPropertyOwned ? 'primary' : 'ghost'}
+      aria-labelledby="{id}-name"
+      aria-pressed={isPropertyOwned}
+      onclick={() => onchange(setOwned(owned, property.id, !isPropertyOwned))}
+    >
+      {isPropertyOwned ? 'Owned' : 'Not owned'}
+    </Button>
+  </div>
 
-  {#if isOwned(owned, property.id) && property.upgrades.length > 0}
+  {#if isPropertyOwned && property.upgrades.length > 0}
     <div class="upgrades">
       {#each property.upgrades as upgrade (upgrade.id)}
         {#if upgrade.kind === 'toggle'}
@@ -77,6 +82,14 @@
   }
 
   .owned {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    justify-content: space-between;
+  }
+
+  .name {
     font-family: var(--font-display);
     letter-spacing: var(--tracking);
     text-transform: uppercase;

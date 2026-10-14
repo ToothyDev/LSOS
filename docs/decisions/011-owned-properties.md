@@ -15,8 +15,10 @@
   no upgrades. Unchecking "owned" keeps the upgrades, so owning it again restores them. Entries
   for ids the catalog does not list are kept; a saved value that no longer fits its upgrade
   reads as the default. Logic: `src/lib/properties.ts`.
-- **UI:** Settings has a Properties panel with every catalog entry (owned checkbox; upgrades
-  appear once owned). The Businesses tab shows only owned properties, each panel with a gear
+- **UI:** Settings has a Properties panel with every catalog entry: the name as the row label and
+  a toggle button next to it, "Owned" (accent, filled) or "Not owned" (muted, outlined), with
+  `aria-pressed` and the name as its accessible label, so the state reads at a glance (issue
+  #31; it replaced an "Own <name>" checkbox). Upgrades appear once owned. The Businesses tab shows only owned properties, each panel with a gear
   button that opens the same settings in place; closed, it summarises the bought upgrades.
   Both components take the catalog as a prop, so `#/kit` previews them with sample entries.
 
