@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { clampValue, formatValue, parseValue, undoValue } from './resync'
+import { applyEvent, clampValue, formatValue, parseValue, undoBars, undoValue } from './resync'
 
 const MIN = 60_000
 
@@ -73,5 +73,32 @@ describe('undoValue', () => {
   it('clamps to the bounds', () => {
     expect(undoValue({ before: 90, after: 10 }, 30, { max: 100 })).toBe(100)
     expect(undoValue({ before: 0, after: 50 }, 20, { min: 0 })).toBe(0)
+  })
+})
+
+describe('applyEvent', () => {
+  it('empties the listed bars and keeps the rest', () => {
+    expect(applyEvent({ stock: 80, supplies: 40 }, ['stock'])).toEqual({ stock: 0, supplies: 40 })
+    expect(applyEvent({ stock: 80, supplies: 40 }, ['stock', 'supplies'])).toEqual({
+      stock: 0,
+      supplies: 0,
+    })
+  })
+
+  it('does not add a supplies bar to a business without one', () => {
+    expect(applyEvent({ stock: 80 }, ['stock', 'supplies'])).toEqual({ stock: 0 })
+  })
+})
+
+describe('undoBars', () => {
+  it('takes back a raid and keeps what changed since', () => {
+    const edit = { before: { stock: 80, supplies: 40 }, after: { stock: 0, supplies: 0 } }
+    expect(undoBars(edit, { stock: 0, supplies: 0 })).toEqual({ stock: 80, supplies: 40 })
+    expect(undoBars(edit, { stock: 5, supplies: 20 })).toEqual({ stock: 85, supplies: 60 })
+  })
+
+  it('clamps each bar to 0..100 and leaves untouched bars alone', () => {
+    const edit = { before: { stock: 90, supplies: 50 }, after: { stock: 10, supplies: 50 } }
+    expect(undoBars(edit, { stock: 30, supplies: 45 })).toEqual({ stock: 100, supplies: 45 })
   })
 })

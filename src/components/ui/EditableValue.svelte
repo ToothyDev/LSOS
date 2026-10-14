@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { tick } from 'svelte'
+  import { tick, type Snippet } from 'svelte'
   import {
     clampValue,
     formatValue,
@@ -25,11 +25,25 @@
     max?: number
     /** One-click values, e.g. "Sold" setting stock to 0. The tracker decides what each one means. */
     presets?: Preset[]
+    /** Show an Undo button for the last edit. Off when the parent keeps one undo for several values. */
+    undoable?: boolean
+    /** Shown under the value, e.g. a bare Meter. */
+    children?: Snippet
     /** Called with the corrected value; the tracker stores it as of now (decision 003). */
     onresync: (value: number) => void
   }
 
-  let { label, value, unit, min, max, presets = [], onresync }: Props = $props()
+  let {
+    label,
+    value,
+    unit,
+    min,
+    max,
+    presets = [],
+    undoable = true,
+    children,
+    onresync,
+  }: Props = $props()
 
   const HINTS: Record<ValueUnit, string> = {
     percent: 'A percentage, e.g. 40',
@@ -65,7 +79,7 @@
   function apply(next: number) {
     const after = clampValue(next, bounds)
     if (after === value) return
-    last = { before: value, after }
+    if (undoable) last = { before: value, after }
     onresync(after)
   }
 
@@ -119,6 +133,8 @@
       >
     {/if}
   </div>
+
+  {@render children?.()}
 
   {#if editing}
     <p class="hint" class:invalid id="{id}-hint" aria-live="polite">

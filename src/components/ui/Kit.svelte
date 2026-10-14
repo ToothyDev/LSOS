@@ -1,6 +1,8 @@
 <script lang="ts">
   // Dev-only preview of the base components (open #/kit with `npm run dev`).
   // Sample numbers only: no game values here (decision 004).
+  import type { Bars } from '../../lib/resync'
+  import BusinessBars from './BusinessBars.svelte'
   import Button from './Button.svelte'
   import Countdown from './Countdown.svelte'
   import EditableValue from './EditableValue.svelte'
@@ -10,6 +12,8 @@
 
   let amount = $state(40)
   let safe = $state(70_000)
+  let bars = $state<Bars>({ stock: 60, supplies: 35 })
+  let stockOnly = $state<Bars>({ stock: 45 })
 
   // A real-time cooldown, as a tracker would keep it: the moment it is ready.
   let now = $state(Date.now())
@@ -47,20 +51,15 @@
     />
   </Panel>
 
+  <Panel title="Business bars">
+    <BusinessBars {bars} onresync={(value) => (bars = value)} />
+  </Panel>
+
+  <Panel title="Stock only">
+    <BusinessBars bars={stockOnly} onresync={(value) => (stockOnly = value)} />
+  </Panel>
+
   <Panel title="Resync">
-    <Meter label="Stock" value={amount} max={100} />
-    <EditableValue
-      label="Stock"
-      value={amount}
-      unit="percent"
-      min={0}
-      max={100}
-      presets={[
-        { label: 'Sold', value: 0 },
-        { label: 'Full', value: 100 },
-      ]}
-      onresync={(value) => (amount = value)}
-    />
     <EditableValue
       label="Safe"
       value={safe}

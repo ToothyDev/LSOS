@@ -88,3 +88,31 @@ function nonNegative(text: string): number | null {
 export function undoValue(edit: Resync, current: number, bounds: ValueBounds = {}): number {
   return clampValue(current - (edit.after - edit.before), bounds)
 }
+
+/** A business's bars in percent. Some businesses have only a stock bar. */
+export interface Bars {
+  stock: number
+  supplies?: number
+}
+
+const PERCENT: ValueBounds = { min: 0, max: 100 }
+
+/** The bars after an event such as a sale or a raid: the bars it empties go to zero. */
+export function applyEvent(bars: Bars, empties: readonly (keyof Bars)[]): Bars {
+  const next = { ...bars }
+  for (const bar of empties) if (next[bar] !== undefined) next[bar] = 0
+  return next
+}
+
+/** `undoValue` for each bar, for an edit or event that changed several at once. */
+export function undoBars(edit: { before: Bars; after: Bars }, current: Bars): Bars {
+  const next = { ...current }
+  for (const bar of ['stock', 'supplies'] as const) {
+    const before = edit.before[bar]
+    const after = edit.after[bar]
+    const now = current[bar]
+    if (before === undefined || after === undefined || now === undefined) continue
+    next[bar] = undoValue({ before, after }, now, PERCENT)
+  }
+  return next
+}
