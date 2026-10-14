@@ -29,7 +29,7 @@
   out in" (the other cannot happen before it). A delivery on its way shows too. "Edit" in the
   card footer swaps the meters for `BusinessBars`, whose actions (Full, Supplies bought, Sold,
   Raided, Undo) share one row. Which card is open lasts for the session only.
-- Bunker staff are taken to be on manufacturing only; a research split is not tracked yet.
+- Bunker staff are taken to be on manufacturing only; research and the split are issue #33.
 
 ## Why
 

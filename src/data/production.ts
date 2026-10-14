@@ -104,7 +104,7 @@ export const PRODUCTION: readonly Production[] = [
     maxUnits: 100,
     farSaleBonus: 0.5,
     farSaleLabel: 'in Los Santos',
-    // Staff on manufacturing only; splitting staff with research is not tracked yet.
+    // Staff on manufacturing only; research and the split come with issue #33.
     rates: [
       { upgrades: [], minutesPerUnit: 10, unitValue: 5_000, unitsPerFullSupplies: 10 },
       { upgrades: ['staff'], minutesPerUnit: 8.5, unitValue: 6_000, unitsPerFullSupplies: 10 },
