@@ -1,11 +1,13 @@
 <script lang="ts">
-  // Stock, supplies, value and countdowns of one business (issue #6). Logic: lib/production.ts.
+  // Stock, supplies, value and what comes next for one business (issue #6). Collapsed it shows
+  // only that; `editing` adds the resync controls. Logic: lib/production.ts.
   import { SUPPLY_PURCHASE } from '../data/business-events'
   import type { Production, ProductionRate } from '../data/production'
   import { forecast, stockUnits, stockValue, type KnownRate } from '../lib/production'
   import { formatValue, settleBars, type Bars } from '../lib/resync'
   import BusinessBars from './ui/BusinessBars.svelte'
   import Countdown from './ui/Countdown.svelte'
+  import Meter from './ui/Meter.svelte'
 
   interface Props {
     production: Production
@@ -16,68 +18,71 @@
     bars: Bars
     /** Wall-clock time, for supply deliveries. */
     now: number
+    /** Show the controls to correct the bars and record sales, raids and supplies. */
+    editing: boolean
     onresync: (bars: Bars) => void
   }
 
-  let { production, rate, running, bars, now, onresync }: Props = $props()
+  let { production, rate, running, bars, now, editing, onresync }: Props = $props()
 
   const current = $derived(settleBars(bars, now, SUPPLY_PURCHASE.fillsTo))
   const units = $derived(stockUnits(current, production))
   const value = $derived(rate ? stockValue(current, production, rate) : null)
   const ahead = $derived(running ? forecast(current, production, running) : null)
+  const percent = (value: number) => formatValue(value, 'percent')
 </script>
 
-<BusinessBars {bars} {now} {onresync} />
-
-<dl>
-  <dt>Stock</dt>
-  <dd>{units} / {production.maxUnits} {production.unitName}</dd>
-  {#if value}
-    <dt>Value</dt>
-    <dd>
-      {formatValue(value.nearby, 'money')}
-      <span class="far">{formatValue(value.far, 'money')} {production.farSaleLabel}</span>
-    </dd>
+{#if editing}
+  <BusinessBars {bars} {now} {onresync} />
+{:else}
+  <Meter
+    label="Stock"
+    value={current.stock}
+    max={100}
+    valueText="{units} / {production.maxUnits} {production.unitName} · {percent(current.stock)}"
+  />
+  <Meter label="Supplies" value={current.supplies ?? 0} max={100} kind="supplies" />
+  {#if current.suppliesDueAt !== undefined}
+    <Countdown label="Supplies arrive in" remainingMs={current.suppliesDueAt - now} />
   {/if}
-</dl>
+{/if}
+
+{#if value}
+  <div class="facts">
+    <span class="label">Value</span>
+    <span class="value" title="Sold {production.farSaleLabel}: {formatValue(value.far, 'money')}">
+      {formatValue(value.nearby, 'money')}
+      <span class="far">· {formatValue(value.far, 'money')} far</span>
+    </span>
+  </div>
+{/if}
 
 {#if ahead}
-  <div class="countdowns">
-    <Countdown
-      label="Full in"
-      remainingMs={ahead.fullInMs}
-      readyText="Full"
-      neverText="Supplies run out first"
-    />
-    <Countdown
-      label="Supplies out in"
-      remainingMs={ahead.suppliesOutInMs}
-      readyText="Out"
-      neverText="Last until full"
-    />
-  </div>
-  <p class="hint">Counts play time: runs while the clock runs.</p>
+  <!-- Only what happens first: the other one cannot happen before it. Play time. -->
+  {#if ahead.fullInMs !== null}
+    <Countdown label="Full in" remainingMs={ahead.fullInMs} readyText="Full" />
+  {:else}
+    <Countdown label="Supplies out in" remainingMs={ahead.suppliesOutInMs ?? 0} readyText="Out" />
+  {/if}
 {:else}
   <p class="hint">
     {#if rate}
-      How fast this business uses supplies with these upgrades is not known yet, so stock does not
-      rise on its own. Set the bars by hand.
+      Supply use with these upgrades is not known yet: stock does not rise on its own.
     {:else}
-      There is no production data for this combination of upgrades yet, so stock does not rise on
-      its own. Set the bars by hand.
+      No production data for these upgrades yet: stock does not rise on its own.
     {/if}
   </p>
 {/if}
 
 <style>
-  dl {
-    display: grid;
-    gap: var(--space-1) var(--space-3);
-    grid-template-columns: auto 1fr;
-    margin: 0;
+  .facts {
+    align-items: baseline;
+    display: flex;
+    gap: var(--space-3);
+    justify-content: space-between;
   }
 
-  dt {
+  .label {
     color: var(--muted);
     font-family: var(--font-display);
     font-size: var(--text-sm);
@@ -85,26 +90,18 @@
     text-transform: uppercase;
   }
 
-  dd {
-    margin: 0;
+  .value {
+    font-variant-numeric: tabular-nums;
     text-align: right;
   }
 
-  .far {
-    color: var(--muted);
-    display: block;
-    font-size: var(--text-sm);
-  }
-
-  .countdowns {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2);
-  }
-
+  .far,
   .hint {
     color: var(--muted);
     font-size: var(--text-sm);
+  }
+
+  .hint {
     margin: 0;
   }
 </style>

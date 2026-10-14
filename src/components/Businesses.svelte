@@ -35,6 +35,8 @@
   }: Props = $props()
   const shown = $derived(ownedProperties(catalog, owned))
   let open = $state<string | null>(null)
+  // Cards start collapsed: bars, value and next countdown only (issue #6).
+  let editing = $state<string | null>(null)
 
   /** Short summary of the bought upgrades, e.g. "Equipment, Technician: Cash". */
   function summary(property: Property): string {
@@ -75,10 +77,18 @@
             running={rateFor(production, owned, property)}
             bars={businesses[property.id] ?? emptyBars()}
             {now}
+            editing={editing === property.id}
             onresync={(bars) => onresync(property.id, bars)}
           />
         {/if}
         {#snippet footer()}
+          {#if production}
+            <Button
+              aria-expanded={editing === property.id}
+              onclick={() => (editing = editing === property.id ? null : property.id)}
+              >{editing === property.id ? 'Done' : 'Edit'}</Button
+            >
+          {/if}
           <Button
             aria-label="Settings for {property.label}"
             aria-expanded={open === property.id}
@@ -101,7 +111,7 @@
   .grid {
     display: grid;
     gap: var(--space-5);
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
   }
 
   p {

@@ -23,8 +23,12 @@
   supplies and after it the new ones. Exact for normal ticks; for a long confirmed gap it is the
   best guess LSOS has.
 - **Wiring** (`src/lib/production.svelte.ts`) adds every play-time stretch to each owned business
-  with a running rate. Countdowns ("Full in", "Supplies out in") are play time; whichever comes
-  first is shown and the other says why it will not happen.
+  with a running rate.
+- **Cards start collapsed:** stock meter (units and percent), supplies meter, value (nearby and
+  far on one line) and one play-time countdown, whichever comes first: "Full in" or "Supplies
+  out in" (the other cannot happen before it). A delivery on its way shows too. "Edit" in the
+  card footer swaps the meters for `BusinessBars`, whose actions (Full, Supplies bought, Sold,
+  Raided, Undo) share one row. Which card is open lasts for the session only.
 - Bunker staff are taken to be on manufacturing only; a research split is not tracked yet.
 
 ## Why
