@@ -125,12 +125,24 @@
 </div>
 
 {#snippet bar()}
-  <div class="track" bind:this={track}>
-    <div class="fill" class:dragging={dragging !== null} style:width="{fraction * 100}%"></div>
-    {#each { length: Math.max(0, (segments ?? 0) - 1) }, i (i)}
-      <div class="divider" style:left="{((i + 1) / segments!) * 100}%"></div>
-    {/each}
-  </div>
+  {#if segments && segments > 1}
+    <!-- Separate boxes like the in-game HUD, each filled by its share of the value. -->
+    <div class="segments" bind:this={track}>
+      {#each { length: segments }, i (i)}
+        <div class="track segment">
+          <div
+            class="fill"
+            class:dragging={dragging !== null}
+            style:width="{meterFraction(fraction * segments - i, 1) * 100}%"
+          ></div>
+        </div>
+      {/each}
+    </div>
+  {:else}
+    <div class="track" bind:this={track}>
+      <div class="fill" class:dragging={dragging !== null} style:width="{fraction * 100}%"></div>
+    </div>
+  {/if}
 {/snippet}
 
 <style>
@@ -191,14 +203,16 @@
     background: var(--supplies);
   }
 
-  /* Gaps between segments, in the panel colour. */
-  .divider {
-    background: var(--panel);
-    height: 100%;
-    position: absolute;
-    top: 0;
-    transform: translateX(-50%);
-    width: 3px;
+  .segments {
+    display: flex;
+    gap: 4px;
+  }
+
+  /* Taller than a plain bar, with an edge so empty segments stand out from the panel. */
+  .segment {
+    box-shadow: inset 0 0 0 1px var(--track-edge);
+    flex: 1;
+    height: calc(var(--bar-height) + 0.25rem);
   }
 
   /* Taller than the bar to give fingers and the pointer room; vertical scrolling still works. */

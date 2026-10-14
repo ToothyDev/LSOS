@@ -31,7 +31,8 @@
   also cancels a delivery on its way.
 - **Segmented bars, drag to resync** (issue #32): stock and supplies bars are split into five
   segments like in game (`BAR_SEGMENTS` in `src/data/business-events.ts`), in the resync
-  controls only; collapsed cards keep a plain bar to stay clean.
+  controls only; collapsed cards keep a plain bar to stay clean. Each segment is its own box
+  with an edge (`--track-edge`, 3.4:1 on the panel), so empty segments are easy to see.
   In `BusinessBars` each bar is also a slider (`Meter` with `onset`): drag its handle with mouse,
   pen or touch, or use the keys (arrows step 1% to the next whole percent, Page Up/Down jump to
   the next segment edge, Home/End to 0/100%). A drag rounds to whole percent and snaps to a
