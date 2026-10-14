@@ -1,7 +1,7 @@
 <script lang="ts">
   // Stock, supplies, value and what comes next for one business (issue #6). Collapsed it shows
   // only that; `editing` adds the resync controls. Logic: lib/production.ts.
-  import { BAR_SEGMENTS, SUPPLY_PURCHASE } from '../data/business-events'
+  import { SUPPLY_PURCHASE } from '../data/business-events'
   import type { Production, ProductionRate } from '../data/production'
   import {
     estimatedParts,
@@ -49,7 +49,6 @@
     label={est('Stock', estimated.production)}
     value={current.stock}
     max={100}
-    segments={BAR_SEGMENTS.count}
     valueText="{units} / {production.maxUnits} {production.unitName} · {percent(current.stock)}"
   />
   <Meter
@@ -57,7 +56,6 @@
     value={current.supplies ?? 0}
     max={100}
     kind="supplies"
-    segments={BAR_SEGMENTS.count}
   />
   {#if current.suppliesDueAt !== undefined}
     <Countdown label="Supplies arrive in" remainingMs={current.suppliesDueAt - now} />
