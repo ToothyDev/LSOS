@@ -4,9 +4,10 @@ import { parseGoodsStock, type GoodsStock } from './nightclub'
 import { parseOrder } from './order'
 import { parseBusinessBars, type BusinessBarsById } from './production'
 import { parseOwnedProperties, type OwnedProperties } from './properties'
+import { parseSafes, type SafesById } from './safes'
 
 /** Bump when the stored shape changes, and add a migration from the previous version. */
-export const CURRENT_VERSION = 6
+export const CURRENT_VERSION = 7
 
 /** All user state. Trackers add their own sections here as they are built. */
 export interface AppState {
@@ -21,6 +22,8 @@ export interface AppState {
   businessOrder: string[]
   /** Nightclub warehouse crates by goods id, as of the last play time counted (issue #7). */
   nightclub: GoodsStock
+  /** Money in each safe and nightclub popularity, as of the last play time counted (issue #8). */
+  safes: SafesById
 }
 
 export function defaultState(): AppState {
@@ -31,6 +34,7 @@ export function defaultState(): AppState {
     businesses: {},
     businessOrder: [],
     nightclub: {},
+    safes: {},
   }
 }
 
@@ -51,6 +55,8 @@ export const MIGRATIONS: Readonly<Record<number, Migration>> = {
   4: (data) => ({ ...data, businessOrder: [] }),
   // Version 6 adds the nightclub warehouse stock (issue #7); empty until set or produced.
   5: (data) => ({ ...data, nightclub: {} }),
+  // Version 7 adds property safes (issue #8); empty until set or paid.
+  6: (data) => ({ ...data, safes: {} }),
 }
 
 export type ParseResult =
@@ -129,7 +135,17 @@ function toState(data: StoredData): AppState | string {
   if (typeof businessOrder === 'string') return businessOrder
   const nightclub = parseGoodsStock(data.nightclub)
   if (typeof nightclub === 'string') return nightclub
-  return { version: CURRENT_VERSION, clock, properties, businesses, businessOrder, nightclub }
+  const safes = parseSafes(data.safes)
+  if (typeof safes === 'string') return safes
+  return {
+    version: CURRENT_VERSION,
+    clock,
+    properties,
+    businesses,
+    businessOrder,
+    nightclub,
+    safes,
+  }
 }
 
 function toClock(data: unknown): ClockSettings | string {

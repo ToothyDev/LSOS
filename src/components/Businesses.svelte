@@ -21,6 +21,7 @@
   import PropertySettings from './PropertySettings.svelte'
   import Button from './ui/Button.svelte'
   import Panel from './ui/Panel.svelte'
+  import SettingsButton from './ui/SettingsButton.svelte'
 
   interface Props {
     catalog: readonly Property[]
@@ -260,18 +261,11 @@
                   >{editing === property.id ? 'Done' : 'Edit'}</Button
                 >
               {/if}
-              <Button
-                aria-label="Settings for {property.label}"
-                aria-expanded={open === property.id}
+              <SettingsButton
+                label={property.label}
+                open={open === property.id}
                 onclick={() => (open = open === property.id ? null : property.id)}
-              >
-                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-                  <path
-                    fill="currentColor"
-                    d="M19.14 12.94a7.07 7.07 0 0 0 0-1.88l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7 7 0 0 0-1.62-.94l-.36-2.54a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.54a7 7 0 0 0-1.62.94l-2.39-.96a.5.5 0 0 0-.6.22L2.71 8.84a.5.5 0 0 0 .12.64l2.03 1.58a7.07 7.07 0 0 0 0 1.88l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32a.5.5 0 0 0 .6.22l2.39-.96a7 7 0 0 0 1.62.94l.36 2.54a.5.5 0 0 0 .5.42h3.84a.5.5 0 0 0 .5-.42l.36-2.54a7 7 0 0 0 1.62-.94l2.39.96a.5.5 0 0 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64zM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7z"
-                  />
-                </svg>
-              </Button>
+              />
             {/snippet}
           </Panel>
         </div>
@@ -341,9 +335,5 @@
   .hint {
     color: var(--muted);
     font-size: var(--text-sm);
-  }
-
-  svg {
-    display: block;
   }
 </style>

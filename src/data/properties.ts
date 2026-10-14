@@ -25,7 +25,10 @@ export interface Property {
   id: string
   label: string
   upgrades: readonly Upgrade[]
-  /** False for properties that only unlock something elsewhere: no card on the Businesses tab. */
+  /**
+   * False for properties with no card on the Businesses tab: those that only unlock something
+   * elsewhere, or that only have a safe (Safes tab).
+   */
   card?: false
   source: string
   checked: string
@@ -38,6 +41,7 @@ import {
   NIGHTCLUB_CHECKED,
   NIGHTCLUB_SOURCE,
 } from './nightclub'
+import { ARCADE_SLOTS, SAFES, SAFES_CHECKED } from './safes'
 
 // Equipment and staff speed up production and raise the value; equipment also makes supplies
 // last longer. The security upgrade only changes raids, which LSOS does not predict: left out.
@@ -83,9 +87,10 @@ export const PROPERTIES: readonly Property[] = [
   {
     id: 'nightclub',
     label: 'Nightclub',
-    // Staff and security upgrades only change popularity and raids: left out.
+    // Security only changes raids: left out. Staff slows the popularity loss (Safes tab).
     upgrades: [
       { kind: 'toggle', id: 'equipment', label: 'Equipment' },
+      { kind: 'toggle', id: 'staff', label: 'Staff' },
       {
         kind: 'choice',
         id: 'floors',
@@ -110,6 +115,59 @@ export const PROPERTIES: readonly Property[] = [
     ],
     source: NIGHTCLUB_SOURCE,
     checked: NIGHTCLUB_CHECKED,
+  },
+  // Safes only (issue #8, decision 016): no card on the Businesses tab.
+  {
+    id: 'arcade',
+    label: 'Arcade',
+    upgrades: [
+      {
+        kind: 'choice',
+        id: 'floor-slots',
+        label: 'Floor slots filled',
+        // A machine that takes two slots counts as two.
+        options: [
+          { id: 'full', label: `All ${ARCADE_SLOTS}` },
+          ...Array.from({ length: ARCADE_SLOTS }, (_, i) => {
+            const n = String(ARCADE_SLOTS - 1 - i)
+            return { id: n, label: n }
+          }),
+        ],
+      },
+    ],
+    card: false,
+    source: SAFES.find((safe) => safe.propertyId === 'arcade')!.source,
+    checked: SAFES_CHECKED,
+  },
+  {
+    id: 'agency',
+    label: 'Agency',
+    upgrades: [
+      {
+        kind: 'choice',
+        id: 'contracts',
+        label: 'Security contracts done',
+        // The payout rises every 5 contracts and stops at 200.
+        options: Array.from({ length: 41 }, (_, i) => ({
+          id: String(i * 5),
+          label: i === 40 ? '200 or more' : `${i * 5} to ${i * 5 + 4}`,
+        })),
+      },
+    ],
+    card: false,
+    source: SAFES.find((safe) => safe.propertyId === 'agency')!.source,
+    checked: SAFES_CHECKED,
+  },
+  {
+    id: 'salvage-yard',
+    label: 'Salvage Yard',
+    upgrades: [
+      { kind: 'toggle', id: 'staff', label: 'Staff' },
+      { kind: 'toggle', id: 'wall-safe', label: 'Wall Safe' },
+    ],
+    card: false,
+    source: SAFES.find((safe) => safe.propertyId === 'salvage-yard')!.source,
+    checked: SAFES_CHECKED,
   },
 ]
 
