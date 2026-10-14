@@ -21,7 +21,7 @@
 - **Business bars** (`src/components/ui/BusinessBars.svelte`): stock and, if the business has
   one, supplies, each an `EditableValue` with its meter, plus the business events "Sold"
   (empties stock) and "Raided" (a successful police raid empties stock and supplies). Stock has
-  "Full". Raided is hidden for a business without supplies. Trackers pass the bars in percent
+  "Full". All these actions share one row under the bars (compacted in issue #6). Raided is hidden for a business without supplies. Trackers pass the bars in percent
   and store what comes back.
 - **Supplies bought** starts a delivery instead of filling at once: the bars keep
   `suppliesDueAt` (wall-clock time), the panel counts down, and once due `settleBars` fills

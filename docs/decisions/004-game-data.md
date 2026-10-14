@@ -1,6 +1,6 @@
 # 004: Game data lives in `src/data/` and is always sourced
 
-2026-10-13, project bootstrap
+2026-10-13, project bootstrap. Amended by 013: marked estimates from a stated rule.
 
 ## Decision
 

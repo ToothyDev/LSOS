@@ -1,8 +1,13 @@
 <script lang="ts">
-  // The owned businesses, each with a gear to change what is owned and upgraded (decision 011).
+  // The owned businesses, each with a gear to change what is owned and upgraded (decision 011),
+  // and its stock and supplies if LSOS has production data for it (issue #6).
+  import type { Production } from '../data/production'
   import type { Property } from '../data/properties'
+  import { emptyBars, matchingRate, rateFor, type BusinessBarsById } from '../lib/production'
   import { ownedProperties, upgradeValue, type OwnedProperties } from '../lib/properties'
+  import type { Bars } from '../lib/resync'
   import { hashForTab } from '../lib/tabs'
+  import BusinessProduction from './BusinessProduction.svelte'
   import PropertySettings from './PropertySettings.svelte'
   import Button from './ui/Button.svelte'
   import Panel from './ui/Panel.svelte'
@@ -11,11 +16,27 @@
     catalog: readonly Property[]
     owned: OwnedProperties
     onchange: (owned: OwnedProperties) => void
+    productions?: readonly Production[]
+    /** Saved stock and supplies by property id. */
+    businesses?: BusinessBarsById
+    /** Wall-clock time, for supply deliveries. */
+    now?: number
+    onresync?: (propertyId: string, bars: Bars) => void
   }
 
-  let { catalog, owned, onchange }: Props = $props()
+  let {
+    catalog,
+    owned,
+    onchange,
+    productions = [],
+    businesses = {},
+    now = 0,
+    onresync = () => {},
+  }: Props = $props()
   const shown = $derived(ownedProperties(catalog, owned))
   let open = $state<string | null>(null)
+  // Cards start collapsed: bars, value and next countdown only (issue #6).
+  let editing = $state<string | null>(null)
 
   /** Short summary of the bought upgrades, e.g. "Equipment, Technician: Cash". */
   function summary(property: Property): string {
@@ -42,13 +63,32 @@
 {:else}
   <div class="grid">
     {#each shown as property (property.id)}
+      {@const production = productions.find((p) => p.propertyId === property.id)}
       <Panel title={property.label}>
         {#if open === property.id}
           <PropertySettings {property} {owned} {onchange} />
         {:else}
           <p class="hint">{summary(property)}</p>
         {/if}
+        {#if production}
+          <BusinessProduction
+            {production}
+            rate={matchingRate(production, owned, property)}
+            running={rateFor(production, owned, property)}
+            bars={businesses[property.id] ?? emptyBars()}
+            {now}
+            editing={editing === property.id}
+            onresync={(bars) => onresync(property.id, bars)}
+          />
+        {/if}
         {#snippet footer()}
+          {#if production}
+            <Button
+              aria-expanded={editing === property.id}
+              onclick={() => (editing = editing === property.id ? null : property.id)}
+              >{editing === property.id ? 'Done' : 'Edit'}</Button
+            >
+          {/if}
           <Button
             aria-label="Settings for {property.label}"
             aria-expanded={open === property.id}
@@ -71,7 +111,7 @@
   .grid {
     display: grid;
     gap: var(--space-5);
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
   }
 
   p {

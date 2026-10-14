@@ -25,9 +25,10 @@ describe('parseState', () => {
     expect(result).toEqual({
       ok: true,
       state: {
-        version: 3,
+        version: 4,
         clock: { trackOnOpen: false },
         properties: {},
+        businesses: {},
       },
       fromVersion: 1,
     })
@@ -37,13 +38,26 @@ describe('parseState', () => {
     const result = parseState('{"version":2,"clock":{"trackOnOpen":true}}')
     expect(result).toEqual({
       ok: true,
-      state: { version: 3, clock: { trackOnOpen: true }, properties: {} },
+      state: { version: 4, clock: { trackOnOpen: true }, properties: {}, businesses: {} },
       fromVersion: 2,
     })
   })
 
+  it('migrates a version 3 sample, tracking no business yet', () => {
+    const properties = { 'mc-weed': { owned: true, upgrades: { equipment: true } } }
+    const result = parseState(
+      JSON.stringify({ version: 3, clock: { trackOnOpen: false }, properties }),
+    )
+    expect(result).toEqual({
+      ok: true,
+      state: { version: 4, clock: { trackOnOpen: false }, properties, businesses: {} },
+      fromVersion: 3,
+    })
+  })
+
   it('keeps the saved clock setting', () => {
-    const text = '{"version":3,"clock":{"trackOnOpen":true,"playMs":5},"properties":{}}'
+    const text =
+      '{"version":4,"clock":{"trackOnOpen":true,"playMs":5},"properties":{},"businesses":{}}'
     expect(parseState(text)).toMatchObject({ ok: true, state: { clock: { trackOnOpen: true } } })
   })
 
@@ -53,14 +67,38 @@ describe('parseState', () => {
     expect(parseState(text)).toMatchObject({ ok: true, state: { properties } })
   })
 
+  it('keeps saved business bars', () => {
+    const businesses = { bunker: { stock: 12.5, supplies: 40, suppliesDueAt: 1000 } }
+    const text = JSON.stringify({ ...defaultState(), businesses })
+    expect(parseState(text)).toMatchObject({ ok: true, state: { businesses } })
+  })
+
   it.each([
-    ['a missing clock', '{"version":3,"properties":{}}', 'clock section is missing'],
+    [
+      'a missing clock',
+      '{"version":4,"properties":{},"businesses":{}}',
+      'clock section is missing',
+    ],
     [
       'a bad tracking setting',
-      '{"version":3,"clock":{"trackOnOpen":"yes"},"properties":{}}',
+      '{"version":4,"clock":{"trackOnOpen":"yes"},"properties":{},"businesses":{}}',
       'tracking setting',
     ],
-    ['missing properties', '{"version":3,"clock":{"trackOnOpen":false}}', 'properties section'],
+    [
+      'missing properties',
+      '{"version":4,"clock":{"trackOnOpen":false},"businesses":{}}',
+      'properties section',
+    ],
+    [
+      'missing businesses',
+      '{"version":4,"clock":{"trackOnOpen":false},"properties":{}}',
+      'businesses section',
+    ],
+    [
+      'stock over 100%',
+      '{"version":4,"clock":{"trackOnOpen":false},"properties":{},"businesses":{"bunker":{"stock":120}}}',
+      'business "bunker"',
+    ],
   ])('rejects %s', (_, text, message) => {
     const result = parseState(text)
     expect(result).toMatchObject({ ok: false, reason: 'invalid' })

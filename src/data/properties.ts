@@ -22,4 +22,32 @@ export interface Property {
   checked: string
 }
 
-export const PROPERTIES: readonly Property[] = []
+// Equipment and staff speed up production and raise the value; equipment also makes supplies
+// last longer. The security upgrade only changes raids, which LSOS does not predict: left out.
+const PRODUCTION_UPGRADES: readonly Upgrade[] = [
+  { kind: 'toggle', id: 'equipment', label: 'Equipment' },
+  { kind: 'toggle', id: 'staff', label: 'Staff' },
+]
+
+const MC_SOURCE = 'gta.wiki, The Open Road (Upgrades): equipment, staff and security upgrades.'
+const BUNKER_SOURCE =
+  'gta.wiki, Disruption Logistics (Buy Upgrades): equipment, staff and security upgrades.'
+
+export const PROPERTIES: readonly Property[] = [
+  mc('mc-cocaine', 'Cocaine Lockup'),
+  mc('mc-meth', 'Methamphetamine Lab'),
+  mc('mc-cash', 'Counterfeit Cash Factory'),
+  mc('mc-weed', 'Weed Farm'),
+  mc('mc-documents', 'Document Forgery Office'),
+  {
+    id: 'bunker',
+    label: 'Bunker',
+    upgrades: PRODUCTION_UPGRADES,
+    source: BUNKER_SOURCE,
+    checked: '2026-10-14',
+  },
+]
+
+function mc(id: string, label: string): Property {
+  return { id, label, upgrades: PRODUCTION_UPGRADES, source: MC_SOURCE, checked: '2026-10-14' }
+}

@@ -54,8 +54,6 @@
     last = null
   }
 
-  const FULL = [{ label: 'Full', value: 100 }]
-
   function buy() {
     set(buySupplies(bars, now, SUPPLY_PURCHASE.deliveryMs), SUPPLY_PURCHASE.label)
   }
@@ -68,7 +66,6 @@
     unit="percent"
     min={0}
     max={100}
-    presets={FULL}
     undoable={false}
     onresync={(stock) => set({ ...bars, stock }, `stock was ${formatValue(bars.stock, 'percent')}`)}
   >
@@ -89,12 +86,18 @@
       {#if dueAt !== undefined}
         <Countdown label="Supplies arrive in" remainingMs={dueAt - now} />
       {/if}
-      <div class="actions">
-        <Button onclick={buy} disabled={dueAt !== undefined}>{SUPPLY_PURCHASE.label}</Button>
-      </div>
     </EditableValue>
   {/if}
+  <!-- All actions in one row to keep the card short. -->
   <div class="actions">
+    <Button
+      onclick={() =>
+        set({ ...bars, stock: 100 }, `stock was ${formatValue(bars.stock, 'percent')}`)}
+      >Full</Button
+    >
+    {#if bars.supplies !== undefined}
+      <Button onclick={buy} disabled={dueAt !== undefined}>{SUPPLY_PURCHASE.label}</Button>
+    {/if}
     {#each events as event (event.label)}
       <Button onclick={() => set(applyEvent(bars, event), event.label)}>{event.label}</Button>
     {/each}

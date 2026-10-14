@@ -1,9 +1,10 @@
 // The persisted root state, its versions and migrations (decision 006).
 import { defaultClockSettings, type ClockSettings } from './clock'
+import { parseBusinessBars, type BusinessBarsById } from './production'
 import { parseOwnedProperties, type OwnedProperties } from './properties'
 
 /** Bump when the stored shape changes, and add a migration from the previous version. */
-export const CURRENT_VERSION = 3
+export const CURRENT_VERSION = 4
 
 /** All user state. Trackers add their own sections here as they are built. */
 export interface AppState {
@@ -12,10 +13,17 @@ export interface AppState {
   clock: ClockSettings
   /** Owned properties and their upgrades (decision 011). */
   properties: OwnedProperties
+  /** Stock and supplies of each business, as of the last play time counted (issue #6). */
+  businesses: BusinessBarsById
 }
 
 export function defaultState(): AppState {
-  return { version: CURRENT_VERSION, clock: defaultClockSettings(), properties: {} }
+  return {
+    version: CURRENT_VERSION,
+    clock: defaultClockSettings(),
+    properties: {},
+    businesses: {},
+  }
 }
 
 export type StoredData = Record<string, unknown> & { version: number }
@@ -29,6 +37,8 @@ export const MIGRATIONS: Readonly<Record<number, Migration>> = {
   1: (data) => ({ ...data, clock: defaultClockSettings() }),
   // Version 3 adds owned properties and upgrades (issue #5); nothing is owned yet.
   2: (data) => ({ ...data, properties: {} }),
+  // Version 4 adds business stock and supplies (issue #6); nothing is tracked yet.
+  3: (data) => ({ ...data, businesses: {} }),
 }
 
 export type ParseResult =
@@ -101,7 +111,9 @@ function toState(data: StoredData): AppState | string {
   if (typeof clock === 'string') return clock
   const properties = parseOwnedProperties(data.properties)
   if (typeof properties === 'string') return properties
-  return { version: CURRENT_VERSION, clock, properties }
+  const businesses = parseBusinessBars(data.businesses)
+  if (typeof businesses === 'string') return businesses
+  return { version: CURRENT_VERSION, clock, properties, businesses }
 }
 
 function toClock(data: unknown): ClockSettings | string {
