@@ -1,6 +1,6 @@
 # 013: Marked estimates for missing game data
 
-2026-10-14, issue #6, at the maintainer's request. Amends decision 004.
+2026-10-14, issue #6. Amends decision 004.
 
 ## Decision
 
