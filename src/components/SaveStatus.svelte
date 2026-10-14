@@ -25,10 +25,10 @@
 
 <style>
   .warning {
-    border: 1px solid var(--warn);
+    border-bottom: 1px solid var(--warn);
     color: var(--warn);
     margin: 0;
-    padding: 0.75rem 1rem;
+    padding: var(--space-3) var(--space-4);
   }
 
   .warning a {

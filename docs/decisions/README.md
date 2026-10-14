@@ -19,3 +19,4 @@ free number, add one line below. **Replacing one:** write a new decision, then m
 - [006](006-persisted-state.md) Persisted state is versioned, migrated on load, exportable as JSON
 - [007](007-state-store.md) State store: unreadable data blocks saving like a newer version; import overrides
 - [008](008-clock-details.md) Clock details: session play time, opens paused (setting), throttled ticks counted, long gaps asked about
+- [009](009-terminal-design.md) Terminal look: tokens in `app.css`, self-hosted Oswald (OFL), browser-style tabs, base components in `src/components/ui/`

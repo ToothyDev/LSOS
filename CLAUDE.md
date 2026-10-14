@@ -18,8 +18,9 @@ Svelte 5 + TypeScript + Vite. Public repository.
 | Game logic (pure TS, unit-tested)              | `src/lib/`                                        |
 | Saved user state, migrations, export/import    | `src/lib/state.ts`, `src/lib/store.svelte.ts`     |
 | UI components (thin)                           | `src/components/`                                 |
+| Base UI kit (panel, meter, button...), preview | `src/components/ui/`, `#/kit` in dev (dec. 009)   |
 | Game data with sources                         | `src/data/` (decision 004)                        |
-| Theme tokens                                   | `src/app.css`                                     |
+| Theme tokens                                   | `src/app.css` (decision 009)                      |
 | CI, templates                                  | `.github/`                                        |
 | Skills: `handoff`, `finish-pr`; agent: `scout` | `.claude/`                                        |
 

@@ -1,19 +1,106 @@
-/* Placeholder palette; the real theme is tracked in its own issue. */
+/*
+ * LSOS theme: a GTA Online style in-game terminal (slate panels, green stock, blue supplies,
+ * condensed wide-tracked capitals). Components use these tokens only, never raw values.
+ * Display font: Oswald (SIL Open Font License 1.1), self-hosted via @fontsource-variable/oswald.
+ */
+@import '@fontsource-variable/oswald';
+
 :root {
-  --bg: #0b0f0c;
-  --fg: #d7ffe0;
-  --muted: #6f9a7a;
-  --accent: #7dff9b;
-  --line: #24402c;
-  --warn: #ffb454;
+  /* Surfaces, darkest to lightest. */
+  --bg: #12161b;
+  --surface: #1a1f26;
+  --panel: #20262e;
+  --panel-raised: #28303a;
+  --line: #34404c;
+
+  /* Text. Every text/background pair used keeps at least 4.5:1 (WCAG AA). */
+  --fg: #e8ecef;
+  --muted: #9aa7b3;
+
+  /* Accents: --accent is stock / primary, --supplies is supplies. *-text variants are for text. */
+  --accent: #3a9e66;
+  --accent-text: #62d394;
+  --accent-deep: #1e4a35;
+  --accent-hover: #286346;
+  --supplies: #3f6db8;
+  --supplies-text: #8fb2ee;
+  --track: #2b343e;
+  --warn: #f0b450;
+  --danger: #ef7a6e;
+  --focus: #ffd75e;
+
+  /* Type. */
+  --font-display: 'Oswald Variable', 'Arial Narrow', 'Roboto Condensed', sans-serif;
+  --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.75rem;
+  --text-2xl: clamp(1.25rem, 5vw, 2.5rem);
+  --tracking: 0.08em;
+  --tracking-wide: 0.18em;
+  --tracking-wider: 0.3em;
+
+  /* Spacing. */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+
+  --radius: 3px;
+  --bar-height: 0.5rem;
+  --max-width: 80rem;
 
   color-scheme: dark;
-  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  font-family: var(--font-body);
+  line-height: 1.5;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
-  background: var(--bg);
+  background-color: var(--bg);
+  /* Faint vertical scan lines, like the in-game monitors. */
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgb(255 255 255 / 0.015) 0 1px,
+    transparent 1px 4px
+  );
   color: var(--fg);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: var(--tracking-wide);
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+a {
+  color: var(--accent-text);
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+  }
 }
