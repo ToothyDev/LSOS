@@ -61,30 +61,39 @@ export function weekStatus(week: Pick<Week, 'start' | 'end'>, now: number): Week
   return now < Date.parse(week.end) ? 'current' : 'ended'
 }
 
-/** "3x GTA$ and RP: Slasher" */
-export function multiplierText(multiplier: Multiplier): string {
-  return `${multiplier.factor}x ${multiplier.pays}: ${multiplier.activity}`
-}
-
 /** "Free" or "40% off" */
 export function discountText(discount: Discount): string {
   return discount.percent >= 100 ? 'Free' : `${discount.percent}% off`
 }
 
-/**
- * The Breaking News lines: multipliers, highest first, with the ones paid through an owned
- * property ahead of the rest; then the gifts.
- */
-export function newsItems(week: Week, owned: OwnedProperties): { text: string; owned: boolean }[] {
-  const multipliers = week.multipliers
-    .map((multiplier) => ({
-      text: multiplierText(multiplier),
-      owned: multiplier.property !== undefined && isOwned(owned, multiplier.property),
-      factor: multiplier.factor,
-    }))
-    .sort((a, b) => Number(b.owned) - Number(a.owned) || b.factor - a.factor)
-    .map(({ text, owned }) => ({ text, owned }))
-  return [...multipliers, ...week.gifts.map((text) => ({ text, owned: false }))]
+/** The bonus payouts, the ones paid through an owned property first, then highest first. */
+export function sortMultipliers(
+  multipliers: readonly Multiplier[],
+  owned: OwnedProperties,
+): Multiplier[] {
+  const ownsIt = (m: Multiplier) => m.property !== undefined && isOwned(owned, m.property)
+  return [...multipliers].sort(
+    (a, b) => Number(ownsIt(b)) - Number(ownsIt(a)) || b.factor - a.factor,
+  )
+}
+
+/** Time left in the week, e.g. "6d 16h left" or "3h left". */
+export function timeLeftText(ms: number): string {
+  const hours = Math.max(0, Math.floor(ms / 3_600_000))
+  const days = Math.floor(hours / 24)
+  return days > 0 ? `${days}d ${hours % 24}h left` : `${hours}h left`
+}
+
+/** Discounts of one kind, by percentage (highest first), keeping the file's item order. */
+export function discountTiers(
+  discounts: readonly Discount[],
+  kind: Discount['kind'],
+): { percent: number; items: string[] }[] {
+  const tiers = new Map<number, string[]>()
+  for (const d of discounts) {
+    if (d.kind === kind) tiers.set(d.percent, [...(tiers.get(d.percent) ?? []), d.item])
+  }
+  return [...tiers].sort(([a], [b]) => b - a).map(([percent, items]) => ({ percent, items }))
 }
 
 /** Problems with a week's data that the type does not catch; empty when it is fine. */

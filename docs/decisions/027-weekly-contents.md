@@ -24,8 +24,7 @@
     (e.g. "complete X, get GTA$500,000 within 72 hours"), with any deadline.
   - **Still running**: seasonal activities carried over from earlier weeks without a bonus
     this week (e.g. Ghosts Exposed, Phantom Car), names only. Shown below the week's events,
-    more out of the way (e.g. a collapsed or muted "Also running" list), and never in the
-    Breaking News bar.
+    more out of the way, in a collapsed "Also running" list.
   - **Week**: start and end as exact UTC instants, plus the source link.
 - **Left out:**
   - **GTA+**: no member-only multipliers, discounts or monthly benefits. Where an entry has a
@@ -33,14 +32,18 @@
   - **Daily, map-bound rotations**: the Gun Van's location, and the daily Junk Energy and RC
     Time Trials. They change every day and only make sense on a map, which LSOS does not have.
     The Gun Van's weekly stock and discounts stay (they are not tied to a place).
-- **Shown** on the Weekly tab (bonus payouts with owned ones first, challenge and gifts,
-  rotation, discounts by vehicles, properties and Gun Van; then a collapsed "Also running" list)
-  and in a Breaking News bar on every tab (multipliers, then gifts; links to the Weekly tab).
-  The Weekly panels keep a fixed order: unlike the business cards, there is nothing to compare
-  between them. A multiplier names its `property` id when it pays through one (e.g. bounties
+- **Shown on the Weekly tab only**: a header with the week's dates, a status pill (live with
+  time left, or out of date) and the source links; bonus payouts (factor badge, activity, what
+  it pays) next to the Weekly Challenge and gifts; the rotation and the discounts (by vehicles,
+  properties and Gun Van, then by percentage) as labelled blocks of chips; then a collapsed
+  "Also running" list. The panels keep a fixed order: unlike the business cards, there is
+  nothing to compare between them.
+- **No Breaking News bar.** Issue #16 asked for a ticker on every tab; it was built and taken
+  out again before merging: more distracting than helpful. A multiplier names its `property` id when it pays through one (e.g. bounties
   through the Bail Office), so owners see it first.
-- **Out of date:** once `now >= end` the bar says the weekly events are out of date and the tab
-  shows a warning over dimmed panels, instead of old bonuses as current.
+- **Out of date:** once `now >= end` the pill says "Out of date" and a warning says the events
+  are last week's; the old week stays readable below it, greyed and dimmed, instead of shown as
+  current or hidden.
 - **The week** runs Thursday to the next Thursday. The file stores explicit `start` and `end`
   instants and the site uses only those (staleness: `now >= end`), never a weekday rule: some
   events ran 12 to 14 days (gta.wiki, Lucky Wheel). Instants are written as Thursday 2:00 AM US

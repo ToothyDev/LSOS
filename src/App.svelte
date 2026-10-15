@@ -8,7 +8,6 @@
   import SaveStatus from './components/SaveStatus.svelte'
   import Settings from './components/Settings.svelte'
   import Timers from './components/Timers.svelte'
-  import NewsBar from './components/NewsBar.svelte'
   import Weekly from './components/Weekly.svelte'
   import TabBar from './components/ui/TabBar.svelte'
   import { GOODS } from './data/nightclub'
@@ -69,7 +68,6 @@
   <div class="window">
     <ClockBar title={kit ? 'Component kit' : TABS.find((tab) => tab.id === active)!.label} />
     <SaveStatus />
-    <NewsBar week={WEEK} owned={store.state.properties} now={clocks.now} />
 
     <main>
       {#if kit && kitModule}

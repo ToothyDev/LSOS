@@ -2,8 +2,17 @@ import { describe, expect, it } from 'vitest'
 import { PROPERTIES } from '../data/properties'
 import { WEEK } from '../data/weekly'
 import { setOwned } from './properties'
-import { discountText, newsItems, weekProblems, weekStatus, type Week } from './weekly'
+import {
+  discountText,
+  discountTiers,
+  sortMultipliers,
+  timeLeftText,
+  weekProblems,
+  weekStatus,
+  type Week,
+} from './weekly'
 
+const HOUR = 60 * 60_000
 const IDS = PROPERTIES.map((property) => property.id)
 
 const SAMPLE: Week = {
@@ -37,19 +46,26 @@ describe('weekStatus', () => {
   })
 })
 
-describe('newsItems', () => {
-  it('puts the highest multipliers first, then the gifts', () => {
-    expect(newsItems(SAMPLE, {}).map((item) => item.text)).toEqual([
-      '3x GTA$ and RP: Slasher',
-      '2x GTA$ and RP: Dispatch Work',
-      '2x GTA$: Bounties',
-      'Free T-shirt',
+describe('sortMultipliers', () => {
+  it('puts the highest first', () => {
+    expect(sortMultipliers(SAMPLE.multipliers, {}).map((m) => m.activity)).toEqual([
+      'Slasher',
+      'Dispatch Work',
+      'Bounties',
     ])
   })
 
-  it('puts multipliers on owned properties ahead of everything', () => {
+  it('puts the ones paid through an owned property ahead of everything', () => {
     const owned = setOwned({}, 'bail-office', true)
-    expect(newsItems(SAMPLE, owned)[0]).toEqual({ text: '2x GTA$: Bounties', owned: true })
+    expect(sortMultipliers(SAMPLE.multipliers, owned)[0]?.activity).toBe('Bounties')
+  })
+})
+
+describe('timeLeftText', () => {
+  it('shows days and hours, or hours only in the last day', () => {
+    expect(timeLeftText((6 * 24 + 16) * HOUR + 59 * 60_000)).toBe('6d 16h left')
+    expect(timeLeftText(3 * HOUR + 1)).toBe('3h left')
+    expect(timeLeftText(-5)).toBe('0h left')
   })
 })
 
@@ -57,6 +73,25 @@ describe('discountText', () => {
   it('says Free at 100%', () => {
     expect(discountText({ kind: 'weapon', item: 'Bat', percent: 100 })).toBe('Free')
     expect(discountText({ kind: 'vehicle', item: 'Car', percent: 40 })).toBe('40% off')
+  })
+})
+
+describe('discountTiers', () => {
+  it('groups one kind by percentage, highest first', () => {
+    expect(
+      discountTiers(
+        [
+          { kind: 'vehicle', item: 'A', percent: 30 },
+          { kind: 'weapon', item: 'Bat', percent: 100 },
+          { kind: 'vehicle', item: 'B', percent: 40 },
+          { kind: 'vehicle', item: 'C', percent: 30 },
+        ],
+        'vehicle',
+      ),
+    ).toEqual([
+      { percent: 40, items: ['B'] },
+      { percent: 30, items: ['A', 'C'] },
+    ])
   })
 })
 
