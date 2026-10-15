@@ -14,6 +14,8 @@ export interface SafeState {
   sinceMs: number
   /** Popularity in percent, for a safe whose payout depends on it. */
   popularity?: number
+  /** Money Fronts safe only: heat in percent by front property id (lib/fronts.ts). */
+  heat?: Record<string, number>
 }
 
 /** Saved safes by property id. */
@@ -196,12 +198,25 @@ export function parseSafes(data: unknown): SafesById | string {
     const state: SafeState = { money: entry.money, sinceMs: entry.sinceMs }
     if (entry.popularity !== undefined) {
       const { popularity } = entry
-      if (typeof popularity !== 'number' || !(popularity >= 0 && popularity <= 100)) return bad
+      if (!isPercent(popularity)) return bad
       state.popularity = popularity
+    }
+    if (entry.heat !== undefined) {
+      if (!isRecord(entry.heat)) return bad
+      const heat: Record<string, number> = {}
+      for (const [front, value] of Object.entries(entry.heat)) {
+        if (!isPercent(value)) return bad
+        heat[front] = value
+      }
+      state.heat = heat
     }
     result[id] = state
   }
   return result
+}
+
+function isPercent(value: unknown): value is number {
+  return typeof value === 'number' && value >= 0 && value <= 100
 }
 
 function isAmount(value: unknown): value is number {

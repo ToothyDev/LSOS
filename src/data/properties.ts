@@ -43,6 +43,13 @@ import {
   NIGHTCLUB_CHECKED,
   NIGHTCLUB_SOURCE,
 } from './nightclub'
+import {
+  FRONTS,
+  FRONTS_CHECKED,
+  FRONTS_SOURCE,
+  MISSIONS_UPGRADE,
+  WAREHOUSE_SIZE_UPGRADE,
+} from './fronts'
 import { ARCADE_SLOTS, SAFES, SAFES_CHECKED } from './safes'
 
 // Equipment and staff speed up production and raise the value; equipment also makes supplies
@@ -83,14 +90,26 @@ export const PROPERTIES: readonly Property[] = [
       'Acid Product: a unique name adds 5% to the sale value.',
     checked: '2026-10-15',
   },
-  // Only owned or not: owning either unlocks Cargo and Shipments in the nightclub (issue #7).
+  // Owning either unlocks Cargo and Shipments in the nightclub (issue #7). The largest warehouse
+  // owned sets what it adds to the Money Fronts safe (issue #11).
   {
     id: 'special-cargo',
     label: 'Special Cargo Warehouse',
-    upgrades: [],
+    upgrades: [
+      {
+        kind: 'choice',
+        id: WAREHOUSE_SIZE_UPGRADE,
+        label: 'Largest owned',
+        options: [
+          { id: 'large', label: 'Large' },
+          { id: 'medium', label: 'Medium' },
+          { id: 'small', label: 'Small' },
+        ],
+      },
+    ],
     card: false,
-    source: NIGHTCLUB_SOURCE,
-    checked: NIGHTCLUB_CHECKED,
+    source: `${NIGHTCLUB_SOURCE} ${FRONTS_SOURCE}`,
+    checked: FRONTS_CHECKED,
   },
   {
     id: 'hangar',
@@ -177,6 +196,39 @@ export const PROPERTIES: readonly Property[] = [
     source: SAFES.find((safe) => safe.propertyId === 'salvage-yard')!.source,
     checked: SAFES_CHECKED,
   },
+  // Money Fronts (issue #11, decision 018): the Car Wash holds the safe, all three have heat.
+  ...FRONTS.map((front): Property => ({
+    id: front.propertyId,
+    label: front.label,
+    // Mr. Faber jobs count for every front.
+    upgrades: [
+      {
+        kind: 'count',
+        id: MISSIONS_UPGRADE,
+        label: 'Laundering missions done (15 doubles its pay)',
+        default: 0,
+      },
+    ],
+    card: false,
+    source: FRONTS_SOURCE,
+    checked: FRONTS_CHECKED,
+  })),
+  // Only owned or not: each adds to the Money Fronts safe (issue #11).
+  ...(
+    [
+      ['vehicle-warehouse', 'Vehicle Warehouse'],
+      ['auto-shop', 'Auto Shop'],
+      ['bail-office', 'Bail Enforcement Office'],
+      ['mckenzie-hangar', 'McKenzie Field Hangar'],
+    ] as const
+  ).map(([id, label]): Property => ({
+    id,
+    label,
+    upgrades: [],
+    card: false,
+    source: FRONTS_SOURCE,
+    checked: FRONTS_CHECKED,
+  })),
 ]
 
 function mc(id: string, label: string): Property {

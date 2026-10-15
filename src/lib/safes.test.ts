@@ -261,6 +261,7 @@ describe('parseSafes', () => {
   it('keeps valid entries', () => {
     const data = {
       nightclub: { money: 10, sinceMs: 5, popularity: 50 },
+      'car-wash': { money: 0, sinceMs: 0, heat: { 'car-wash': 100, helitours: 0 } },
       arcade: { money: 0, sinceMs: 0 },
     }
     expect(parseSafes(data)).toEqual(data)
@@ -271,6 +272,10 @@ describe('parseSafes', () => {
     expect(parseSafes({ arcade: { money: -1, sinceMs: 0 } })).toBeTypeOf('string')
     expect(parseSafes({ arcade: { money: 1 } })).toBeTypeOf('string')
     expect(parseSafes({ nightclub: { money: 1, sinceMs: 0, popularity: 120 } })).toBeTypeOf(
+      'string',
+    )
+    expect(parseSafes({ 'car-wash': { money: 1, sinceMs: 0, heat: [] } })).toBeTypeOf('string')
+    expect(parseSafes({ 'car-wash': { money: 1, sinceMs: 0, heat: { x: -5 } } })).toBeTypeOf(
       'string',
     )
   })
