@@ -22,7 +22,8 @@ export function emptyBars(): Bars {
 
 /**
  * The rate for exactly the upgrades bought, or undefined if the data has none for that
- * combination. Upgrades no rate mentions (none yet) are ignored.
+ * combination, split by what the staff work on (issue #33). Upgrades no rate mentions (none
+ * yet) are ignored.
  */
 export function matchingRate(
   production: Production,
@@ -34,9 +35,35 @@ export function matchingRate(
     .filter((upgrade) => relevant.has(upgrade.id))
     .filter((upgrade) => upgradeValue(owned, property.id, upgrade) === true)
     .map((upgrade) => upgrade.id)
-  return production.rates.find(
+  const rate = production.rates.find(
     (r) => r.upgrades.length === bought.length && bought.every((id) => r.upgrades.includes(id)),
   )
+  return rate && withStaffSplit(rate, production, owned, property)
+}
+
+/** `rate` with the stock share the staff choice gives, and its supply use marked estimated. */
+function withStaffSplit(
+  rate: ProductionRate,
+  production: Production,
+  owned: OwnedProperties,
+  property: Property,
+): ProductionRate {
+  const split = production.staffSplit
+  const upgrade = split && property.upgrades.find((u) => u.id === split.upgrade)
+  if (!split || !upgrade) return rate
+  const share = split.stockShare[String(upgradeValue(owned, property.id, upgrade))]
+  if (share === undefined || share === 1) return rate
+  const fields = rate.estimate?.fields ?? []
+  return {
+    ...rate,
+    stockShare: share,
+    estimate: {
+      fields: fields.includes('unitsPerFullSupplies')
+        ? fields
+        : [...fields, 'unitsPerFullSupplies'],
+      how: rate.estimate ? `${rate.estimate.how} ${split.how}` : split.how,
+    },
+  }
 }
 
 /** `matchingRate` if it is complete enough to run production: its supply use is known. */
@@ -68,7 +95,7 @@ export function estimatedParts(rate: ProductionRate | undefined): {
 function perUnit(production: Production, rate: KnownRate) {
   return {
     ms: rate.minutesPerUnit * MINUTE_MS,
-    stock: 100 / production.maxUnits,
+    stock: (100 / production.maxUnits) * (rate.stockShare ?? 1),
     supplies: 100 / rate.unitsPerFullSupplies,
   }
 }
@@ -78,7 +105,8 @@ function timeLeft(bars: Bars, production: Production, rate: KnownRate) {
   const unit = perUnit(production, rate)
   return {
     unit,
-    untilFull: ((100 - bars.stock) / unit.stock) * unit.ms,
+    // Staff on research only never fill the stock.
+    untilFull: unit.stock === 0 ? Infinity : ((100 - bars.stock) / unit.stock) * unit.ms,
     untilOut: ((bars.supplies ?? 0) / unit.supplies) * unit.ms,
   }
 }

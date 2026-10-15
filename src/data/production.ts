@@ -19,8 +19,16 @@ export interface ProductionRate {
   minutesPerUnit: number
   /** Sale value of one unit sold nearby, in dollars. */
   unitValue: number
-  /** Units one full supply bar makes. Missing while neither a source nor an estimate gives it. */
+  /**
+   * Units one full supply bar makes (with staff on manufacturing only, where staff can be
+   * split). Missing while neither a source nor an estimate gives it.
+   */
   unitsPerFullSupplies?: number
+  /**
+   * Share of the work that makes stock, 1 if left out: the rest goes to research, which uses
+   * supplies just the same but makes no stock (`StaffSplit`).
+   */
+  stockShare?: number
   /** Play time per unit while a production boost runs, for businesses that have one. */
   boostedMinutesPerUnit?: number
   /** Set when some values are estimates rather than sourced (decision 013). */
@@ -44,6 +52,8 @@ export interface Production {
   raids?: false
   /** A production boost the player can start in the business. */
   boost?: ProductionBoost
+  /** A choice of what the staff work on, e.g. manufacturing or research. */
+  staffSplit?: StaffSplit
   rates: readonly ProductionRate[]
   source: string
   checked: string
@@ -57,6 +67,19 @@ export interface OwnedBonus {
   label: string
   /** E.g. 0.35 for +35%. */
   bonus: number
+  source: string
+}
+
+/**
+ * What the staff work on, picked by a choice upgrade: the stock share per option (options not
+ * listed make stock only). Supply use per unit of work is the same for every option.
+ */
+export interface StaffSplit {
+  /** The choice upgrade in `PROPERTIES` that picks it. */
+  upgrade: string
+  stockShare: Readonly<Record<string, number>>
+  /** How the supply use was derived, shown to the user (decision 013). */
+  how: string
   source: string
 }
 
@@ -200,7 +223,18 @@ export const PRODUCTION: readonly Production[] = [
     unitName: 'units',
     maxUnits: 100,
     farSale: { bonus: 0.5, label: 'in Los Santos' },
-    // Staff on manufacturing only; research and the split come with issue #33.
+    // Rates with staff on manufacturing only; the split halves them (issue #33).
+    staffSplit: {
+      upgrade: 'staff-assignment',
+      stockShare: { both: 0.5, research: 0 },
+      how:
+        'Research uses supplies as fast as manufacturing, so supplies last as long whatever ' +
+        'the staff work on, and Both makes half the stock from them.',
+      source:
+        'gta.wiki, Disruption Logistics: Profits (split between production and research, 1 ' +
+        'unit every 20 / 17 / 14 minutes, half the manufacturing speed). gta.wiki, Bunker ' +
+        'Research: research makes no stock.',
+    },
     rates: [
       { upgrades: [], minutesPerUnit: 10, unitValue: 5_000, unitsPerFullSupplies: 10 },
       { upgrades: ['staff'], minutesPerUnit: 8.5, unitValue: 6_000, unitsPerFullSupplies: 10 },
