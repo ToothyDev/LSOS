@@ -20,7 +20,8 @@ emptying.
 - **Sourced game data.** Rates and values come from sources such as gta.wiki. Where none exists
   for your upgrades, LSOS uses a best estimate and labels those numbers "(est.)".
 - **Overview for a second screen.** One page lists what is ready now and what comes next across
-  every tracker, soonest first, with the money waiting. Browser notifications are optional.
+  every tracker, soonest first, with the money waiting. Mark things done right there (sold,
+  collected, spun), and get optional alerts as pop-ups or browser notifications.
 - **Resync anytime.** When an estimate drifts from what the game shows, click the value and type
   the real one.
 - **Weekly events** (bonuses, discounts) come from a data file in this repo that's updated weekly.
