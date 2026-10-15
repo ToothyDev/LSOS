@@ -51,8 +51,7 @@
       propertyId: 'sample-a',
       unitName: 'crates',
       maxUnits: 10,
-      farSaleBonus: 0.5,
-      farSaleLabel: 'far away',
+      farSale: { bonus: 0.5, label: 'far away' },
       rates: [
         { upgrades: [], minutesPerUnit: 30, unitValue: 10_000, unitsPerFullSupplies: 4 },
         { upgrades: ['equipment'], minutesPerUnit: 20, unitValue: 12_000 },

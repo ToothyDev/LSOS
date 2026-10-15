@@ -22,18 +22,21 @@
     now: number
     /** Called with the corrected bars; the tracker stores them as of now (decision 003). */
     onresync: (bars: Bars) => void
+    /** False for a business that cannot be raided: no "Raided" button. */
+    raids?: boolean
   }
 
-  let { bars: stored, now, onresync }: Props = $props()
+  let { bars: stored, now, onresync, raids = true }: Props = $props()
 
   // The bars as of now, with an arrived delivery filled in. Every change starts from these.
   const bars = $derived(settleBars(stored, now, SUPPLY_PURCHASE.fillsTo))
   const dueAt = $derived(bars.suppliesDueAt)
 
   const events = $derived(
-    Object.values(BUSINESS_EVENTS).filter(
-      (event) => bars.supplies !== undefined || !event.empties.includes('supplies'),
-    ),
+    Object.entries(BUSINESS_EVENTS)
+      .filter(([id]) => raids || id !== 'raided')
+      .map(([, event]) => event)
+      .filter((event) => bars.supplies !== undefined || !event.empties.includes('supplies')),
   )
 
   // One undo for the whole business: the last edit, Full or event, whichever bars it changed.

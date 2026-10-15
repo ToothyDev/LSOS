@@ -1,6 +1,6 @@
 // Business production: stock rises on play time while supplies last (issue #6, decision 012).
 // Pure logic: play time and wall-clock time come in as arguments (decision 003).
-import type { Production, ProductionRate } from '../data/production'
+import type { Production, ProductionBoost, ProductionRate } from '../data/production'
 import type { Property } from '../data/properties'
 import { isOwned, upgradeValue, type OwnedProperties } from './properties'
 import { settleBars, type Bars } from './resync'
@@ -105,7 +105,31 @@ export interface Forecast {
   suppliesOutInMs: number | null
 }
 
-export function forecast(bars: Bars, production: Production, rate: KnownRate): Forecast {
+/**
+ * What comes first, in play time. With `boostUnitsLeft`, that many units are made at the
+ * boosted speed first (the rate must have one).
+ */
+export function forecast(
+  bars: Bars,
+  production: Production,
+  rate: KnownRate,
+  boostUnitsLeft = 0,
+): Forecast {
+  if (boostUnitsLeft <= 0 || rate.boostedMinutesPerUnit === undefined) {
+    return plainForecast(bars, production, rate)
+  }
+  const fast: KnownRate = { ...rate, minutesPerUnit: rate.boostedMinutesPerUnit }
+  const boostMs = boostUnitsLeft * fast.minutesPerUnit * MINUTE_MS
+  const boosted = plainForecast(bars, production, fast)
+  if ((boosted.fullInMs ?? boosted.suppliesOutInMs ?? 0) <= boostMs) return boosted
+  const rest = plainForecast(produce(bars, production, fast, boostMs), production, rate)
+  return {
+    fullInMs: rest.fullInMs === null ? null : rest.fullInMs + boostMs,
+    suppliesOutInMs: rest.suppliesOutInMs === null ? null : rest.suppliesOutInMs + boostMs,
+  }
+}
+
+function plainForecast(bars: Bars, production: Production, rate: KnownRate): Forecast {
   const { untilFull, untilOut } = timeLeft(bars, production, rate)
   if (untilFull <= 0) return { fullInMs: 0, suppliesOutInMs: null }
   return {
@@ -120,21 +144,110 @@ export function stockUnits(bars: Bars, production: Production): number {
   return Math.floor((bars.stock * production.maxUnits) / 100 + 1e-6)
 }
 
-/** Sale value of the stock, nearby and far. */
+/** What bought upgrades add to the sale value, e.g. 0.05 for a named product. */
+export function valueBonus(
+  production: Production,
+  owned: OwnedProperties,
+  property: Property,
+): number {
+  const bonus = production.valueBonus
+  if (!bonus) return 0
+  const upgrade = property.upgrades.find((u) => u.id === bonus.upgrade)
+  return upgrade && upgradeValue(owned, property.id, upgrade) === true ? bonus.bonus : 0
+}
+
+/** Sale value of the stock nearby, and far if a far sale pays more (null if not). */
 export function stockValue(
   bars: Bars,
   production: Production,
   rate: ProductionRate,
-): { nearby: number; far: number } {
-  const nearby = stockUnits(bars, production) * rate.unitValue
-  return { nearby, far: nearby * (1 + production.farSaleBonus) }
+  bonus = 0,
+): { nearby: number; far: number | null } {
+  // The game pays whole dollars per unit: 5% on $2,095 is $2,199 (gta.wiki, Acid Product).
+  const nearby = stockUnits(bars, production) * Math.floor(rate.unitValue * (1 + bonus))
+  const far = production.farSale ? nearby * (1 + production.farSale.bonus) : null
+  return { nearby, far }
+}
+
+/** A production boost the user started: when (wall clock) and the units it still speeds up. */
+export interface Boost {
+  startedAt: number
+  unitsLeft: number
+}
+
+/** The last boost of each business by property id, kept after it ends for the daily limit. */
+export type BoostsById = Record<string, Boost>
+
+const DAY_MS = 24 * 60 * MINUTE_MS
+
+/** A boost started at `now`. */
+export function startBoost(boost: ProductionBoost, now: number): Boost {
+  return { startedAt: now, unitsLeft: boost.units }
+}
+
+/** Whether the boost speeds up production at wall-clock time `now`. */
+export function boostRunning(
+  boost: Boost | undefined,
+  data: ProductionBoost | undefined,
+  now: number,
+): boolean {
+  return (
+    !!boost &&
+    !!data &&
+    boost.unitsLeft > 0 &&
+    now >= boost.startedAt &&
+    now < boost.startedAt + data.maxRealMs
+  )
+}
+
+/** When the next boost can be started (wall clock): the first daily reset after the last one. */
+export function nextBoostAt(boost: Boost | undefined, data: ProductionBoost): number {
+  if (!boost) return -Infinity
+  const day = new Date(boost.startedAt)
+  const reset = Date.UTC(
+    day.getUTCFullYear(),
+    day.getUTCMonth(),
+    day.getUTCDate(),
+    data.resetUtcHour,
+  )
+  return reset > boost.startedAt ? reset : reset + DAY_MS
 }
 
 /**
- * Counts a stretch of play time for every owned business with a known rate. Supplies bought
- * that arrived during the stretch count from their arrival: the stretch is taken to end at
- * `now` (wall clock), which is exact for normal ticks. Returns `businesses` itself if nothing
- * changed, so an idle tick does not trigger a save.
+ * `ms` of production starting at wall-clock time `at`, boosted while the boost runs. The boost
+ * counts the units it made.
+ */
+function step(
+  bars: Bars,
+  production: Production,
+  rate: KnownRate,
+  boost: Boost | undefined,
+  ms: number,
+  at: number,
+): { bars: Bars; boost: Boost | undefined } {
+  const boosted = rate.boostedMinutesPerUnit
+  if (!boost || boosted === undefined || !boostRunning(boost, production.boost, at)) {
+    return { bars: produce(bars, production, rate, ms), boost }
+  }
+  const fast: KnownRate = { ...rate, minutesPerUnit: boosted }
+  const boostMs = Math.min(ms, boost.unitsLeft * boosted * MINUTE_MS)
+  const after = produce(bars, production, fast, boostMs)
+  if (after === bars) return { bars, boost }
+  const made = ((after.stock - bars.stock) * production.maxUnits) / 100
+  // The small margin ends the boost despite floating-point leftovers.
+  const unitsLeft = boost.unitsLeft - made < 1e-6 ? 0 : boost.unitsLeft - made
+  return {
+    bars: produce(after, production, rate, ms - boostMs),
+    boost: { ...boost, unitsLeft },
+  }
+}
+
+/**
+ * Counts a stretch of play time for every owned business with a known rate. The stretch is
+ * taken to end at `now` (wall clock), which is exact for normal ticks: supplies bought that
+ * arrived during it count from their arrival, and a boost runs from its start to its end.
+ * Returns `businesses` and `boosts` themselves if nothing changed, so an idle tick does not
+ * trigger a save.
  */
 export function produceAll(
   businesses: BusinessBarsById,
@@ -144,20 +257,32 @@ export function produceAll(
   playMs: number,
   now: number,
   fillsTo: number,
-): BusinessBarsById {
-  let next = businesses
+  boosts: BoostsById = {},
+): { businesses: BusinessBarsById; boosts: BoostsById } {
+  let next = { businesses, boosts }
   for (const production of productions) {
     const property = catalog.find((p) => p.id === production.propertyId)
     if (!property || !isOwned(owned, property.id)) continue
     const rate = rateFor(production, owned, property)
     if (!rate) continue
-    let bars = businesses[property.id] ?? emptyBars()
-    const due = bars.suppliesDueAt
-    const afterDelivery = due === undefined ? 0 : Math.min(playMs, Math.max(0, now - due))
-    bars = produce(bars, production, rate, playMs - afterDelivery)
+    const id = property.id
+    let bars = businesses[id] ?? emptyBars()
+    let boost = boosts[id]
+    // Where something changes during the stretch, in wall-clock time.
+    const start = now - playMs
+    const ends = boost && production.boost ? boost.startedAt + production.boost.maxRealMs : 0
+    const cuts = [bars.suppliesDueAt, boost?.startedAt, boost && ends]
+      .filter((t): t is number => t !== undefined && t > start && t < now)
+      .sort((a, b) => a - b)
+    let at = start
+    for (const cut of [...cuts, now]) {
+      bars = settleBars(bars, at, fillsTo)
+      ;({ bars, boost } = step(bars, production, rate, boost, cut - at, at))
+      at = cut
+    }
     bars = settleBars(bars, now, fillsTo)
-    bars = produce(bars, production, rate, afterDelivery)
-    if (bars !== businesses[property.id]) next = { ...next, [property.id]: bars }
+    if (bars !== businesses[id]) next = { ...next, businesses: { ...next.businesses, [id]: bars } }
+    if (boost !== boosts[id] && boost) next = { ...next, boosts: { ...next.boosts, [id]: boost } }
   }
   return next
 }
@@ -194,4 +319,23 @@ function isPercent(value: unknown): value is number {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+/** Checks saved boosts. Returns an error message if the shape is wrong. */
+export function parseBoosts(data: unknown): BoostsById | string {
+  if (!isRecord(data)) return 'The boosts section is missing.'
+  const result: BoostsById = {}
+  for (const [id, entry] of Object.entries(data)) {
+    if (
+      !isRecord(entry) ||
+      typeof entry.startedAt !== 'number' ||
+      !Number.isFinite(entry.startedAt) ||
+      typeof entry.unitsLeft !== 'number' ||
+      !(entry.unitsLeft >= 0)
+    ) {
+      return `The saved boost of business "${id}" is not readable.`
+    }
+    result[id] = { startedAt: entry.startedAt, unitsLeft: entry.unitsLeft }
+  }
+  return result
 }

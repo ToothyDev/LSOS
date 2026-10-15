@@ -11,7 +11,15 @@
   import type { Production } from '../data/production'
   import type { Property } from '../data/properties'
   import { applyOrder, cardAt, moveId, saveOrder, swapAt, type CardBox } from '../lib/order'
-  import { emptyBars, matchingRate, rateFor, type BusinessBarsById } from '../lib/production'
+  import {
+    emptyBars,
+    matchingRate,
+    rateFor,
+    valueBonus,
+    type Boost,
+    type BoostsById,
+    type BusinessBarsById,
+  } from '../lib/production'
   import { ownedProperties, upgradeValue, type OwnedProperties } from '../lib/properties'
   import type { GoodsStock } from '../lib/nightclub'
   import type { Bars } from '../lib/resync'
@@ -33,6 +41,9 @@
     /** Wall-clock time, for supply deliveries. */
     now?: number
     onresync?: (propertyId: string, bars: Bars) => void
+    /** The last production boost by property id (issue #9). */
+    boosts?: BoostsById
+    onboost?: (propertyId: string, boost: Boost | undefined) => void
     /** Saved card order: property ids (issue #30). */
     order?: readonly string[]
     onorder?: (order: string[]) => void
@@ -50,6 +61,8 @@
     businesses = {},
     now = 0,
     onresync = () => {},
+    boosts = {},
+    onboost = () => {},
     order = [],
     onorder = () => {},
     goods = [],
@@ -241,6 +254,9 @@
                 {now}
                 editing={editing === property.id}
                 onresync={(bars) => onresync(property.id, bars)}
+                bonus={valueBonus(production, owned, property)}
+                boost={boosts[property.id]}
+                onboost={(boost) => onboost(property.id, boost)}
               />
             {/if}
             {#if warehouse}

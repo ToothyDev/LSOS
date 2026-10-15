@@ -7,10 +7,15 @@ import {
   matchingRate,
   parseBusinessBars,
   produce,
+  boostRunning,
+  nextBoostAt,
+  parseBoosts,
   produceAll,
   rateFor,
   stockUnits,
   stockValue,
+  valueBonus,
+  type Boost,
   type KnownRate,
 } from './production'
 import type { OwnedProperties } from './properties'
@@ -20,6 +25,7 @@ const MIN = 60_000
 
 const bunker = PRODUCTION.find((p) => p.propertyId === 'bunker')!
 const cocaine = PRODUCTION.find((p) => p.propertyId === 'mc-cocaine')!
+const acid = PRODUCTION.find((p) => p.propertyId === 'acid-lab')!
 const property = (id: string) => PROPERTIES.find((p) => p.id === id)!
 
 function owning(id: string, upgrades: Record<string, boolean> = {}): OwnedProperties {
@@ -194,17 +200,18 @@ describe('produceAll', () => {
       bunker: { stock: 0, supplies: 100 },
       'mc-cocaine': { stock: 0, supplies: 100 },
     }
-    const next = produceAll(businesses, PROPERTIES, PRODUCTION, owned, 7 * MIN, 0, 100)
+    const next = produceAll(businesses, PROPERTIES, PRODUCTION, owned, 7 * MIN, 0, 100).businesses
     expect(next).toEqual({ ...businesses, bunker: { stock: 1, supplies: 95 } })
   })
 
   it('returns the same object when nothing changed', () => {
     const businesses = { bunker: { stock: 50, supplies: 0 } }
-    expect(produceAll(businesses, PROPERTIES, PRODUCTION, owned, 7 * MIN, 0, 100)).toBe(businesses)
+    const next = produceAll(businesses, PROPERTIES, PRODUCTION, owned, 7 * MIN, 0, 100)
+    expect(next.businesses).toBe(businesses)
   })
 
   it('starts a business without saved bars empty', () => {
-    expect(produceAll({}, PROPERTIES, PRODUCTION, owned, 7 * MIN, 0, 100)).toEqual({
+    expect(produceAll({}, PROPERTIES, PRODUCTION, owned, 7 * MIN, 0, 100).businesses).toEqual({
       bunker: { stock: 0, supplies: 0 },
     })
   })
@@ -213,13 +220,122 @@ describe('produceAll', () => {
     const businesses = { bunker: { stock: 0, supplies: 0, suppliesDueAt: 1000 * MIN } }
     // 14 minutes of play ending 7 minutes after the delivery: only the last 7 produce.
     const next = produceAll(businesses, PROPERTIES, PRODUCTION, owned, 14 * MIN, 1007 * MIN, 100)
-    expect(next.bunker).toEqual({ stock: 1, supplies: 95 })
+    expect(next.businesses.bunker).toEqual({ stock: 1, supplies: 95 })
   })
 
   it('leaves a delivery still on its way', () => {
     const businesses = { bunker: { stock: 0, supplies: 10, suppliesDueAt: 1000 * MIN } }
     const next = produceAll(businesses, PROPERTIES, PRODUCTION, owned, 7 * MIN, 999 * MIN, 100)
-    expect(next.bunker).toEqual({ stock: 1, supplies: 5, suppliesDueAt: 1000 * MIN })
+    expect(next.businesses.bunker).toEqual({ stock: 1, supplies: 5, suppliesDueAt: 1000 * MIN })
+  })
+})
+
+describe('acid lab', () => {
+  const lab = property('acid-lab')
+  const upgraded = owning('acid-lab', { equipment: true })
+  // With equipment: 1.5 minutes per unit, 45 s boosted; 160 units (0.625% each), 100 per bar.
+  const rate = rateFor(acid, upgraded, lab)!
+  const run = (bars: Bars, boost: Boost | undefined, playMs: number, now: number) =>
+    produceAll({ 'acid-lab': bars }, PROPERTIES, PRODUCTION, upgraded, playMs, now, 100, {
+      ...(boost && { 'acid-lab': boost }),
+    })
+
+  it('has a rate with and without equipment, named or not', () => {
+    expect(rateFor(acid, owning('acid-lab', { named: true }), lab)?.unitValue).toBe(1_485)
+    expect(rate).toMatchObject({ unitValue: 2_095, unitsPerFullSupplies: 100 })
+  })
+
+  it('matches the full values on the wiki, named and not', () => {
+    const full = { stock: 100 }
+    expect(stockValue(full, acid, rate)).toEqual({ nearby: 335_200, far: null })
+    const named = owning('acid-lab', { equipment: true, named: true })
+    expect(valueBonus(acid, named, lab)).toBe(0.05)
+    expect(stockValue(full, acid, rate, valueBonus(acid, named, lab)).nearby).toBe(351_840)
+    const plain = rateFor(acid, owning('acid-lab'), lab)!
+    expect(stockValue(full, acid, plain, 0.05).nearby).toBe(249_440)
+    expect(valueBonus(acid, upgraded, lab)).toBe(0)
+  })
+
+  it('fills in the times the wiki gives, without and with the upgrade', () => {
+    const plain = rateFor(acid, owning('acid-lab'), lab)!
+    // Supplies for 50 units, 100 with equipment; the wiki times assume enough supplies.
+    expect(plain.minutesPerUnit * 160).toBe(6 * 60)
+    expect(rate.minutesPerUnit * 160).toBe(4 * 60)
+  })
+
+  it('makes the boosted units at the boosted speed, then the rest at the normal one', () => {
+    const boost = { startedAt: 0, unitsLeft: 80 }
+    // 80 units in 60 minutes boosted, then 20 in 30 minutes until supplies run out.
+    const next = run({ stock: 0, supplies: 100 }, boost, 90 * MIN, 90 * MIN)
+    expect(next.businesses['acid-lab']).toEqual({ stock: 62.5, supplies: 0 })
+    expect(next.boosts['acid-lab']).toEqual({ startedAt: 0, unitsLeft: 0 })
+  })
+
+  it('ends the boost after 24 real hours', () => {
+    const boost = { startedAt: 0, unitsLeft: 80 }
+    // 30 minutes boosted (40 units), then 30 minutes not (20 units).
+    const next = run({ stock: 0, supplies: 100 }, boost, 60 * MIN, 24 * 60 * MIN + 30 * MIN)
+    expect(next.businesses['acid-lab']?.stock).toBeCloseTo(37.5, 9)
+    expect(next.boosts['acid-lab']?.unitsLeft).toBeCloseTo(40, 9)
+  })
+
+  it('starts the boost when it was started', () => {
+    const boost = { startedAt: 30 * MIN, unitsLeft: 80 }
+    // 30 minutes not boosted (20 units), then 30 minutes boosted (40 units).
+    const next = run({ stock: 0, supplies: 100 }, boost, 60 * MIN, 60 * MIN)
+    expect(next.businesses['acid-lab']?.stock).toBeCloseTo(37.5, 9)
+    expect(next.boosts['acid-lab']?.unitsLeft).toBeCloseTo(40, 9)
+  })
+
+  it('keeps the boost while nothing is made', () => {
+    const boosts = { 'acid-lab': { startedAt: 0, unitsLeft: 80 } }
+    const businesses = { 'acid-lab': { stock: 10, supplies: 0 } }
+    const next = produceAll(businesses, PROPERTIES, PRODUCTION, upgraded, MIN, MIN, 100, boosts)
+    expect(next).toEqual({ businesses, boosts })
+    expect(next.boosts).toBe(boosts)
+  })
+
+  it('forecasts with the boost first', () => {
+    expect(forecast({ stock: 0, supplies: 100 }, acid, rate, 80)).toEqual({
+      fullInMs: null,
+      suppliesOutInMs: 90 * MIN,
+    })
+    expect(forecast({ stock: 50, supplies: 100 }, acid, rate, 80).fullInMs).toBe(60 * MIN)
+    expect(forecast({ stock: 50, supplies: 100 }, acid, rate).fullInMs).toBe(120 * MIN)
+  })
+
+  it('runs a boost until its units are made or 24 real hours pass', () => {
+    const boost = { startedAt: 1_000, unitsLeft: 5 }
+    expect(boostRunning(boost, acid.boost, 999)).toBe(false)
+    expect(boostRunning(boost, acid.boost, 1_000)).toBe(true)
+    expect(boostRunning(boost, acid.boost, 1_000 + 24 * 60 * MIN)).toBe(false)
+    expect(boostRunning({ ...boost, unitsLeft: 0 }, acid.boost, 2_000)).toBe(false)
+  })
+
+  it('allows the next boost after the next 6:00 UTC', () => {
+    const at = (iso: string) => ({ startedAt: Date.parse(iso), unitsLeft: 80 })
+    expect(nextBoostAt(undefined, acid.boost!)).toBe(-Infinity)
+    expect(nextBoostAt(at('2026-10-15T05:59:00Z'), acid.boost!)).toBe(
+      Date.parse('2026-10-15T06:00:00Z'),
+    )
+    expect(nextBoostAt(at('2026-10-15T06:00:00Z'), acid.boost!)).toBe(
+      Date.parse('2026-10-16T06:00:00Z'),
+    )
+  })
+})
+
+describe('parseBoosts', () => {
+  it('reads boosts', () => {
+    const data = { 'acid-lab': { startedAt: 5, unitsLeft: 0 } }
+    expect(parseBoosts(data)).toEqual(data)
+  })
+
+  it.each([
+    ['not an object', [], 'missing'],
+    ['a missing start', { a: { unitsLeft: 5 } }, 'business "a"'],
+    ['units below zero', { a: { startedAt: 0, unitsLeft: -1 } }, 'business "a"'],
+  ])('rejects %s', (_, data, message) => {
+    expect(parseBoosts(data)).toContain(message)
   })
 })
 

@@ -57,6 +57,11 @@
           now={clocks.now}
           onresync={(id, bars) =>
             (store.state.businesses = { ...store.state.businesses, [id]: bars })}
+          boosts={store.state.boosts}
+          onboost={(id, boost) => {
+            const { [id]: _, ...rest } = store.state.boosts
+            store.state.boosts = boost ? { ...rest, [id]: boost } : rest
+          }}
           order={store.state.businessOrder}
           onorder={(order) => (store.state.businessOrder = order)}
           goods={GOODS}

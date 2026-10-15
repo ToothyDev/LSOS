@@ -24,6 +24,7 @@ Svelte 5 + TypeScript + Vite. Public repository.
 | Nightclub warehouse goods                      | `data/nightclub.ts`, `lib/nightclub.ts` (015)     |
 | Business card order (drag, keys)               | `lib/order.ts`, `ui/Panel` `move` (decision 014)  |
 | Safes and nightclub popularity                 | `data/safes.ts`, `lib/safes.ts` (decision 016)    |
+| Acid Lab, production boost                     | `data/production.ts`, `lib/production.ts` (017)   |
 | Theme tokens                                   | `src/app.css` (decision 009)                      |
 | CI, templates                                  | `.github/`                                        |
 | Skills: `handoff`, `finish-pr`; agent: `scout` | `.claude/`                                        |

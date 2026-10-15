@@ -21,6 +21,8 @@ export interface ProductionRate {
   unitValue: number
   /** Units one full supply bar makes. Missing while neither a source nor an estimate gives it. */
   unitsPerFullSupplies?: number
+  /** Play time per unit while a production boost runs, for businesses that have one. */
+  boostedMinutesPerUnit?: number
   /** Set when some values are estimates rather than sourced (decision 013). */
   estimate?: Estimate
 }
@@ -32,16 +34,34 @@ export interface Production {
   unitName: string
   /** Units a full stock bar holds. */
   maxUnits: number
-  /** A far sale pays this much more, e.g. 0.5 for +50%. */
-  farSaleBonus: number
-  /** Where the far sale goes, e.g. "Los Santos". */
-  farSaleLabel: string
+  /** A far sale pays this much more, e.g. 0.5 for +50%; left out if sales pay the same anywhere. */
+  farSale?: { bonus: number; label: string }
+  /** A bought upgrade that raises the sale value, e.g. `{ upgrade: 'named', bonus: 0.05 }`. */
+  valueBonus?: { upgrade: string; bonus: number }
+  /** False if the business cannot be raided. */
+  raids?: false
+  /** A production boost the player can start in the business. */
+  boost?: ProductionBoost
   rates: readonly ProductionRate[]
   source: string
   checked: string
 }
 
+/**
+ * A boost that runs production at `boostedMinutesPerUnit` until it has made `units` or
+ * `maxRealMs` of real time has passed since it started. It can be started once a day.
+ */
+export interface ProductionBoost {
+  units: number
+  maxRealMs: number
+  /** Hour of the day (UTC) when the next boost becomes available. */
+  resetUtcHour: number
+  source: string
+  checked: string
+}
+
 const CHECKED = '2026-10-14'
+const ACID_CHECKED = '2026-10-15'
 
 const MC_SOURCE =
   'gta.wiki, The Open Road: Profits (unit, value and minutes per upgrade level, stock capacity), ' +
@@ -77,8 +97,7 @@ function mc(
     propertyId,
     unitName,
     maxUnits,
-    farSaleBonus: 0.5,
-    farSaleLabel: 'across the county line',
+    farSale: { bonus: 0.5, label: 'across the county line' },
     rates: [
       {
         upgrades: [],
@@ -147,8 +166,7 @@ export const PRODUCTION: readonly Production[] = [
     propertyId: 'bunker',
     unitName: 'units',
     maxUnits: 100,
-    farSaleBonus: 0.5,
-    farSaleLabel: 'in Los Santos',
+    farSale: { bonus: 0.5, label: 'in Los Santos' },
     // Staff on manufacturing only; research and the split come with issue #33.
     rates: [
       { upgrades: [], minutesPerUnit: 10, unitValue: 5_000, unitsPerFullSupplies: 10 },
@@ -171,5 +189,47 @@ export const PRODUCTION: readonly Production[] = [
       'minutes and value per upgrade level, +50% sold in Los Santos) and Profitability When ' +
       'Focused on Production (stock from a full supply bar).',
     checked: CHECKED,
+  },
+  // Acid Lab (issue #9). Only the equipment upgrade changes production: there is no staff or
+  // security upgrade, and the lab cannot be raided. Sales pay the same anywhere.
+  {
+    propertyId: 'acid-lab',
+    unitName: 'units',
+    maxUnits: 160,
+    valueBonus: { upgrade: 'named', bonus: 0.05 },
+    raids: false,
+    boost: {
+      units: 80,
+      maxRealMs: 24 * 60 * 60_000,
+      resetUtcHour: 6,
+      source:
+        'gta.wiki, Acid Product: once per real-time day, resetting at 6 a.m. GMT; "lasts until 80 ' +
+        'units of stock have been produced, or 24 real-time hours have passed".',
+      checked: ACID_CHECKED,
+    },
+    rates: [
+      {
+        upgrades: [],
+        minutesPerUnit: 135 / 60,
+        boostedMinutesPerUnit: 68 / 60,
+        unitValue: 1_485,
+        unitsPerFullSupplies: 50,
+      },
+      {
+        upgrades: ['equipment'],
+        minutesPerUnit: 90 / 60,
+        boostedMinutesPerUnit: 45 / 60,
+        unitValue: 2_095,
+        unitsPerFullSupplies: 100,
+      },
+    ],
+    source:
+      'gta.wiki, Acid Product: 160 units; seconds and value per unit with and without the ' +
+      'equipment upgrade, boosted and not; 2 units of supplies per unit without the upgrade, of ' +
+      '100 in a full bar; a unique name adds 5% to the value. gta.wiki, Acid Lab: no security ' +
+      'upgrade, as it cannot be raided; a full resupply costs $60,000. GTABoom, Acid Lab Business ' +
+      'Guide: filling the lab takes $192,000 of supplies without the upgrade and $96,000 with ' +
+      'it, so 1.6 full bars, or 100 units per full bar, with the upgrade.',
+    checked: ACID_CHECKED,
   },
 ]
