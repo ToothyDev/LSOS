@@ -144,16 +144,33 @@ export function stockUnits(bars: Bars, production: Production): number {
   return Math.floor((bars.stock * production.maxUnits) / 100 + 1e-6)
 }
 
-/** What bought upgrades add to the sale value, e.g. 0.05 for a named product. */
+/**
+ * What bought upgrades and owned properties add to the sale value, e.g. 0.05 for a named
+ * product or 0.35 for a Money Front. No business has both yet.
+ */
 export function valueBonus(
   production: Production,
   owned: OwnedProperties,
   property: Property,
 ): number {
-  const bonus = production.valueBonus
-  if (!bonus) return 0
-  const upgrade = property.upgrades.find((u) => u.id === bonus.upgrade)
-  return upgrade && upgradeValue(owned, property.id, upgrade) === true ? bonus.bonus : 0
+  const named = production.valueBonus
+  const upgrade = named && property.upgrades.find((u) => u.id === named.upgrade)
+  const fromUpgrade = named && upgrade && upgradeValue(owned, property.id, upgrade) === true
+  const fromOwned = ownedBonusApplies(production, owned)
+  return (fromUpgrade ? named.bonus : 0) + (fromOwned ? production.ownedBonus!.bonus : 0)
+}
+
+/** Whether the property behind `ownedBonus` is owned, so the bonus is in the value. */
+export function ownedBonusApplies(production: Production, owned: OwnedProperties): boolean {
+  return production.ownedBonus !== undefined && isOwned(owned, production.ownedBonus.propertyId)
+}
+
+/**
+ * Whether the far value is an estimate (decision 013): no source says how an owned-property
+ * bonus combines with the far-sale bonus; LSOS adds them, the lower guess (decision 019).
+ */
+export function farValueEstimated(production: Production, owned: OwnedProperties): boolean {
+  return production.farSale !== undefined && ownedBonusApplies(production, owned)
 }
 
 /** Sale value of the stock nearby, and far if a far sale pays more (null if not). */
@@ -164,8 +181,10 @@ export function stockValue(
   bonus = 0,
 ): { nearby: number; far: number | null } {
   // The game pays whole dollars per unit: 5% on $2,095 is $2,199 (gta.wiki, Acid Product).
-  const nearby = stockUnits(bars, production) * Math.floor(rate.unitValue * (1 + bonus))
-  const far = production.farSale ? nearby * (1 + production.farSale.bonus) : null
+  const units = stockUnits(bars, production)
+  const nearby = units * Math.floor(rate.unitValue * (1 + bonus))
+  // The far bonus adds its share of the base value; with no other bonus that is nearby × 1.5.
+  const far = production.farSale ? nearby + units * rate.unitValue * production.farSale.bonus : null
   return { nearby, far }
 }
 

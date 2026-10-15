@@ -16,6 +16,7 @@
     matchingRate,
     rateFor,
     valueBonus,
+    farValueEstimated,
     type Boost,
     type BoostsById,
     type BusinessBarsById,
@@ -255,6 +256,7 @@
                 editing={editing === property.id}
                 onresync={(bars) => onresync(property.id, bars)}
                 bonus={valueBonus(production, owned, property)}
+                farEstimated={farValueEstimated(production, owned)}
                 boost={boosts[property.id]}
                 onboost={(boost) => onboost(property.id, boost)}
               />

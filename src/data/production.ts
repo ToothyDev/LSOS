@@ -38,6 +38,8 @@ export interface Production {
   farSale?: { bonus: number; label: string }
   /** A bought upgrade that raises the sale value, e.g. `{ upgrade: 'named', bonus: 0.05 }`. */
   valueBonus?: { upgrade: string; bonus: number }
+  /** Owning another property raises the sale value, e.g. a Money Front (decision 019). */
+  ownedBonus?: OwnedBonus
   /** False if the business cannot be raided. */
   raids?: false
   /** A production boost the player can start in the business. */
@@ -45,6 +47,17 @@ export interface Production {
   rates: readonly ProductionRate[]
   source: string
   checked: string
+}
+
+/** A sale value bonus for owning another property, with its own source. */
+export interface OwnedBonus {
+  /** The property in `PROPERTIES` that must be owned. */
+  propertyId: string
+  /** Name shown with the value, e.g. "Hands On Car Wash". */
+  label: string
+  /** E.g. 0.35 for +35%. */
+  bonus: number
+  source: string
 }
 
 /**
@@ -147,16 +160,36 @@ export const PRODUCTION: readonly Production[] = [
     ' The wiki gives 2h 30m for a full supply bar, 8 bins at 18 minutes is 2h 24m; the ' +
       'per-bin time is used.',
   ),
-  mc('mc-cash', 'stacks', 40, [
-    { minutesPerUnit: 12, unitValue: 4_725 },
-    { minutesPerUnit: 10, unitValue: 5_425 },
-    { minutesPerUnit: 8, unitValue: 6_125, unitsPerFullSupplies: 20 },
-  ]),
-  mc('mc-weed', 'bundles', 80, [
-    { minutesPerUnit: 6, unitValue: 2_025 },
-    { minutesPerUnit: 5, unitValue: 2_325 },
-    { minutesPerUnit: 4, unitValue: 2_625, unitsPerFullSupplies: 50 },
-  ]),
+  {
+    ...mc('mc-cash', 'stacks', 40, [
+      { minutesPerUnit: 12, unitValue: 4_725 },
+      { minutesPerUnit: 10, unitValue: 5_425 },
+      { minutesPerUnit: 8, unitValue: 6_125, unitsPerFullSupplies: 20 },
+    ]),
+    ownedBonus: {
+      propertyId: 'car-wash',
+      label: 'Hands On Car Wash',
+      bonus: 0.35,
+      source:
+        'gta.wiki, Hands On Car Wash (GTA Online): owning it raises the value of Counterfeit ' +
+        'Cash Factory product by 35% in Biker Sell Missions.',
+    },
+  },
+  {
+    ...mc('mc-weed', 'bundles', 80, [
+      { minutesPerUnit: 6, unitValue: 2_025 },
+      { minutesPerUnit: 5, unitValue: 2_325 },
+      { minutesPerUnit: 4, unitValue: 2_625, unitsPerFullSupplies: 50 },
+    ]),
+    ownedBonus: {
+      propertyId: 'smoke-on-the-water',
+      label: 'Smoke on the Water',
+      bonus: 0.35,
+      source:
+        'gta.wiki, Smoke on the Water (GTA Online): owning it raises Weed Farm product value ' +
+        'by 35% in Biker Sell Missions.',
+    },
+  },
   mc('mc-documents', 'boxes', 60, [
     { minutesPerUnit: 5, unitValue: 1_350 },
     { minutesPerUnit: 4, unitValue: 1_550 },

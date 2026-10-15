@@ -26,6 +26,7 @@ Svelte 5 + TypeScript + Vite. Public repository.
 | Safes and nightclub popularity                 | `data/safes.ts`, `lib/safes.ts` (decision 016)    |
 | Acid Lab, production boost                     | `data/production.ts`, `lib/production.ts` (017)   |
 | Money Fronts safe and heat                     | `data/fronts.ts`, `lib/fronts.ts` (018)           |
+| Value bonus for owning a front                 | `ownedBonus` in `data/production.ts` (019)        |
 | Theme tokens                                   | `src/app.css` (decision 009)                      |
 | CI, templates                                  | `.github/`                                        |
 | Skills: `handoff`, `finish-pr`; agent: `scout` | `.claude/`                                        |

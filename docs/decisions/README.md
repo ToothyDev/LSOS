@@ -29,3 +29,4 @@ free number, add one line below. **Replacing one:** write a new decision, then m
 - [016](016-safes.md) Safes tab: Nightclub, Agency, Arcade, Salvage Yard, Garment Factory paid per in-game day of play time, nightclub popularity with estimated loss and boosts
 - [017](017-production-boost.md) Acid Lab: optional far sale, value bonus (named product), no raids; production boost by units made or 24 real hours, once a day
 - [018](018-money-fronts.md) Money Fronts: one Car Wash safe card on the Safes tab, paid by the fronts and other businesses, heat per front (est.), missions and legal jobs
+- [019](019-owned-value-bonus.md) Money Front value bonus: owning Car Wash or Smoke on the Water adds 35% to Counterfeit Cash or Weed, far value adds the bonuses (est.), Helitours left out
