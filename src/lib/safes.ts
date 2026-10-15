@@ -2,6 +2,7 @@
 // with it (issue #8, decision 016). Pure logic: play time comes in as an argument (decision 003).
 import type { Property } from '../data/properties'
 import { PAYOUT_MINUTES, type Safe } from '../data/safes'
+import type { NextEvent } from './events'
 import { isOwned, upgradeValue, type OwnedProperties, type UpgradeValue } from './properties'
 
 /** Play time of one in-game day, the payout interval. */
@@ -183,6 +184,39 @@ export function advanceSafes(
     if (after !== state) next = { ...next, [safe.propertyId]: after }
   }
   return next
+}
+
+/** When each owned safe is full (issue #15), if it is paid anything. */
+export function safeEvents(
+  safes: SafesById,
+  data: readonly Safe[],
+  catalog: readonly Property[],
+  owned: OwnedProperties,
+): NextEvent[] {
+  return data.flatMap((safe) => {
+    const property = catalog.find((p) => p.id === safe.propertyId)
+    if (!property || !isOwned(owned, property.id)) return []
+    const state = safes[safe.propertyId] ?? emptySafe(safe)
+    const full = fullInMs(state, safe, owned, property)
+    if (full === null) return []
+    return [
+      {
+        id: `safe:${property.id}`,
+        source: property.label,
+        what: 'Safe full',
+        action: 'Collect',
+        inMs: full,
+        clock: 'play',
+        tone: 'good',
+        level: { value: state.money, max: capacity(safe, owned, property), kind: 'stock' },
+        value: state.money,
+        estimated: estimatedParts(safe, owned, property).payout,
+        tab: 'safes',
+        focus: property.id,
+        quick: { label: 'Collected' },
+      },
+    ]
+  })
 }
 
 /**

@@ -2,6 +2,7 @@
 // Pure logic: play time and wall-clock time come in as arguments (decision 003).
 import type { Production, ProductionBoost, ProductionRate } from '../data/production'
 import type { Property } from '../data/properties'
+import type { NextEvent } from './events'
 import { isOwned, isRunning, isShutDown, upgradeValue, type OwnedProperties } from './properties'
 import { settleBars, type Bars } from './resync'
 import { mansionBoostOn, type MansionBoost, type MansionBoostData } from './timers'
@@ -139,6 +140,52 @@ export function forecast(
   const boosted = plainForecast(bars, production, fast)
   if ((boosted.fullInMs ?? boosted.suppliesOutInMs ?? 0) <= boostMs) return boosted
   return later(plainForecast(produce(bars, production, fast, boostMs), production, rate), boostMs)
+}
+
+/** The Mansion boost as production needs it: the last one started, and its data. */
+export interface MansionRun {
+  boost: MansionBoost | undefined
+  data: MansionBoostData
+}
+
+/**
+ * What comes first for business `id` from wall-clock time `now`, with its production boost and
+ * the Mansion boost as they run then. Supplies bought and still on their way count from their
+ * arrival (issue #15): until then the business runs on what it has, and if the stock fills
+ * first that is what comes first. Play time is taken to run along with real time meanwhile.
+ */
+export function forecastAt(
+  bars: Bars,
+  production: Production,
+  rate: KnownRate,
+  id: string,
+  now: number,
+  { boost, mansion, fillsTo }: { boost?: Boost; mansion?: MansionRun; fillsTo: number },
+): Forecast {
+  const due = bars.suppliesDueAt
+  if (due !== undefined && due > now) {
+    const { suppliesDueAt: _, ...rest } = bars
+    const first = forecastAt(rest, production, rate, id, now, { boost, mansion, fillsTo })
+    const waitMs = due - now
+    if (first.fullInMs !== null && first.fullInMs <= waitMs) return first
+    const run = runBusiness(bars, production, rate, id, now, due, fillsTo, boost, mansion)
+    const after = { boost: run.boost, mansion, fillsTo }
+    return later(forecastAt(run.bars, production, rate, id, due, after), waitMs)
+  }
+  const boosting = boostRunning(boost, production.boost, now)
+  const sped = mansion && mansionBoostOn(mansion.boost, mansion.data, id, now)
+  return forecast(
+    bars,
+    production,
+    rate,
+    boosting ? boost!.unitsLeft : 0,
+    sped
+      ? {
+          msLeft: mansion.boost!.startedAt + mansion.data.durationMs - now,
+          speed: mansion.data.speed,
+        }
+      : undefined,
+  )
 }
 
 /** `forecast` as seen `ms` earlier. */
@@ -310,6 +357,40 @@ function step(
 }
 
 /**
+ * Business `id` producing from `start` to `end` (wall clock, all of it play time): supplies
+ * bought count from their arrival, and a boost runs from its start to its end, as does the
+ * Mansion boost for the business it boosts. The boost counts the units it made.
+ */
+function runBusiness(
+  bars: Bars,
+  production: Production,
+  rate: KnownRate,
+  id: string,
+  start: number,
+  end: number,
+  fillsTo: number,
+  boost: Boost | undefined,
+  mansion: MansionRun | undefined,
+): { bars: Bars; boost: Boost | undefined } {
+  // Where something changes during the stretch, in wall-clock time.
+  const ends = boost && production.boost ? boost.startedAt + production.boost.maxRealMs : 0
+  const sped = mansion?.boost?.propertyId === id ? mansion.boost : undefined
+  const spedEnds = sped && sped.startedAt + mansion!.data.durationMs
+  const cuts = [bars.suppliesDueAt, boost?.startedAt, boost && ends, sped?.startedAt, spedEnds]
+    .filter((t): t is number => t !== undefined && t > start && t < end)
+    .sort((a, b) => a - b)
+  let at = start
+  for (const cut of [...cuts, end]) {
+    bars = settleBars(bars, at, fillsTo)
+    const fast = mansion && mansionBoostOn(mansion.boost, mansion.data, id, at)
+    const r = fast ? spedUp(rate, mansion.data.speed) : rate
+    ;({ bars, boost } = step(bars, production, r, boost, cut - at, at))
+    at = cut
+  }
+  return { bars: settleBars(bars, end, fillsTo), boost }
+}
+
+/**
  * Counts a stretch of play time for every running business with a known rate: a shut-down one
  * keeps its bars as they are (issue #38). The stretch is
  * taken to end at `now` (wall clock), which is exact for normal ticks: supplies bought that
@@ -327,7 +408,7 @@ export function produceAll(
   now: number,
   fillsTo: number,
   boosts: BoostsById = {},
-  mansion?: { boost: MansionBoost | undefined; data: MansionBoostData },
+  mansion?: MansionRun,
 ): { businesses: BusinessBarsById; boosts: BoostsById } {
   let next = { businesses, boosts }
   for (const production of productions) {
@@ -336,29 +417,107 @@ export function produceAll(
     const rate = rateFor(production, owned, property)
     if (!rate) continue
     const id = property.id
-    let bars = businesses[id] ?? emptyBars()
-    let boost = boosts[id]
-    // Where something changes during the stretch, in wall-clock time.
-    const start = now - playMs
-    const ends = boost && production.boost ? boost.startedAt + production.boost.maxRealMs : 0
-    const sped = mansion?.boost?.propertyId === id ? mansion.boost : undefined
-    const spedEnds = sped && sped.startedAt + mansion!.data.durationMs
-    const cuts = [bars.suppliesDueAt, boost?.startedAt, boost && ends, sped?.startedAt, spedEnds]
-      .filter((t): t is number => t !== undefined && t > start && t < now)
-      .sort((a, b) => a - b)
-    let at = start
-    for (const cut of [...cuts, now]) {
-      bars = settleBars(bars, at, fillsTo)
-      const fast = mansion && mansionBoostOn(mansion.boost, mansion.data, id, at)
-      const r = fast ? spedUp(rate, mansion.data.speed) : rate
-      ;({ bars, boost } = step(bars, production, r, boost, cut - at, at))
-      at = cut
-    }
-    bars = settleBars(bars, now, fillsTo)
+    const { bars, boost } = runBusiness(
+      businesses[id] ?? emptyBars(),
+      production,
+      rate,
+      id,
+      now - playMs,
+      now,
+      fillsTo,
+      boosts[id],
+      mansion,
+    )
     if (bars !== businesses[id]) next = { ...next, businesses: { ...next.businesses, [id]: bars } }
     if (boost !== boosts[id] && boost) next = { ...next, boosts: { ...next.boosts, [id]: boost } }
   }
   return next
+}
+
+/**
+ * What comes next for each running business with a known rate (issue #15): stock full or
+ * supplies out, counting supplies on their way, and a production boost ready to start again.
+ */
+export function productionEvents(
+  businesses: BusinessBarsById,
+  catalog: readonly Property[],
+  productions: readonly Production[],
+  owned: OwnedProperties,
+  now: number,
+  fillsTo: number,
+  boosts: BoostsById,
+  mansion: MansionRun,
+): NextEvent[] {
+  const events: NextEvent[] = []
+  for (const production of productions) {
+    const property = catalog.find((p) => p.id === production.propertyId)
+    if (!property || !isRunning(owned, property.id)) continue
+    const rate = rateFor(production, owned, property)
+    if (!rate) continue
+    const id = property.id
+    const bars = settleBars(businesses[id] ?? emptyBars(), now, fillsTo)
+    const boost = boosts[id]
+    const sped = mansionBoostOn(mansion.boost, mansion.data, id, now)
+    const ahead = forecastAt(bars, production, rate, id, now, { boost, mansion, fillsTo })
+    const parts = estimatedParts(rate)
+    // Both boosts at once: no source gives the speed (BusinessProduction says so).
+    const estimated = parts.production || (sped && boostRunning(boost, production.boost, now))
+    const source = property.label
+    const tab = 'businesses'
+    if (ahead.fullInMs !== null) {
+      const value = stockValue(bars, production, rate, valueBonus(production, owned, property))
+      events.push({
+        id: `stock:${id}`,
+        source,
+        what: 'Stock full',
+        action: 'Sell',
+        inMs: ahead.fullInMs,
+        clock: 'play',
+        tone: 'good',
+        level: { value: bars.stock, max: 100, kind: 'stock' },
+        value: value.far ?? value.nearby,
+        estimated: estimated || parts.value || farValueEstimated(production, owned),
+        tab,
+        focus: id,
+        quick: { label: 'Sold' },
+      })
+    } else {
+      events.push({
+        id: `supplies:${id}`,
+        source,
+        what: 'Supplies out',
+        action: 'Resupply',
+        inMs: ahead.suppliesOutInMs ?? 0,
+        clock: 'play',
+        tone: 'bad',
+        level: { value: bars.supplies ?? 0, max: 100, kind: 'supplies' },
+        estimated,
+        tab,
+        focus: id,
+        quick: { label: 'Bought' },
+      })
+    }
+    if (
+      production.boost &&
+      rate.boostedMinutesPerUnit !== undefined &&
+      !boostRunning(boost, production.boost, now)
+    ) {
+      events.push({
+        id: `boost:${id}`,
+        source,
+        what: 'Boost ready',
+        action: 'Start boost',
+        inMs: Math.max(0, nextBoostAt(boost, production.boost) - now),
+        clock: 'real',
+        tone: 'good',
+        estimated: false,
+        tab,
+        focus: id,
+        quick: { label: 'Started' },
+      })
+    }
+  }
+  return events
 }
 
 /**

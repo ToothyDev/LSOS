@@ -109,7 +109,30 @@ a {
   outline-offset: 2px;
 }
 
+/* A card the Overview linked to: a glow that fades out (issue #15). */
+.flash {
+  animation: flash 2.4s ease-out;
+}
+
+@keyframes flash {
+  0%,
+  40% {
+    box-shadow:
+      0 0 0 2px var(--focus),
+      0 0 1.5rem rgb(255 215 94 / 0.35);
+  }
+
+  100% {
+    box-shadow: 0 0 0 2px transparent;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .flash {
+    animation: none;
+    outline: 2px solid var(--focus);
+  }
+
   *,
   *::before,
   *::after {

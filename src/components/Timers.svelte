@@ -81,7 +81,7 @@
 {/snippet}
 
 <div class="grid">
-  <Panel title="Lucky Wheel" footer={undoSpin ? wheelUndo : undefined}>
+  <Panel title="Lucky Wheel" focus="lucky-wheel" footer={undoSpin ? wheelUndo : undefined}>
     {#if now < spinAt}
       <EditableValue
         label="Next spin in"
@@ -103,7 +103,7 @@
     <p class="hint">One spin per 24 real hours, also while LSOS is closed.</p>
   </Panel>
 
-  <Panel title="Mansion boost" footer={undoBoost ? mansionUndo : undefined}>
+  <Panel title="Mansion boost" focus="mansion" footer={undoBoost ? mansionUndo : undefined}>
     {#if !mansionOwned}
       <p class="hint">
         The production boost from the Mansion's AI assistant. Mark a Mansion as owned in

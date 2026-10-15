@@ -13,7 +13,7 @@ import { parseSafes, type SafesById } from './safes'
 import { parseTimers, type Timers } from './timers'
 
 /** Bump when the stored shape changes, and add a migration from the previous version. */
-export const CURRENT_VERSION = 11
+export const CURRENT_VERSION = 12
 
 /** All user state. Trackers add their own sections here as they are built. */
 export interface AppState {
@@ -34,6 +34,23 @@ export interface AppState {
   boosts: BoostsById
   /** Real-time timers: the Lucky Wheel and the Mansion boost (issues #13, #14). */
   timers: Timers
+  /** Alerts when an Overview item comes due (issue #15); off until opted in. */
+  alerts: AlertSettings
+}
+
+export interface AlertSettings {
+  /** Browser (system) notifications; the browser asks for permission first. */
+  browser: boolean
+  /** Pop-ups inside LSOS, on any tab. */
+  popup: boolean
+  /** How long before an item is due to alert; 0 alerts when it is due. */
+  leadMs: number
+  /** Alert only while LSOS is not the focused window, e.g. while in the game. */
+  unfocusedOnly: boolean
+}
+
+export function defaultAlerts(): AlertSettings {
+  return { browser: false, popup: false, leadMs: 10 * 60_000, unfocusedOnly: false }
 }
 
 export function defaultState(): AppState {
@@ -47,6 +64,7 @@ export function defaultState(): AppState {
     safes: {},
     boosts: {},
     timers: {},
+    alerts: defaultAlerts(),
   }
 }
 
@@ -79,6 +97,8 @@ export const MIGRATIONS: Readonly<Record<number, Migration>> = {
   9: (data) => ({ ...data }),
   // Version 11 adds the real-time timers (issues #13, #14); none started yet.
   10: (data) => ({ ...data, timers: {} }),
+  // Version 12 adds the alert settings (issue #15); alerts are off until opted in.
+  11: (data) => ({ ...data, alerts: defaultAlerts() }),
 }
 
 export type ParseResult =
@@ -163,6 +183,8 @@ function toState(data: StoredData): AppState | string {
   if (typeof boosts === 'string') return boosts
   const timers = parseTimers(data.timers)
   if (typeof timers === 'string') return timers
+  const alerts = toAlerts(data.alerts)
+  if (typeof alerts === 'string') return alerts
   return {
     version: CURRENT_VERSION,
     clock,
@@ -173,6 +195,7 @@ function toState(data: StoredData): AppState | string {
     safes,
     boosts,
     timers,
+    alerts,
   }
 }
 
@@ -181,6 +204,22 @@ function toClock(data: unknown): ClockSettings | string {
   const { trackOnOpen } = data
   if (typeof trackOnOpen !== 'boolean') return 'The saved tracking setting is not true or false.'
   return { trackOnOpen }
+}
+
+function toAlerts(data: unknown): AlertSettings | string {
+  if (!isRecord(data)) return 'The alerts section is missing.'
+  const { browser, popup, leadMs, unfocusedOnly } = data
+  if (
+    typeof browser !== 'boolean' ||
+    typeof popup !== 'boolean' ||
+    typeof unfocusedOnly !== 'boolean' ||
+    typeof leadMs !== 'number' ||
+    !Number.isFinite(leadMs) ||
+    leadMs < 0
+  ) {
+    return 'The saved alert settings are not readable.'
+  }
+  return { browser, popup, leadMs, unfocusedOnly }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

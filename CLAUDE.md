@@ -29,6 +29,7 @@ Svelte 5 + TypeScript + Vite. Public repository.
 | Value bonus for owning a front                 | `ownedBonus` in `data/production.ts` (019)        |
 | Shut-down businesses (owned, not running)      | `isRunning` in `lib/properties.ts` (020)          |
 | Real-time timers: Lucky Wheel, Mansion boost   | `data/timers.ts`, `lib/timers.ts` (022)           |
+| Overview tab, next events, notifications       | `lib/events.ts`, `lib/overview.ts` (dec. 023)     |
 | Theme tokens                                   | `src/app.css` (decision 009)                      |
 | Link previews (Open Graph), preview image      | `index.html`, `scripts/og-image.html`             |
 | CI, templates                                  | `.github/`                                        |

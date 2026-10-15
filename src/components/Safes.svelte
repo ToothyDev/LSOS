@@ -50,7 +50,7 @@
 {:else}
   <div class="grid">
     {#if fronts}
-      <Panel title="Money Fronts">
+      <Panel title="Money Fronts" focus={CAR_WASH}>
         {#if open === CAR_WASH}
           {#each frontProperties as property (property.id)}
             <PropertySettings {property} {owned} {onchange} />
@@ -79,7 +79,7 @@
       </Panel>
     {/if}
     {#each shown as { safe, property } (property.id)}
-      <Panel title={property.label}>
+      <Panel title={property.label} focus={property.id}>
         {#if open === property.id}
           <PropertySettings {property} {owned} {onchange} />
         {/if}

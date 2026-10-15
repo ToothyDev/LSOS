@@ -1,5 +1,7 @@
 <script lang="ts">
   import Boot from './components/Boot.svelte'
+  import Overview from './components/Overview.svelte'
+  import Popups from './components/Popups.svelte'
   import Businesses from './components/Businesses.svelte'
   import ClockBar from './components/ClockBar.svelte'
   import Safes from './components/Safes.svelte'
@@ -12,10 +14,12 @@
   import { PROPERTIES } from './data/properties'
   import { SAFES } from './data/safes'
   import { clocks } from './lib/clock.svelte'
+  import { dismissPopup, overview, quick, undoQuick } from './lib/overview.svelte'
   import './lib/production.svelte'
   import './lib/safes.svelte'
   import { setProperties, store } from './lib/store.svelte'
-  import { TABS, tabFromHash } from './lib/tabs'
+  import { tick } from 'svelte'
+  import { TABS, focusFromHash, hashForTab, tabFromHash } from './lib/tabs'
 
   let hash = $state(location.hash)
   const active = $derived(tabFromHash(hash))
@@ -27,6 +31,26 @@
     const onHashChange = () => (hash = location.hash)
     window.addEventListener('hashchange', onHashChange)
     return () => window.removeEventListener('hashchange', onHashChange)
+  })
+
+  // A link to one card (`#/safes/agency`, from the Overview): scroll to it and make it glow, then
+  // drop the card from the address so the same link works again (issue #15).
+  const FLASH_MS = 2400
+  $effect(() => {
+    const target = focusFromHash(hash)
+    if (!target) return
+    const tab = active
+    tick().then(() => {
+      const card = document.querySelector<HTMLElement>(`[data-focus="${CSS.escape(target)}"]`)
+      history.replaceState(null, '', hashForTab(tab))
+      hash = location.hash
+      if (!card) return
+      card.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      card.classList.remove('flash')
+      void card.offsetWidth
+      card.classList.add('flash')
+      setTimeout(() => card.classList.remove('flash'), FLASH_MS)
+    })
   })
 </script>
 
@@ -48,6 +72,15 @@
         {#await kitModule then { default: Kit }}
           <Kit />
         {/await}
+      {:else if active === 'overview'}
+        <Overview
+          events={overview.events}
+          holdings={overview.holdings}
+          popularity={overview.popularity}
+          paused={clocks.play.paused}
+          onquick={quick}
+          onundo={undoQuick}
+        />
       {:else if active === 'businesses'}
         <Businesses
           catalog={PROPERTIES}
@@ -110,6 +143,8 @@
     </a>
   </footer>
 </div>
+
+<Popups events={overview.events} open={overview.popups} ondismiss={dismissPopup} />
 
 <Boot />
 

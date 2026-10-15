@@ -14,13 +14,15 @@
     move?: HTMLAttributes<HTMLDivElement>
     /** Highlights the panel while it is being moved. */
     moving?: boolean
+    /** Name a link can scroll to and highlight the panel by, e.g. from the Overview (issue #15). */
+    focus?: string
   }
 
-  let { title, children, footer, move, moving = false }: Props = $props()
+  let { title, children, footer, move, moving = false, focus }: Props = $props()
   const id = $props.id()
 </script>
 
-<section class="panel" class:moving aria-label={title}>
+<section class="panel" class:moving aria-label={title} data-focus={focus}>
   <h3>
     {#if move}
       <div
