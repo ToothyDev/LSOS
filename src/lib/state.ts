@@ -2,12 +2,17 @@
 import { defaultClockSettings, type ClockSettings } from './clock'
 import { parseGoodsStock, type GoodsStock } from './nightclub'
 import { parseOrder } from './order'
-import { parseBusinessBars, type BusinessBarsById } from './production'
+import {
+  parseBoosts,
+  parseBusinessBars,
+  type BoostsById,
+  type BusinessBarsById,
+} from './production'
 import { parseOwnedProperties, type OwnedProperties } from './properties'
 import { parseSafes, type SafesById } from './safes'
 
 /** Bump when the stored shape changes, and add a migration from the previous version. */
-export const CURRENT_VERSION = 7
+export const CURRENT_VERSION = 8
 
 /** All user state. Trackers add their own sections here as they are built. */
 export interface AppState {
@@ -24,6 +29,8 @@ export interface AppState {
   nightclub: GoodsStock
   /** Money in each safe and nightclub popularity, as of the last play time counted (issue #8). */
   safes: SafesById
+  /** The last production boost of each business, e.g. the Acid Lab's (issue #9). */
+  boosts: BoostsById
 }
 
 export function defaultState(): AppState {
@@ -35,6 +42,7 @@ export function defaultState(): AppState {
     businessOrder: [],
     nightclub: {},
     safes: {},
+    boosts: {},
   }
 }
 
@@ -57,6 +65,8 @@ export const MIGRATIONS: Readonly<Record<number, Migration>> = {
   5: (data) => ({ ...data, nightclub: {} }),
   // Version 7 adds property safes (issue #8); empty until set or paid.
   6: (data) => ({ ...data, safes: {} }),
+  // Version 8 adds production boosts (issue #9); none started yet.
+  7: (data) => ({ ...data, boosts: {} }),
 }
 
 export type ParseResult =
@@ -137,6 +147,8 @@ function toState(data: StoredData): AppState | string {
   if (typeof nightclub === 'string') return nightclub
   const safes = parseSafes(data.safes)
   if (typeof safes === 'string') return safes
+  const boosts = parseBoosts(data.boosts)
+  if (typeof boosts === 'string') return boosts
   return {
     version: CURRENT_VERSION,
     clock,
@@ -145,6 +157,7 @@ function toState(data: StoredData): AppState | string {
     businessOrder,
     nightclub,
     safes,
+    boosts,
   }
 }
 

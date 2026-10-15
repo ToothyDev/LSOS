@@ -25,13 +25,14 @@ describe('parseState', () => {
     expect(result).toEqual({
       ok: true,
       state: {
-        version: 7,
+        version: 8,
         clock: { trackOnOpen: false },
         properties: {},
         businesses: {},
         businessOrder: [],
         nightclub: {},
         safes: {},
+        boosts: {},
       },
       fromVersion: 1,
     })
@@ -42,13 +43,14 @@ describe('parseState', () => {
     expect(result).toEqual({
       ok: true,
       state: {
-        version: 7,
+        version: 8,
         clock: { trackOnOpen: true },
         properties: {},
         businesses: {},
         businessOrder: [],
         nightclub: {},
         safes: {},
+        boosts: {},
       },
       fromVersion: 2,
     })
@@ -62,13 +64,14 @@ describe('parseState', () => {
     expect(result).toEqual({
       ok: true,
       state: {
-        version: 7,
+        version: 8,
         clock: { trackOnOpen: false },
         properties,
         businesses: {},
         businessOrder: [],
         nightclub: {},
         safes: {},
+        boosts: {},
       },
       fromVersion: 3,
     })
@@ -83,13 +86,14 @@ describe('parseState', () => {
     expect(result).toEqual({
       ok: true,
       state: {
-        version: 7,
+        version: 8,
         clock: { trackOnOpen: true },
         properties,
         businesses,
         businessOrder: [],
         nightclub: {},
         safes: {},
+        boosts: {},
       },
       fromVersion: 4,
     })
@@ -106,7 +110,7 @@ describe('parseState', () => {
     }
     expect(parseState(JSON.stringify(sample))).toEqual({
       ok: true,
-      state: { ...sample, version: 7, nightclub: {}, safes: {} },
+      state: { ...sample, version: 8, nightclub: {}, safes: {}, boosts: {} },
       fromVersion: 5,
     })
   })
@@ -122,9 +126,32 @@ describe('parseState', () => {
     }
     expect(parseState(JSON.stringify(sample))).toEqual({
       ok: true,
-      state: { ...sample, version: 7, safes: {} },
+      state: { ...sample, version: 8, safes: {}, boosts: {} },
       fromVersion: 6,
     })
+  })
+
+  it('migrates a version 7 sample, with no boosts', () => {
+    const sample = {
+      version: 7,
+      clock: { trackOnOpen: false },
+      properties: { 'acid-lab': { owned: true, upgrades: {} } },
+      businesses: { 'acid-lab': { stock: 10, supplies: 50 } },
+      businessOrder: [],
+      nightclub: {},
+      safes: {},
+    }
+    expect(parseState(JSON.stringify(sample))).toEqual({
+      ok: true,
+      state: { ...sample, version: 8, boosts: {} },
+      fromVersion: 7,
+    })
+  })
+
+  it('keeps saved boosts', () => {
+    const boosts = { 'acid-lab': { startedAt: 1_000, unitsLeft: 42.5 } }
+    const text = JSON.stringify({ ...defaultState(), boosts })
+    expect(parseState(text)).toMatchObject({ ok: true, state: { boosts } })
   })
 
   it('keeps saved safes', () => {

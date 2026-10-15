@@ -1,17 +1,23 @@
 <script lang="ts">
   // Stock, supplies, value and what comes next for one business (issue #6). Collapsed it shows
-  // only that; `editing` adds the resync controls. Logic: lib/production.ts.
+  // only that; `editing` adds the resync controls. A business with a production boost shows it
+  // and lets the user start it (issue #9). Logic: lib/production.ts.
   import { SUPPLY_PURCHASE } from '../data/business-events'
   import type { Production, ProductionRate } from '../data/production'
   import {
+    boostRunning,
     estimatedParts,
     forecast,
+    nextBoostAt,
+    startBoost,
     stockUnits,
     stockValue,
+    type Boost,
     type KnownRate,
   } from '../lib/production'
   import { formatValue, settleBars, type Bars } from '../lib/resync'
   import BusinessBars from './ui/BusinessBars.svelte'
+  import Button from './ui/Button.svelte'
   import Countdown from './ui/Countdown.svelte'
   import Meter from './ui/Meter.svelte'
 
@@ -27,14 +33,35 @@
     /** Show the controls to correct the bars and record sales, raids and supplies. */
     editing: boolean
     onresync: (bars: Bars) => void
+    /** What bought upgrades add to the value, e.g. 0.05 for a named product. */
+    bonus?: number
+    /** The last production boost, if the business has one (kept after it ends). */
+    boost?: Boost
+    /** Called with the new boost, or undefined to take back one started by mistake. */
+    onboost?: (boost: Boost | undefined) => void
   }
 
-  let { production, rate, running, bars, now, editing, onresync }: Props = $props()
+  let {
+    production,
+    rate,
+    running,
+    bars,
+    now,
+    editing,
+    onresync,
+    bonus = 0,
+    boost,
+    onboost = () => {},
+  }: Props = $props()
 
   const current = $derived(settleBars(bars, now, SUPPLY_PURCHASE.fillsTo))
   const units = $derived(stockUnits(current, production))
-  const value = $derived(rate ? stockValue(current, production, rate) : null)
-  const ahead = $derived(running ? forecast(current, production, running) : null)
+  const value = $derived(rate ? stockValue(current, production, rate, bonus) : null)
+  const boosting = $derived(boostRunning(boost, production.boost, now))
+  const nextBoost = $derived(production.boost ? nextBoostAt(boost, production.boost) : 0)
+  const ahead = $derived(
+    running ? forecast(current, production, running, boosting ? boost!.unitsLeft : 0) : null,
+  )
   const percent = (value: number) => formatValue(value, 'percent')
   // Numbers resting on estimated rates say so (decision 013). The value also counts units made
   // at an estimated rate.
@@ -43,7 +70,7 @@
 </script>
 
 {#if editing}
-  <BusinessBars {bars} {now} {onresync} />
+  <BusinessBars {bars} {now} {onresync} raids={production.raids !== false} />
 {:else}
   <Meter
     label={est('Stock', estimated.production)}
@@ -65,15 +92,41 @@
 {#if value}
   <div class="facts">
     <span class="label">{est('Value', estimated.value || estimated.production)}</span>
-    <!-- Far sales pay more, so that is the headline; nearby is the alternative. -->
-    <span
-      class="value"
-      title="Sold {production.farSaleLabel}; {formatValue(value.nearby, 'money')} sold nearby"
-    >
-      {formatValue(value.far, 'money')} far
-      <span class="alt">· {formatValue(value.nearby, 'money')} nearby</span>
-    </span>
+    {#if value.far !== null}
+      <!-- Far sales pay more, so that is the headline; nearby is the alternative. -->
+      <span
+        class="value"
+        title="Sold {production.farSale?.label}; {formatValue(value.nearby, 'money')} sold nearby"
+      >
+        {formatValue(value.far, 'money')} far
+        <span class="alt">· {formatValue(value.nearby, 'money')} nearby</span>
+      </span>
+    {:else}
+      <span class="value">{formatValue(value.nearby, 'money')}</span>
+    {/if}
   </div>
+{/if}
+
+{#if production.boost && running?.boostedMinutesPerUnit !== undefined}
+  <!-- Play time while it runs; the next one is a real-time wait (daily reset). -->
+  <div class="facts">
+    {#if boosting}
+      <span class="label">Boost on</span>
+      <span class="value">
+        {Math.ceil(boost!.unitsLeft)}
+        {production.unitName} left
+        <Button onclick={() => onboost(undefined)} title="Take back a boost started by mistake"
+          >Undo</Button
+        >
+      </span>
+    {:else if now >= nextBoost}
+      <span class="label">Boost ready</span>
+      <Button onclick={() => onboost(startBoost(production.boost!, now))}>Boost started</Button>
+    {/if}
+  </div>
+  {#if !boosting && now < nextBoost}
+    <Countdown label="Next boost in" remainingMs={nextBoost - now} />
+  {/if}
 {/if}
 
 {#if ahead}

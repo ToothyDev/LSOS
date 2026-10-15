@@ -10,7 +10,7 @@ import { produceAll } from './production'
 import { store } from './store.svelte'
 
 onPlayTime((ms) => {
-  store.state.businesses = produceAll(
+  const produced = produceAll(
     store.state.businesses,
     PROPERTIES,
     PRODUCTION,
@@ -18,7 +18,10 @@ onPlayTime((ms) => {
     ms,
     Date.now(),
     SUPPLY_PURCHASE.fillsTo,
+    store.state.boosts,
   )
+  store.state.businesses = produced.businesses
+  store.state.boosts = produced.boosts
   store.state.nightclub = produceGoods(
     store.state.nightclub,
     GOODS,

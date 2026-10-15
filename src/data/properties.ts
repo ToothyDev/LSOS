@@ -69,6 +69,20 @@ export const PROPERTIES: readonly Property[] = [
     source: BUNKER_SOURCE,
     checked: '2026-10-14',
   },
+  // Equipment is the only production upgrade; there is no security upgrade (no raids). A unique
+  // product name adds to the sale value (issue #9).
+  {
+    id: 'acid-lab',
+    label: 'Acid Lab',
+    upgrades: [
+      { kind: 'toggle', id: 'equipment', label: 'Equipment' },
+      { kind: 'toggle', id: 'named', label: 'Product named' },
+    ],
+    source:
+      'gta.wiki, Acid Lab (Upgrades): the equipment upgrade, and no security upgrade. gta.wiki, ' +
+      'Acid Product: a unique name adds 5% to the sale value.',
+    checked: '2026-10-15',
+  },
   // Only owned or not: owning either unlocks Cargo and Shipments in the nightclub (issue #7).
   {
     id: 'special-cargo',
