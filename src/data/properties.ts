@@ -67,7 +67,8 @@ const PRODUCTION_UPGRADES: readonly Upgrade[] = [
 
 const MC_SOURCE = 'gta.wiki, The Open Road (Upgrades): equipment, staff and security upgrades.'
 const BUNKER_SOURCE =
-  'gta.wiki, Disruption Logistics (Buy Upgrades): equipment, staff and security upgrades.'
+  'gta.wiki, Disruption Logistics (Buy Upgrades): equipment, staff and security upgrades, ' +
+  'and staff on Manufacturing, Research or an even split to Both.'
 
 export const PROPERTIES: readonly Property[] = [
   mc('mc-cocaine', 'Cocaine Lockup'),
@@ -78,7 +79,20 @@ export const PROPERTIES: readonly Property[] = [
   {
     id: 'bunker',
     label: 'Bunker',
-    upgrades: PRODUCTION_UPGRADES,
+    // What the staff work on changes production (issue #33); research itself is not tracked.
+    upgrades: [
+      ...PRODUCTION_UPGRADES,
+      {
+        kind: 'choice',
+        id: 'staff-assignment',
+        label: 'Staff on',
+        options: [
+          { id: 'manufacturing', label: 'Manufacturing' },
+          { id: 'both', label: 'Both' },
+          { id: 'research', label: 'Research' },
+        ],
+      },
+    ],
     canShutDown: true,
     source: BUNKER_SOURCE,
     checked: '2026-10-14',

@@ -180,6 +180,71 @@ describe('forecast', () => {
   })
 })
 
+describe('bunker staff assignment (issue #33)', () => {
+  const staffOn = (assignment: string): KnownRate =>
+    rateFor(
+      bunker,
+      {
+        bunker: {
+          owned: true,
+          upgrades: { equipment: true, staff: true, 'staff-assignment': assignment },
+        },
+      },
+      property('bunker'),
+    )!
+
+  it('keeps the sourced rate on manufacturing, the default', () => {
+    expect(staffOn('manufacturing')).toEqual(fast)
+    expect(fast.stockShare).toBeUndefined()
+    expect(fast.estimate).toBeUndefined()
+  })
+
+  it('makes stock at half speed on both, with supplies used as fast (est.)', () => {
+    const both = staffOn('both')
+    // 1 unit every 14 minutes with both upgrades (gta.wiki), supplies for 20 x 7 minutes.
+    expect(produce({ stock: 0, supplies: 100 }, bunker, both, 70 * MIN)).toEqual({
+      stock: 5,
+      supplies: 50,
+    })
+    expect(forecast({ stock: 0, supplies: 100 }, bunker, both)).toEqual({
+      fullInMs: null,
+      suppliesOutInMs: 140 * MIN,
+    })
+    expect(estimatedParts(both)).toEqual({ value: false, production: true })
+  })
+
+  it('makes no stock on research, and supplies still run out (est.)', () => {
+    const research = staffOn('research')
+    expect(produce({ stock: 40, supplies: 100 }, bunker, research, 70 * MIN)).toEqual({
+      stock: 40,
+      supplies: 50,
+    })
+    expect(forecast({ stock: 100, supplies: 100 }, bunker, research)).toEqual({
+      fullInMs: null,
+      suppliesOutInMs: 140 * MIN,
+    })
+    expect(produce({ stock: 40, supplies: 0 }, bunker, research, 70 * MIN)).toEqual({
+      stock: 40,
+      supplies: 0,
+    })
+    expect(research.estimate?.fields).toEqual(['unitsPerFullSupplies'])
+  })
+
+  it('adds its estimate to one the rate already has', () => {
+    const rates = bunker.rates.map((r) =>
+      r.upgrades.length === 0
+        ? { ...r, estimate: { fields: ['unitValue' as const], how: 'A.' } }
+        : r,
+    )
+    const owned = { bunker: { owned: true, upgrades: { 'staff-assignment': 'both' } } }
+    const rate = matchingRate({ ...bunker, rates }, owned, property('bunker'))
+    expect(rate?.estimate).toEqual({
+      fields: ['unitValue', 'unitsPerFullSupplies'],
+      how: `A. ${bunker.staffSplit!.how}`,
+    })
+  })
+})
+
 describe('stock value', () => {
   const full: KnownRate = {
     upgrades: [],
