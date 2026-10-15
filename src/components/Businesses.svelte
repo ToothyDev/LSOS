@@ -210,11 +210,6 @@
 
   /** Short summary of the bought upgrades, e.g. "Equipment, Technician: Cash". */
   function summary(property: Property): string {
-    const shutDown = isShutDown(owned, property.id) ? 'Shut down · ' : ''
-    return shutDown + upgradeSummary(property)
-  }
-
-  function upgradeSummary(property: Property): string {
     const parts = property.upgrades.flatMap((upgrade) => {
       const value = upgradeValue(owned, property.id, upgrade)
       if (upgrade.kind === 'toggle') return value === true ? [upgrade.label] : []
@@ -248,6 +243,7 @@
           class="lift"
           class:lifted={moving === property.id}
           class:settling={settling === property.id}
+          class:shut={isShutDown(owned, property.id)}
           style:translate={moving === property.id ? `${lift.x}px ${lift.y}px` : undefined}
         >
           <Panel title={property.label} move={handle(property.id)} moving={moving === property.id}>
@@ -323,6 +319,12 @@
     border-radius: var(--radius);
     outline: 1px dashed var(--track-edge);
     outline-offset: -1px;
+  }
+
+  /* A shut-down business is greyed out but stays readable (issue #38). */
+  .lift.shut {
+    filter: grayscale(1);
+    opacity: 0.75;
   }
 
   .lift.lifted {

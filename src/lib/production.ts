@@ -2,7 +2,7 @@
 // Pure logic: play time and wall-clock time come in as arguments (decision 003).
 import type { Production, ProductionBoost, ProductionRate } from '../data/production'
 import type { Property } from '../data/properties'
-import { isOwned, isRunning, upgradeValue, type OwnedProperties } from './properties'
+import { isOwned, isRunning, isShutDown, upgradeValue, type OwnedProperties } from './properties'
 import { settleBars, type Bars } from './resync'
 
 /** A rate with everything needed to run production on its own. */
@@ -303,6 +303,24 @@ export function produceAll(
     bars = settleBars(bars, now, fillsTo)
     if (bars !== businesses[id]) next = { ...next, businesses: { ...next.businesses, [id]: bars } }
     if (boost !== boosts[id] && boost) next = { ...next, boosts: { ...next.boosts, [id]: boost } }
+  }
+  return next
+}
+
+/**
+ * Empties the stock of every business that `after` shuts down and `before` did not: the game
+ * clears the stock but keeps the supplies (issue #38). Returns `businesses` itself if none.
+ */
+export function clearShutDownStock(
+  businesses: BusinessBarsById,
+  before: OwnedProperties,
+  after: OwnedProperties,
+): BusinessBarsById {
+  let next = businesses
+  for (const [id, bars] of Object.entries(businesses)) {
+    if (bars.stock > 0 && isShutDown(after, id) && !isShutDown(before, id)) {
+      next = { ...next, [id]: { ...bars, stock: 0 } }
+    }
   }
   return next
 }

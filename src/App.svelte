@@ -13,7 +13,7 @@
   import { clocks } from './lib/clock.svelte'
   import './lib/production.svelte'
   import './lib/safes.svelte'
-  import { store } from './lib/store.svelte'
+  import { setProperties, store } from './lib/store.svelte'
   import { TABS, tabFromHash } from './lib/tabs'
 
   let hash = $state(location.hash)
@@ -51,7 +51,7 @@
         <Businesses
           catalog={PROPERTIES}
           owned={store.state.properties}
-          onchange={(owned) => (store.state.properties = owned)}
+          onchange={setProperties}
           productions={PRODUCTION}
           businesses={store.state.businesses}
           now={clocks.now}
@@ -74,7 +74,7 @@
           safes={SAFES}
           catalog={PROPERTIES}
           owned={store.state.properties}
-          onchange={(owned) => (store.state.properties = owned)}
+          onchange={setProperties}
           stored={store.state.safes}
           onresync={(id, safe) => (store.state.safes = { ...store.state.safes, [id]: safe })}
         />

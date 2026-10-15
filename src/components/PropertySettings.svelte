@@ -22,34 +22,36 @@
   let { property, owned, onchange }: Props = $props()
   const id = $props.id()
   const isPropertyOwned = $derived(isOwned(owned, property.id))
+  const isPropertyRunning = $derived(!isShutDown(owned, property.id))
 </script>
 
 <div class="property">
   <div class="owned">
     <span id="{id}-name" class="name">{property.label}</span>
-    <Button
-      variant={isPropertyOwned ? 'primary' : 'ghost'}
-      aria-labelledby="{id}-name"
-      aria-pressed={isPropertyOwned}
-      onclick={() => onchange(setOwned(owned, property.id, !isPropertyOwned))}
-    >
-      {isPropertyOwned ? 'Owned' : 'Not owned'}
-    </Button>
+    <div class="toggles">
+      {#if isPropertyOwned && property.canShutDown}
+        <Button
+          variant={isPropertyRunning ? 'primary' : 'ghost'}
+          aria-label="{property.label} running"
+          aria-pressed={isPropertyRunning}
+          onclick={() => onchange(setShutDown(owned, property.id, isPropertyRunning))}
+        >
+          {isPropertyRunning ? 'Running' : 'Shut down'}
+        </Button>
+      {/if}
+      <Button
+        variant={isPropertyOwned ? 'primary' : 'ghost'}
+        aria-labelledby="{id}-name"
+        aria-pressed={isPropertyOwned}
+        onclick={() => onchange(setOwned(owned, property.id, !isPropertyOwned))}
+      >
+        {isPropertyOwned ? 'Owned' : 'Not owned'}
+      </Button>
+    </div>
   </div>
 
-  {#if isPropertyOwned && (property.upgrades.length > 0 || property.canShutDown)}
+  {#if isPropertyOwned && property.upgrades.length > 0}
     <div class="upgrades">
-      {#if property.canShutDown}
-        <label>
-          <input
-            type="checkbox"
-            checked={isShutDown(owned, property.id)}
-            onchange={(event) =>
-              onchange(setShutDown(owned, property.id, event.currentTarget.checked))}
-          />
-          Shut down
-        </label>
-      {/if}
       {#each property.upgrades as upgrade (upgrade.id)}
         {#if upgrade.kind === 'toggle'}
           <label>
@@ -111,6 +113,15 @@
     flex-wrap: wrap;
     gap: var(--space-2);
     justify-content: space-between;
+  }
+
+  /* Right-aligned, also when a long name pushes them onto their own line. */
+  .toggles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    justify-content: flex-end;
+    margin-left: auto;
   }
 
   .name {

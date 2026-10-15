@@ -1,7 +1,7 @@
 <script lang="ts">
   import { PROPERTIES } from '../data/properties'
   import { exportFileName } from '../lib/state'
-  import { exportText, importText, store } from '../lib/store.svelte'
+  import { exportText, importText, setProperties, store } from '../lib/store.svelte'
   import PropertyList from './PropertyList.svelte'
   import Button from './ui/Button.svelte'
   import Panel from './ui/Panel.svelte'
@@ -38,12 +38,6 @@
 </script>
 
 <div class="grid">
-  <PropertyList
-    catalog={PROPERTIES}
-    owned={store.state.properties}
-    onchange={(owned) => (store.state.properties = owned)}
-  />
-
   <Panel title="Clock">
     <label>
       <input type="checkbox" bind:checked={store.state.clock.trackOnOpen} />
@@ -75,6 +69,11 @@
       <p class:error={message.error} role="status">{message.text}</p>
     {/if}
   </Panel>
+
+  <!-- The long list goes last, across the whole width, in as many columns as fit. -->
+  <div class="wide">
+    <PropertyList catalog={PROPERTIES} owned={store.state.properties} onchange={setProperties} />
+  </div>
 </div>
 
 <style>
@@ -82,6 +81,11 @@
     display: grid;
     gap: var(--space-5);
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 1fr));
+  }
+
+  .wide {
+    display: grid;
+    grid-column: 1 / -1;
   }
 
   p {

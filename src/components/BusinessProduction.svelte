@@ -143,7 +143,7 @@
 {/if}
 
 {#if shutDown}
-  <p class="note" role="note">
+  <p class="note quiet" role="note">
     <strong>Shut down.</strong> No stock is made and no supplies are used until you start it again.
   </p>
 {:else if ahead}
@@ -210,6 +210,10 @@
     font-size: var(--text-sm);
     margin: 0;
     padding-left: var(--space-2);
+  }
+
+  .note.quiet {
+    border-left-color: var(--muted);
   }
 
   .note strong {

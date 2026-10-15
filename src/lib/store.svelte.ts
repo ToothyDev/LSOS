@@ -1,6 +1,9 @@
 // The app's one reactive state, saved to localStorage on every change (decision 006).
-// Logic lives in persistence.ts and state.ts; this file only wires them to Svelte and the browser.
+// Logic lives in persistence.ts, state.ts and the trackers; this file wires it to Svelte and
+// the browser.
 import { createPersistence, type KeyValueStorage, type PersistStatus } from './persistence'
+import { clearShutDownStock } from './production'
+import type { OwnedProperties } from './properties'
 import { defaultState, parseState, type AppState } from './state'
 
 function browserStorage(): KeyValueStorage | null {
@@ -42,6 +45,13 @@ window.addEventListener('pagehide', () => persistence.flush())
 export function saveNow(): void {
   persistence.queue($state.snapshot(store.state))
   persistence.flush()
+}
+
+/** Saves new property settings; shutting a business down empties its stock (issue #38). */
+export function setProperties(owned: OwnedProperties): void {
+  const { businesses, properties } = store.state
+  store.state.businesses = clearShutDownStock(businesses, properties, owned)
+  store.state.properties = owned
 }
 
 /** JSON text for a backup file. While stored data is blocked, that data is exported instead. */
