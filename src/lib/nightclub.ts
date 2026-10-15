@@ -165,6 +165,7 @@ export function goodsEvents(
         estimated: false,
         tab: 'businesses',
         focus: nightclub.id,
+        quick: { label: 'Sold' },
       }
     })
 }

@@ -213,6 +213,7 @@ export function safeEvents(
         estimated: estimatedParts(safe, owned, property).payout,
         tab: 'safes',
         focus: property.id,
+        quick: { label: 'Collected' },
       },
     ]
   })

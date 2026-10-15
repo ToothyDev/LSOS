@@ -123,8 +123,8 @@
               <span class="name">
                 <span class="source">{event.source}</span>
                 <span class="what">{what(event)}</span>
+                {#if event.value}<span class="money">{money(event.value)}</span>{/if}
               </span>
-              {#if event.value}<span class="value">{money(event.value)}</span>{/if}
             </a>
             {#if event.quick}
               <span class="quick">
@@ -439,8 +439,10 @@
     white-space: nowrap;
   }
 
-  .card .value {
+  .money {
     color: var(--accent-text);
+    font-size: var(--text-sm);
+    font-variant-numeric: tabular-nums;
   }
 
   /* Coming up: one line per item in as many columns as fit, read down then across. */

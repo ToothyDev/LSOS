@@ -23,6 +23,7 @@ const DATA: TrackerData = {
   wheel: LUCKY_WHEEL,
   mansion: MANSION_BOOST,
   fillsTo: SUPPLY_PURCHASE.fillsTo,
+  deliveryMs: SUPPLY_PURCHASE.deliveryMs,
 }
 
 function owning(upgrades: Record<string, Record<string, boolean | string | number>>) {
@@ -66,6 +67,7 @@ describe('allEvents', () => {
       estimated: false,
       tab: 'businesses',
       focus: 'bunker',
+      quick: { label: 'Sold' },
     })
   })
 
@@ -230,12 +232,13 @@ describe('holdings', () => {
 })
 
 describe('quickAction', () => {
-  it('spins the Lucky Wheel, with an undo', () => {
+  it('spins the Lucky Wheel; undo puts back the last spin', () => {
     const s = state({ timers: { luckyWheelSpunAt: 1 } })
-    expect(quickAction(s, DATA, 'lucky-wheel', NOW)).toEqual({
-      change: { timers: { luckyWheelSpunAt: NOW } },
-      undo: { timers: { luckyWheelSpunAt: 1 } },
-      done: 'Lucky Wheel spun',
+    const result = quickAction(s, DATA, 'lucky-wheel', NOW)!
+    expect(result.change).toEqual({ timers: { luckyWheelSpunAt: NOW } })
+    expect(result.done).toBe('Lucky Wheel spun')
+    expect(result.undo(state({ timers: { luckyWheelSpunAt: NOW } }))).toEqual({
+      timers: { luckyWheelSpunAt: 1 },
     })
   })
 
@@ -245,26 +248,79 @@ describe('quickAction', () => {
     const s = state({ properties: owned, timers: { mansionBoost: last } })
     const event = find(allEvents(s, DATA, NOW), 'mansion-boost')
     expect(event?.quick?.choices).toEqual([{ id: 'mc-weed', label: 'Weed Farm' }])
-    expect(quickAction(s, DATA, 'mansion-boost', NOW, 'mc-weed')?.change).toEqual({
+    const result = quickAction(s, DATA, 'mansion-boost', NOW, 'mc-weed')!
+    expect(result.change).toEqual({
       timers: { mansionBoost: { propertyId: 'mc-weed', startedAt: NOW } },
+    })
+    expect(result.undo(state({ ...s, ...result.change }))).toEqual({
+      timers: { mansionBoost: last },
     })
     // Not the same business twice in a row, and not without a pick.
     expect(quickAction(s, DATA, 'mansion-boost', NOW, 'bunker')).toBeNull()
     expect(quickAction(s, DATA, 'mansion-boost', NOW)).toBeNull()
   })
 
-  it('starts a production boost', () => {
+  it('starts a production boost; undo removes it', () => {
     const s = state({ properties: owning({ 'acid-lab': { equipment: true } }) })
-    expect(quickAction(s, DATA, 'boost:acid-lab', NOW)).toEqual({
-      change: { boosts: { 'acid-lab': { startedAt: NOW, unitsLeft: 80 } } },
-      undo: { boosts: {} },
-      done: 'Acid Lab boost started',
+    const result = quickAction(s, DATA, 'boost:acid-lab', NOW)!
+    expect(result.change).toEqual({ boosts: { 'acid-lab': { startedAt: NOW, unitsLeft: 80 } } })
+    expect(result.done).toBe('Acid Lab boost started')
+    expect(result.undo(state({ ...s, ...result.change }))).toEqual({ boosts: {} })
+  })
+
+  it('sells the stock; undo adds it back on top of what was made since', () => {
+    const s = state({ businesses: { bunker: { stock: 100, supplies: 40 } } })
+    const result = quickAction(s, DATA, 'stock:bunker', NOW)!
+    expect(result.change).toEqual({ businesses: { bunker: { stock: 0, supplies: 40 } } })
+    expect(result.done).toBe('Bunker: stock sold')
+    const later = state({ businesses: { bunker: { stock: 2, supplies: 30 } } })
+    expect(result.undo(later)).toEqual({ businesses: { bunker: { stock: 100, supplies: 30 } } })
+  })
+
+  it('buys supplies; undo cancels the delivery', () => {
+    const s = state({ businesses: { bunker: { stock: 50, supplies: 0 } } })
+    const result = quickAction(s, DATA, 'supplies:bunker', NOW)!
+    expect(result.change).toEqual({
+      businesses: { bunker: { stock: 50, supplies: 0, suppliesDueAt: NOW + 10 * MIN } },
+    })
+    expect(result.undo(state({ ...s, ...result.change }))).toEqual({
+      businesses: { bunker: { stock: 50, supplies: 0 } },
     })
   })
 
-  it('has nothing for other events', () => {
-    expect(quickAction(defaultState(), DATA, 'stock:bunker', NOW)).toBeNull()
+  it('collects a safe; undo adds the money back to any payout since', () => {
+    const s = state({ safes: { agency: { money: 250_000, sinceMs: 30 * MIN } } })
+    const result = quickAction(s, DATA, 'safe:agency', NOW)!
+    expect(result.change).toEqual({ safes: { agency: { money: 0, sinceMs: 30 * MIN } } })
+    expect(result.done).toBe('Agency safe collected')
+    const paid = state({ safes: { agency: { money: 1_250, sinceMs: 2 * MIN } } })
+    expect(result.undo(paid)).toEqual({ safes: { agency: { money: 251_250, sinceMs: 2 * MIN } } })
+  })
+
+  it('collects the Money Fronts safe and clears the Car Wash heat', () => {
+    const fronts = { money: 100_000, sinceMs: 0, heat: { 'car-wash': 100 } }
+    const s = state({ safes: { 'car-wash': fronts } })
+    expect(quickAction(s, DATA, 'safe:car-wash', NOW)?.change).toEqual({
+      safes: { 'car-wash': { ...fronts, money: 0 } },
+    })
+    const job = quickAction(s, DATA, 'heat:car-wash', NOW)!
+    expect(job.change).toEqual({ safes: { 'car-wash': { ...fronts, heat: { 'car-wash': 0 } } } })
+    expect(job.undo(state({ ...s, ...job.change }))).toEqual({ safes: { 'car-wash': fronts } })
+  })
+
+  it('sells nightclub goods; undo adds them back', () => {
+    const s = state({ nightclub: { cash: 8, cargo: 3 } })
+    const result = quickAction(s, DATA, 'goods:cash', NOW)!
+    expect(result.change).toEqual({ nightclub: { cash: 0, cargo: 3 } })
+    expect(result.undo(state({ nightclub: { cash: 0.5, cargo: 3 } }))).toEqual({
+      nightclub: { cash: 8.5, cargo: 3 },
+    })
+  })
+
+  it('has nothing for unknown events', () => {
+    expect(quickAction(defaultState(), DATA, 'stock:nope', NOW)).toBeNull()
     expect(quickAction(defaultState(), DATA, 'boost:bunker', NOW)).toBeNull()
+    expect(quickAction(defaultState(), DATA, 'safe:nope', NOW)).toBeNull()
   })
 })
 

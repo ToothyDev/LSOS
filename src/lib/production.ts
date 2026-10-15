@@ -479,6 +479,7 @@ export function productionEvents(
         estimated: estimated || parts.value || farValueEstimated(production, owned),
         tab,
         focus: id,
+        quick: { label: 'Sold' },
       })
     } else {
       events.push({
@@ -493,6 +494,7 @@ export function productionEvents(
         estimated,
         tab,
         focus: id,
+        quick: { label: 'Bought' },
       })
     }
     if (

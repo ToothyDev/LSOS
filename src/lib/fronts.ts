@@ -229,6 +229,7 @@ export function frontsEvents(
       estimated: false,
       tab: 'safes',
       focus: CAR_WASH,
+      quick: { label: 'Collected' },
     })
   }
   const heat = maxHeatInMs(state, owned, CAR_WASH)
@@ -245,6 +246,7 @@ export function frontsEvents(
       estimated: true,
       tab: 'safes',
       focus: CAR_WASH,
+      quick: { label: 'Done' },
     })
   }
   return events

@@ -28,6 +28,7 @@ const DATA: TrackerData = {
   wheel: LUCKY_WHEEL,
   mansion: MANSION_BOOST,
   fillsTo: SUPPLY_PURCHASE.fillsTo,
+  deliveryMs: SUPPLY_PURCHASE.deliveryMs,
 }
 
 class Overview {
@@ -49,7 +50,7 @@ export function quick(event: NextEvent, choice?: string): QuickResult | null {
 
 /** Takes back a quick action on event `id`: it is ready again, but that is no news to alert. */
 export function undoQuick(id: string, undo: QuickResult['undo']): void {
-  Object.assign(store.state, undo)
+  Object.assign(store.state, undo(store.state))
   seen?.add(id)
 }
 

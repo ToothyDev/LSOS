@@ -29,10 +29,13 @@
 - **Jump to the card:** every item links to `#/<tab>/<focus>`. The tab opens, the card with that
   `data-focus` (a `Panel` prop) scrolls into view and glows for a moment, and the address drops
   back to `#/<tab>` so the same link works again.
-- **Quick actions:** the Lucky Wheel ("Spun") and a production boost ("Started") are marked done
-  on the Overview; the Mansion boost picks its business in a dropdown first. Undo stays offered
-  for 15 seconds, like the undo buttons on the Timers tab. Selling, collecting and resupplying
-  stay on their cards: they need the resync controls (decision 010).
+- **Quick actions:** every Ready now card has a button to mark it done right there: Sold (stock
+  or nightclub goods, as the Sold event on the card), Bought (supplies, a delivery as on the
+  card), Collected (a safe), Done (a legal job clears the Car Wash heat), Spun (Lucky Wheel),
+  Started (a production boost; the Mansion boost picks its business in a dropdown first). Undo
+  stays offered for 15 seconds and puts back only what the action took, on top of progress
+  since: stock or money made meanwhile is kept. Partial sales and corrections stay on the cards
+  (decision 010).
 - **Alerts** (Settings, all off until opted in): pop-ups inside LSOS on any tab, and browser
   notifications (permission asked when ticked). Both come a chosen time before an item is due
   (when it happens, or 1, 5, 10, 15 or 30 minutes before; default 10), once per item, and
