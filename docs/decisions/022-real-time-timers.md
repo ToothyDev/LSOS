@@ -19,8 +19,11 @@
   the time left on the boost, and its forecast counts that time as play time.
 - **With the Acid Lab's own boost:** no source gives the combined speed, so LSOS takes the
   boosted rate ÷ 3 and marks the production numbers "(est.)" while both are on (decision 013).
-- Both countdowns can be corrected as "time left" (decision 010). "Undo" takes back the last
-  button press, including the last boost needed for the back-to-back rule.
+- Both countdowns can be corrected as "time left" (decision 010). A `duration` value now shows
+  as h:mm:ss like every `Countdown`, so it visibly ticks. It accepts h:mm, h:mm:ss, "5h 30m", or
+  plain minutes. After "Spun" or "Activated", an Undo button for that press shows in the card's
+  footer strip. It restores the previous value, including the last boost the back-to-back rule
+  needs.
 - **Saved state** (version 11): `timers` has `luckyWheelSpunAt` and `mansionBoost`
   (`propertyId`, `startedAt`). Each is left out until first used.
 

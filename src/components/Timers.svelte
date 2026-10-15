@@ -11,6 +11,7 @@
     mansionBoostOn,
     readyAt,
     startForRemaining,
+    type MansionBoost,
     type Timers,
   } from '../lib/timers'
   import Button from './ui/Button.svelte'
@@ -31,23 +32,18 @@
 
   let { catalog, owned, timers, now, onchange }: Props = $props()
 
-  // What the last button press replaced, so a press by mistake can be taken back.
-  let undo = $state<{ timer: 'wheel' | 'mansion'; before: Timers } | null>(null)
+  // What each timer's last button press replaced, so a press by mistake can be taken back.
+  let undoSpin = $state<{ before: number | undefined } | null>(null)
+  let undoBoost = $state<{ before: MansionBoost | undefined } | null>(null)
 
-  function press(timer: 'wheel' | 'mansion', next: Timers) {
-    undo = { timer, before: timers }
-    onchange(next)
+  function spin() {
+    undoSpin = { before: timers.luckyWheelSpunAt }
+    onchange({ ...timers, luckyWheelSpunAt: now })
   }
 
-  function takeBack() {
-    if (!undo) return
-    const { before, timer } = undo
-    onchange(
-      timer === 'wheel'
-        ? { ...timers, luckyWheelSpunAt: before.luckyWheelSpunAt }
-        : { ...timers, mansionBoost: before.mansionBoost },
-    )
-    undo = null
+  function activate(propertyId: string) {
+    undoBoost = { before: timers.mansionBoost }
+    onchange({ ...timers, mansionBoost: { propertyId, startedAt: now } })
   }
 
   const spinAt = $derived(readyAt(timers.luckyWheelSpunAt, LUCKY_WHEEL.cooldownMs))
@@ -63,14 +59,30 @@
   const target = $derived(choices.some((p) => p.id === chosen) ? chosen : choices[0]?.id)
 </script>
 
+<!-- Undo sits in the card's action strip, only right after a press. -->
+{#snippet wheelUndo()}
+  <Button
+    onclick={() => {
+      onchange({ ...timers, luckyWheelSpunAt: undoSpin?.before })
+      undoSpin = null
+    }}
+    title="Take back a spin marked by mistake">Undo spin</Button
+  >
+{/snippet}
+
+{#snippet mansionUndo()}
+  <Button
+    onclick={() => {
+      onchange({ ...timers, mansionBoost: undoBoost?.before })
+      undoBoost = null
+    }}
+    title="Take back a boost marked by mistake">Undo boost</Button
+  >
+{/snippet}
+
 <div class="grid">
-  <Panel title="Lucky Wheel">
+  <Panel title="Lucky Wheel" footer={undoSpin ? wheelUndo : undefined}>
     {#if now < spinAt}
-      {#if undo?.timer === 'wheel'}
-        <Fact label="Spun">
-          <Button onclick={takeBack} title="Take back a spin marked by mistake">Undo</Button>
-        </Fact>
-      {/if}
       <EditableValue
         label="Next spin in"
         value={spinAt - now}
@@ -85,13 +97,13 @@
       />
     {:else}
       <Fact label="Spin ready">
-        <Button onclick={() => press('wheel', { ...timers, luckyWheelSpunAt: now })}>Spun</Button>
+        <Button onclick={spin}>Spun</Button>
       </Fact>
     {/if}
     <p class="hint">One spin per 24 real hours, also while LSOS is closed.</p>
   </Panel>
 
-  <Panel title="Mansion boost">
+  <Panel title="Mansion boost" footer={undoBoost ? mansionUndo : undefined}>
     {#if !mansionOwned}
       <p class="hint">
         The production boost from the Mansion's AI assistant. Mark a Mansion as owned in
@@ -99,12 +111,7 @@
       </p>
     {:else}
       {#if boostOn}
-        <Fact label="Boost on ×{MANSION_BOOST.speed}">
-          {label(last!.propertyId)}
-          {#if undo?.timer === 'mansion'}
-            <Button onclick={takeBack} title="Take back a boost marked by mistake">Undo</Button>
-          {/if}
-        </Fact>
+        <Fact label="Boosting">{label(last!.propertyId)}</Fact>
         <EditableValue
           label="Ends in"
           value={endsAt - now}
@@ -134,14 +141,7 @@
             />
           </Fact>
           <Fact label="Boost ready">
-            <Button
-              disabled={!target}
-              onclick={() =>
-                press('mansion', {
-                  ...timers,
-                  mansionBoost: { propertyId: target!, startedAt: now },
-                })}>Activated</Button
-            >
+            <Button disabled={!target} onclick={() => activate(target!)}>Activated</Button>
           </Fact>
         {:else}
           <p class="hint">
@@ -152,8 +152,8 @@
         {/if}
       {/if}
       <p class="hint">
-        Production ×{MANSION_BOOST.speed} at one of the Bunker, Acid Lab or MC businesses for 24 real
-        hours. The next boost can start 24 real hours after the last one, on a different business.
+        Production ×{MANSION_BOOST.speed} at one Bunker, Acid Lab or MC business for 24 real hours. The
+        next boost is ready 24 real hours after the last one, for a different business.
       </p>
     {/if}
   </Panel>

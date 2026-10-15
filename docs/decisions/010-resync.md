@@ -1,6 +1,6 @@
 # 010: Resync: correcting tracked values by hand
 
-2026-10-14, issue #4. Builds on decision 003 ("Resync").
+2026-10-14, issue #4. Builds on decision 003 ("Resync"). Duration format amended by decision 022.
 
 ## Decision
 
