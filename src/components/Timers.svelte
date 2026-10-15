@@ -16,7 +16,9 @@
   import Button from './ui/Button.svelte'
   import Countdown from './ui/Countdown.svelte'
   import EditableValue from './ui/EditableValue.svelte'
+  import Fact from './ui/Fact.svelte'
   import Panel from './ui/Panel.svelte'
+  import Select from './ui/Select.svelte'
 
   interface Props {
     catalog: readonly Property[]
@@ -64,6 +66,11 @@
 <div class="grid">
   <Panel title="Lucky Wheel">
     {#if now < spinAt}
+      {#if undo?.timer === 'wheel'}
+        <Fact label="Spun">
+          <Button onclick={takeBack} title="Take back a spin marked by mistake">Undo</Button>
+        </Fact>
+      {/if}
       <EditableValue
         label="Next spin in"
         value={spinAt - now}
@@ -77,16 +84,9 @@
           })}
       />
     {:else}
-      <div class="facts">
-        <span class="label ready">Spin ready</span>
-        <Button
-          variant="primary"
-          onclick={() => press('wheel', { ...timers, luckyWheelSpunAt: now })}>Spun</Button
-        >
-      </div>
-    {/if}
-    {#if undo?.timer === 'wheel'}
-      <Button onclick={takeBack} title="Take back a spin marked by mistake">Undo</Button>
+      <Fact label="Spin ready">
+        <Button onclick={() => press('wheel', { ...timers, luckyWheelSpunAt: now })}>Spun</Button>
+      </Fact>
     {/if}
     <p class="hint">One spin per 24 real hours, also while LSOS is closed.</p>
   </Panel>
@@ -99,10 +99,12 @@
       </p>
     {:else}
       {#if boostOn}
-        <div class="facts">
-          <span class="label">Boosting ×{MANSION_BOOST.speed}</span>
-          <span class="value">{label(last!.propertyId)}</span>
-        </div>
+        <Fact label="Boost on ×{MANSION_BOOST.speed}">
+          {label(last!.propertyId)}
+          {#if undo?.timer === 'mansion'}
+            <Button onclick={takeBack} title="Take back a boost marked by mistake">Undo</Button>
+          {/if}
+        </Fact>
         <EditableValue
           label="Ends in"
           value={endsAt - now}
@@ -123,19 +125,16 @@
         <Countdown label="Next boost in" remainingMs={nextBoostAt - now} />
       {:else if now >= nextBoostAt}
         {#if choices.length > 0}
-          <div class="facts">
-            <label class="label ready" for="mansion-target">Boost ready</label>
-            <select
+          <Fact label="Business" labelFor="mansion-target" wide>
+            <Select
               id="mansion-target"
               value={target}
-              onchange={(event) => (chosen = event.currentTarget.value)}
-            >
-              {#each choices as property (property.id)}
-                <option value={property.id}>{property.label}</option>
-              {/each}
-            </select>
+              options={choices}
+              onchange={(id) => (chosen = id)}
+            />
+          </Fact>
+          <Fact label="Boost ready">
             <Button
-              variant="primary"
               disabled={!target}
               onclick={() =>
                 press('mansion', {
@@ -143,7 +142,7 @@
                   mansionBoost: { propertyId: target!, startedAt: now },
                 })}>Activated</Button
             >
-          </div>
+          </Fact>
         {:else}
           <p class="hint">
             Boost ready, but no business you own and run can take it{last
@@ -151,9 +150,6 @@
               : ''}.
           </p>
         {/if}
-      {/if}
-      {#if undo?.timer === 'mansion'}
-        <Button onclick={takeBack} title="Take back a boost marked by mistake">Undo</Button>
       {/if}
       <p class="hint">
         Production ×{MANSION_BOOST.speed} at one of the Bunker, Acid Lab or MC businesses for 24 real
@@ -168,41 +164,6 @@
     display: grid;
     gap: var(--space-5);
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
-  }
-
-  .facts {
-    align-items: center;
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-3);
-    justify-content: space-between;
-  }
-
-  .label {
-    color: var(--muted);
-    font-family: var(--font-display);
-    font-size: var(--text-sm);
-    letter-spacing: var(--tracking);
-    text-transform: uppercase;
-  }
-
-  .label.ready {
-    color: var(--accent-text);
-  }
-
-  .value {
-    text-align: right;
-  }
-
-  select {
-    background: var(--panel-raised);
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    color: var(--fg);
-    flex: 1;
-    font: inherit;
-    min-height: 2.25rem;
-    padding: 0 var(--space-2);
   }
 
   .hint {

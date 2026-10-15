@@ -22,6 +22,7 @@
   import { nextPayoutInMs, type SafeState } from '../lib/safes'
   import Button from './ui/Button.svelte'
   import Countdown from './ui/Countdown.svelte'
+  import Fact from './ui/Fact.svelte'
   import EditableBar from './ui/EditableBar.svelte'
   import EditableValue from './ui/EditableValue.svelte'
   import Meter from './ui/Meter.svelte'
@@ -126,10 +127,7 @@
   />
 {/if}
 
-<div class="facts">
-  <span class="label">Payout</span>
-  <span class="value">{money(parts.fronts + parts.others)} a day</span>
-</div>
+<Fact label="Payout">{money(parts.fronts + parts.others)} a day</Fact>
 <p class="hint">
   Fronts {money(parts.fronts)} + your other businesses {money(parts.others)}. A shut-down business
   adds nothing.
@@ -158,25 +156,6 @@
 <style>
   p {
     margin: 0;
-  }
-
-  .facts {
-    align-items: baseline;
-    display: flex;
-    gap: var(--space-3);
-    justify-content: space-between;
-  }
-
-  .label {
-    color: var(--muted);
-    font-family: var(--font-display);
-    font-size: var(--text-sm);
-    letter-spacing: var(--tracking);
-    text-transform: uppercase;
-  }
-
-  .value {
-    font-variant-numeric: tabular-nums;
   }
 
   .actions {

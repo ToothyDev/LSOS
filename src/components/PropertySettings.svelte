@@ -3,6 +3,7 @@
   import type { Property } from '../data/properties'
   import Button from './ui/Button.svelte'
   import NumberField from './ui/NumberField.svelte'
+  import Select from './ui/Select.svelte'
   import {
     isOwned,
     isShutDown,
@@ -76,16 +77,12 @@
         {:else}
           <div class="choice">
             <label for="{id}-{upgrade.id}">{upgrade.label}</label>
-            <select
+            <Select
               id="{id}-{upgrade.id}"
-              value={upgradeValue(owned, property.id, upgrade)}
-              onchange={(event) =>
-                onchange(setUpgrade(owned, property.id, upgrade.id, event.currentTarget.value))}
-            >
-              {#each upgrade.options as option (option.id)}
-                <option value={option.id}>{option.label}</option>
-              {/each}
-            </select>
+              value={upgradeValue(owned, property.id, upgrade) as string}
+              options={upgrade.options}
+              onchange={(value) => onchange(setUpgrade(owned, property.id, upgrade.id, value))}
+            />
           </div>
         {/if}
       {/each}
@@ -155,21 +152,5 @@
     flex: none;
     height: 1.125rem;
     width: 1.125rem;
-  }
-
-  select {
-    background: var(--panel-raised);
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    color: var(--fg);
-    font: inherit;
-    min-height: 2.25rem;
-    min-width: 0;
-    padding: var(--space-1) var(--space-2);
-    width: 100%;
-  }
-
-  select:hover {
-    border-color: var(--accent);
   }
 </style>

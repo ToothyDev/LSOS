@@ -21,6 +21,7 @@
   import BusinessBars from './ui/BusinessBars.svelte'
   import Button from './ui/Button.svelte'
   import Countdown from './ui/Countdown.svelte'
+  import Fact from './ui/Fact.svelte'
   import Meter from './ui/Meter.svelte'
 
   interface Props {
@@ -123,37 +124,35 @@
 {/if}
 
 {#if value}
-  <div class="facts">
-    <span class="label">{est('Value', estimated.value || estimated.production)}</span>
+  <!-- Far sales pay more, so that is the headline; nearby is the alternative. -->
+  <Fact
+    label={est('Value', estimated.value || estimated.production)}
+    title={value.far !== null ? (farTitle ?? undefined) : undefined}
+  >
     {#if value.far !== null}
-      <!-- Far sales pay more, so that is the headline; nearby is the alternative. -->
-      <span class="value" title={farTitle}>
-        {formatValue(value.far, 'money')} far{farEstimated ? ' (est.)' : ''}
-        <span class="alt">· {formatValue(value.nearby, 'money')} nearby</span>
-      </span>
+      {formatValue(value.far, 'money')} far{farEstimated ? ' (est.)' : ''}
+      <span class="alt">· {formatValue(value.nearby, 'money')} nearby</span>
     {:else}
-      <span class="value">{formatValue(value.nearby, 'money')}</span>
+      {formatValue(value.nearby, 'money')}
     {/if}
-  </div>
+  </Fact>
 {/if}
 
 {#if production.boost && running?.boostedMinutesPerUnit !== undefined && !shutDown}
   <!-- Play time while it runs; the next one is a real-time wait (daily reset). -->
-  <div class="facts">
-    {#if boosting}
-      <span class="label">Boost on</span>
-      <span class="value">
-        {Math.ceil(boost!.unitsLeft)}
-        {production.unitName} left
-        <Button onclick={() => onboost(undefined)} title="Take back a boost started by mistake"
-          >Undo</Button
-        >
-      </span>
-    {:else if now >= nextBoost}
-      <span class="label">Boost ready</span>
+  {#if boosting}
+    <Fact label="Boost on">
+      {Math.ceil(boost!.unitsLeft)}
+      {production.unitName} left
+      <Button onclick={() => onboost(undefined)} title="Take back a boost started by mistake"
+        >Undo</Button
+      >
+    </Fact>
+  {:else if now >= nextBoost}
+    <Fact label="Boost ready">
       <Button onclick={() => onboost(startBoost(production.boost!, now))}>Boost started</Button>
-    {/if}
-  </div>
+    </Fact>
+  {/if}
   {#if !boosting && now < nextBoost}
     <Countdown label="Next boost in" remainingMs={nextBoost - now} />
   {/if}
@@ -210,26 +209,6 @@
 {/if}
 
 <style>
-  .facts {
-    align-items: baseline;
-    display: flex;
-    gap: var(--space-3);
-    justify-content: space-between;
-  }
-
-  .label {
-    color: var(--muted);
-    font-family: var(--font-display);
-    font-size: var(--text-sm);
-    letter-spacing: var(--tracking);
-    text-transform: uppercase;
-  }
-
-  .value {
-    font-variant-numeric: tabular-nums;
-    text-align: right;
-  }
-
   .alt {
     color: var(--muted);
     font-size: var(--text-sm);

@@ -23,6 +23,7 @@
   import Button from './ui/Button.svelte'
   import Digits from './ui/Digits.svelte'
   import EditableValue from './ui/EditableValue.svelte'
+  import Fact from './ui/Fact.svelte'
   import Meter from './ui/Meter.svelte'
 
   interface Props {
@@ -120,10 +121,7 @@
   {/each}
 {/if}
 
-<div class="facts">
-  <span class="label">Total value</span>
-  <span class="value">{formatValue(total, 'money')}</span>
-</div>
+<Fact label="Total value">{formatValue(total, 'money')}</Fact>
 
 {#each fullStuck as id (id)}
   <p class="note" role="note">
@@ -233,25 +231,6 @@
   .time.idle {
     color: var(--muted);
     font-size: var(--text-sm);
-  }
-
-  .facts {
-    align-items: baseline;
-    display: flex;
-    gap: var(--space-3);
-    justify-content: space-between;
-  }
-
-  .label {
-    color: var(--muted);
-    font-family: var(--font-display);
-    font-size: var(--text-sm);
-    letter-spacing: var(--tracking);
-    text-transform: uppercase;
-  }
-
-  .value {
-    font-variant-numeric: tabular-nums;
   }
 
   .hint {

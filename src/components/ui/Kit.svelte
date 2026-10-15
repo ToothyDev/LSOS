@@ -12,11 +12,14 @@
   import Button from './Button.svelte'
   import Countdown from './Countdown.svelte'
   import EditableValue from './EditableValue.svelte'
+  import Fact from './Fact.svelte'
   import Meter from './Meter.svelte'
   import NumberField from './NumberField.svelte'
   import Panel from './Panel.svelte'
+  import Select from './Select.svelte'
 
   let amount = $state(40)
+  let picked = $state('a')
   let safe = $state(70_000)
   let bars = $state<Bars>({ stock: 60, supplies: 35 })
   let stockOnly = $state<Bars>({ stock: 45 })
@@ -91,6 +94,22 @@
   <Panel title="Countdowns">
     <Countdown label="Running" remainingMs={3_723_000} />
     <Countdown label="Done" remainingMs={0} />
+  </Panel>
+
+  <Panel title="Facts">
+    <Fact label="Value">$120,000</Fact>
+    <Fact label="Boost ready"><Button>Activated</Button></Fact>
+    <Fact label="Pick one" labelFor="kit-select" wide>
+      <Select
+        id="kit-select"
+        value={picked}
+        options={[
+          { id: 'a', label: 'Option A' },
+          { id: 'b', label: 'Option B' },
+        ]}
+        onchange={(id) => (picked = id)}
+      />
+    </Fact>
   </Panel>
 
   <Panel title="Number field">
