@@ -190,6 +190,48 @@ describe('save', () => {
   })
 })
 
+describe('receive (another tab saved)', () => {
+  it('takes the other tab state and drops the pending save that would undo it', () => {
+    const storage = fakeStorage({ [STORAGE_KEY]: current })
+    const { persistence, clock } = setup(storage)
+    persistence.load()
+    persistence.queue({ ...defaultState(), n: 1 } as never)
+
+    expect(persistence.receive(current)).toEqual(defaultState())
+    expect(clock.pending).toBe(0)
+    persistence.queue(defaultState())
+    clock.runAll()
+    expect(storage.writes).toBe(0)
+  })
+
+  it('blocks saving when the other tab saved a newer version', () => {
+    const raw = JSON.stringify({ version: CURRENT_VERSION + 1 })
+    const storage = fakeStorage({ [STORAGE_KEY]: raw })
+    const { persistence, clock } = setup(storage)
+
+    expect(persistence.receive(raw)).toBeNull()
+    expect(persistence.status).toMatchObject({ kind: 'blocked', reason: 'newer', raw })
+    persistence.queue(defaultState())
+    clock.runAll()
+    expect(storage.stored).toBe(raw)
+  })
+
+  it('unblocks when the other tab imported a usable state', () => {
+    const storage = fakeStorage({ [STORAGE_KEY]: '{broken' })
+    const { persistence } = setup(storage)
+    persistence.load()
+    expect(persistence.receive(current)).toEqual(defaultState())
+    expect(persistence.status).toEqual({ kind: 'saved' })
+  })
+
+  it('ignores a removed key', () => {
+    const { persistence, clock } = setup()
+    persistence.queue(defaultState())
+    expect(persistence.receive(null)).toBeNull()
+    expect(clock.pending).toBe(1)
+  })
+})
+
 describe('replace (import)', () => {
   it('saves at once and drops a pending save', () => {
     const storage = fakeStorage()

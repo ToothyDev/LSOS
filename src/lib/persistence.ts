@@ -27,6 +27,11 @@ export interface Persistence {
   load(): AppState
   /** Saves `state` after a short delay; a newer call replaces a pending one. */
   queue(state: AppState): void
+  /**
+   * Takes the text another tab just saved (`storage` event) and drops this tab's pending save,
+   * which would overwrite it. Returns the new state, or `null` if there is nothing usable.
+   */
+  receive(raw: string | null): AppState | null
   /** Writes a pending save now (on `pagehide`). */
   flush(): void
   /** Replaces the state with an imported one and saves it now, even over blocked data. */
@@ -67,6 +72,18 @@ export function createPersistence({ storage, schedule, onStatus }: Options): Per
     }
   }
 
+  /** Parses stored text; unusable text blocks saving so it is never overwritten. */
+  function read(raw: string): AppState | null {
+    const result = parseState(raw)
+    if (!result.ok) {
+      setStatus({ kind: 'blocked', reason: result.reason, message: result.message, raw })
+      return null
+    }
+    // A migrated state differs from what is stored, so it is written on the next save.
+    lastText = result.fromVersion === result.state.version ? raw : null
+    return result.state
+  }
+
   function cancelPending() {
     cancel?.()
     cancel = null
@@ -88,15 +105,15 @@ export function createPersistence({ storage, schedule, onStatus }: Options): Per
         return defaultState()
       }
       if (raw === null) return defaultState()
+      return read(raw) ?? defaultState()
+    },
 
-      const result = parseState(raw)
-      if (!result.ok) {
-        setStatus({ kind: 'blocked', reason: result.reason, message: result.message, raw })
-        return defaultState()
-      }
-      // A migrated state differs from what is stored, so it is written on the next save.
-      lastText = result.fromVersion === result.state.version ? raw : null
-      return result.state
+    receive(raw) {
+      if (!storage || raw === null) return null
+      cancelPending()
+      const state = read(raw)
+      if (state && status.kind === 'blocked') setStatus({ kind: 'saved' })
+      return state
     },
 
     queue(state) {

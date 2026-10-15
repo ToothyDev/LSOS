@@ -34,3 +34,4 @@ free number, add one line below. **Replacing one:** write a new decision, then m
 - [021](021-no-heist-tracker.md) No heist cooldown tracker: only Cayo Perico has one worth a timer; Heists tab removed
 - [022](022-real-time-timers.md) Timers tab on real time: Lucky Wheel (24 h) and Mansion production boost (×3 for 24 h, 24 h cooldown, not the same business twice in a row; with the Acid Lab boost: est.)
 - [023](023-overview.md) Overview tab: trackers give a shared `NextEvent`, due first then soonest, supplies on their way counted in the forecast, links that scroll to the card, quick actions with undo on every ready item, popularity in view; alerts as pop-ups and/or notifications, set time ahead
+- [024](024-several-tabs.md) Several tabs: a tab takes the state another tab saves (`storage` event); only the tab that last started counting counts play time (`BroadcastChannel`)
