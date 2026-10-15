@@ -51,6 +51,6 @@ export const BAR_SEGMENTS = {
   source:
     'gta.wiki, Business Supplies: both bars "are broken up into five segments" (MC businesses). ' +
     'Bunker: segments seen in play (issue #32); gta.wiki, Supplies: most resupply missions fill ' +
-    '"1/5th, or 20 units".',
+    '"1/5th, or 20 units". Nightclub popularity: the same five segments, seen in play (issue #8).',
   checked: '2026-10-14',
 }

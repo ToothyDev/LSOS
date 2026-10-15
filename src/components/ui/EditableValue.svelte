@@ -14,6 +14,8 @@
   interface Preset {
     label: string
     value: number
+    /** What the preset stands for in game, shown on hover. */
+    title?: string
   }
 
   interface Props {
@@ -146,7 +148,7 @@
   {#if presets.length > 0 || last}
     <div class="actions">
       {#each presets as preset (preset.label)}
-        <Button onclick={() => apply(preset.value)}>{preset.label}</Button>
+        <Button title={preset.title} onclick={() => apply(preset.value)}>{preset.label}</Button>
       {/each}
       {#if last}
         <Button

@@ -1,8 +1,11 @@
 // Which properties the user owns and which upgrades they bought (decision 011).
 import type { Property, Upgrade } from '../data/properties'
 
-/** A toggle upgrade is saved as true/false, a choice upgrade as the chosen option's id. */
-export type UpgradeValue = boolean | string
+/**
+ * A toggle upgrade is saved as true/false, a choice upgrade as the chosen option's id, a count
+ * as a whole number.
+ */
+export type UpgradeValue = boolean | string | number
 
 export interface PropertySettings {
   owned: boolean
@@ -35,6 +38,14 @@ export function upgradeValue(
 ): UpgradeValue {
   const saved = owned[propertyId]?.upgrades[upgrade.id]
   if (upgrade.kind === 'toggle') return saved === true
+  if (upgrade.kind === 'count') {
+    const fits =
+      typeof saved === 'number' &&
+      Number.isInteger(saved) &&
+      saved >= 0 &&
+      (upgrade.max === undefined || saved <= upgrade.max)
+    return fits ? saved : upgrade.default
+  }
   return upgrade.options.some((option) => option.id === saved)
     ? (saved as string)
     : (upgrade.options[0]?.id ?? '')
@@ -76,10 +87,11 @@ export function parseOwnedProperties(data: unknown): OwnedProperties | string {
     }
     const upgrades: Record<string, UpgradeValue> = {}
     for (const [upgradeId, value] of Object.entries(entry.upgrades)) {
-      if (typeof value !== 'boolean' && typeof value !== 'string') {
+      const isNumber = typeof value === 'number' && Number.isFinite(value)
+      if (typeof value !== 'boolean' && typeof value !== 'string' && !isNumber) {
         return `The saved upgrade "${upgradeId}" of property "${id}" is not readable.`
       }
-      upgrades[upgradeId] = value
+      upgrades[upgradeId] = value as UpgradeValue
     }
     result[id] = { owned: entry.owned, upgrades }
   }

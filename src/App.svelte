@@ -2,14 +2,17 @@
   import Boot from './components/Boot.svelte'
   import Businesses from './components/Businesses.svelte'
   import ClockBar from './components/ClockBar.svelte'
+  import Safes from './components/Safes.svelte'
   import SaveStatus from './components/SaveStatus.svelte'
   import Settings from './components/Settings.svelte'
   import TabBar from './components/ui/TabBar.svelte'
   import { GOODS } from './data/nightclub'
   import { PRODUCTION } from './data/production'
   import { PROPERTIES } from './data/properties'
+  import { SAFES } from './data/safes'
   import { clocks } from './lib/clock.svelte'
   import './lib/production.svelte'
+  import './lib/safes.svelte'
   import { store } from './lib/store.svelte'
   import { TABS, tabFromHash } from './lib/tabs'
 
@@ -60,6 +63,15 @@
           nightclubStock={store.state.nightclub}
           onnightclub={(id, crates) =>
             (store.state.nightclub = { ...store.state.nightclub, [id]: crates })}
+        />
+      {:else if active === 'safes'}
+        <Safes
+          safes={SAFES}
+          catalog={PROPERTIES}
+          owned={store.state.properties}
+          onchange={(owned) => (store.state.properties = owned)}
+          stored={store.state.safes}
+          onresync={(id, safe) => (store.state.safes = { ...store.state.safes, [id]: safe })}
         />
       {:else if active === 'settings'}
         <Settings />

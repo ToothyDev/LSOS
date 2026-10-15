@@ -19,13 +19,18 @@ export type Upgrade =
       /** False to leave it out of the card's upgrade summary, when the card shows it anyway. */
       summary?: false
     }
+  /** A whole number typed in, e.g. security contracts done. */
+  | { kind: 'count'; id: string; label: string; max?: number; default: number }
 
 export interface Property {
   /** Stable id, saved in user data: never change or reuse it. */
   id: string
   label: string
   upgrades: readonly Upgrade[]
-  /** False for properties that only unlock something elsewhere: no card on the Businesses tab. */
+  /**
+   * False for properties with no card on the Businesses tab: those that only unlock something
+   * elsewhere, or that only have a safe (Safes tab).
+   */
   card?: false
   source: string
   checked: string
@@ -38,6 +43,7 @@ import {
   NIGHTCLUB_CHECKED,
   NIGHTCLUB_SOURCE,
 } from './nightclub'
+import { ARCADE_SLOTS, SAFES, SAFES_CHECKED } from './safes'
 
 // Equipment and staff speed up production and raise the value; equipment also makes supplies
 // last longer. The security upgrade only changes raids, which LSOS does not predict: left out.
@@ -83,9 +89,10 @@ export const PROPERTIES: readonly Property[] = [
   {
     id: 'nightclub',
     label: 'Nightclub',
-    // Staff and security upgrades only change popularity and raids: left out.
+    // Security only changes raids: left out. Staff slows the popularity loss (Safes tab).
     upgrades: [
       { kind: 'toggle', id: 'equipment', label: 'Equipment' },
+      { kind: 'toggle', id: 'staff', label: 'Staff' },
       {
         kind: 'choice',
         id: 'floors',
@@ -110,6 +117,51 @@ export const PROPERTIES: readonly Property[] = [
     ],
     source: NIGHTCLUB_SOURCE,
     checked: NIGHTCLUB_CHECKED,
+  },
+  // Safes only (issue #8, decision 016): no card on the Businesses tab.
+  {
+    id: 'arcade',
+    label: 'Arcade',
+    upgrades: [
+      // A machine that takes two slots counts as two.
+      {
+        kind: 'count',
+        id: 'floor-slots',
+        label: `Floor slots filled (of ${ARCADE_SLOTS})`,
+        max: ARCADE_SLOTS,
+        default: 0,
+      },
+    ],
+    card: false,
+    source: SAFES.find((safe) => safe.propertyId === 'arcade')!.source,
+    checked: SAFES_CHECKED,
+  },
+  {
+    id: 'agency',
+    label: 'Agency',
+    upgrades: [{ kind: 'count', id: 'contracts', label: 'Security contracts done', default: 0 }],
+    card: false,
+    source: SAFES.find((safe) => safe.propertyId === 'agency')!.source,
+    checked: SAFES_CHECKED,
+  },
+  {
+    id: 'garment-factory',
+    label: 'Garment Factory',
+    upgrades: [],
+    card: false,
+    source: SAFES.find((safe) => safe.propertyId === 'garment-factory')!.source,
+    checked: SAFES_CHECKED,
+  },
+  {
+    id: 'salvage-yard',
+    label: 'Salvage Yard',
+    upgrades: [
+      { kind: 'toggle', id: 'staff', label: 'Staff' },
+      { kind: 'toggle', id: 'wall-safe', label: 'Wall Safe' },
+    ],
+    card: false,
+    source: SAFES.find((safe) => safe.propertyId === 'salvage-yard')!.source,
+    checked: SAFES_CHECKED,
   },
 ]
 

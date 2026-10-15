@@ -21,8 +21,9 @@ free number, add one line below. **Replacing one:** write a new decision, then m
 - [008](008-clock-details.md) Clock details: session play time, opens paused (setting), throttled ticks counted, long gaps asked about
 - [009](009-terminal-design.md) Terminal look: tokens in `app.css`, self-hosted Oswald (OFL), browser-style tabs, base components in `src/components/ui/`
 - [010](010-resync.md) Resync: `EditableValue` for every tracked value, `BusinessBars` with Sold/Raided/Full and supply deliveries, undo keeps progress since, five-segment bars you can drag
-- [011](011-owned-properties.md) Owned properties and upgrades: catalog in `src/data/properties.ts`, toggle/choice upgrades, Settings panel and Businesses gear
+- [011](011-owned-properties.md) Owned properties and upgrades: catalog in `src/data/properties.ts`, toggle/choice upgrades (count: 016), Settings panel and Businesses gear
 - [012](012-business-production.md) Business production: rate per exact upgrade combination in `src/data/production.ts`, continuous on play time, unknown rates do not run
 - [013](013-marked-estimates.md) Missing game values may be estimated by a stated rule from sourced ones, marked "(est.)" wherever shown
 - [014](014-card-order.md) Business cards: drag a title bar to lift a card and swap it with another, or move it with arrow keys; order saved as property ids
 - [015](015-nightclub-warehouse.md) Nightclub warehouse: goods per technician on play time, saved in crates, unlocked by owning the business, best technician setup by value per hour
+- [016](016-safes.md) Safes tab: Nightclub, Agency, Arcade, Salvage Yard, Garment Factory paid per in-game day of play time, nightclub popularity with estimated loss and boosts

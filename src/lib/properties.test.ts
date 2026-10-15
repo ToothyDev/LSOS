@@ -58,6 +58,17 @@ describe('owning', () => {
 })
 
 describe('upgradeValue', () => {
+  const count: Upgrade = { kind: 'count', id: 'slots', label: 'Slots', max: 35, default: 35 }
+
+  it('reads a count, or its default when missing or out of range', () => {
+    expect(upgradeValue({}, 'a', count)).toBe(35)
+    expect(upgradeValue(setUpgrade({}, 'a', 'slots', 12), 'a', count)).toBe(12)
+    expect(upgradeValue(setUpgrade({}, 'a', 'slots', 0), 'a', count)).toBe(0)
+    expect(upgradeValue(setUpgrade({}, 'a', 'slots', 36), 'a', count)).toBe(35)
+    expect(upgradeValue(setUpgrade({}, 'a', 'slots', 2.5), 'a', count)).toBe(35)
+    expect(upgradeValue(setUpgrade({}, 'a', 'slots', '12'), 'a', count)).toBe(35)
+  })
+
   it('defaults to not bought and the first option', () => {
     expect(upgradeValue({}, 'a', toggle)).toBe(false)
     expect(upgradeValue({}, 'a', choice)).toBe('none')
@@ -80,7 +91,7 @@ describe('upgradeValue', () => {
 describe('parseOwnedProperties', () => {
   it('keeps every entry, listed or not', () => {
     const data = {
-      a: { owned: true, upgrades: { tech: 'cash' } },
+      a: { owned: true, upgrades: { tech: 'cash', contracts: 42 } },
       old: { owned: false, upgrades: {} },
     }
     expect(parseOwnedProperties(data)).toEqual(data)
@@ -97,7 +108,7 @@ describe('parseOwnedProperties', () => {
     ['an array', [], 'properties section is missing'],
     ['a bad owned flag', { a: { owned: 'yes', upgrades: {} } }, 'property "a"'],
     ['missing upgrades', { a: { owned: true } }, 'property "a"'],
-    ['a bad upgrade', { a: { owned: true, upgrades: { tech: 3 } } }, 'upgrade "tech"'],
+    ['a bad upgrade', { a: { owned: true, upgrades: { tech: null } } }, 'upgrade "tech"'],
   ])('rejects %s', (_, data, message) => {
     expect(parseOwnedProperties(data)).toContain(message)
   })
