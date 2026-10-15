@@ -1,7 +1,12 @@
 // The app's one reactive state, saved to localStorage on every change (decision 006).
 // Logic lives in persistence.ts, state.ts and the trackers; this file wires it to Svelte and
 // the browser.
-import { createPersistence, type KeyValueStorage, type PersistStatus } from './persistence'
+import {
+  STORAGE_KEY,
+  createPersistence,
+  type KeyValueStorage,
+  type PersistStatus,
+} from './persistence'
 import { clearShutDownStock } from './production'
 import type { OwnedProperties } from './properties'
 import { defaultState, parseState, type AppState } from './state'
@@ -37,6 +42,12 @@ $effect.root(() => {
   $effect(() => persistence.queue($state.snapshot(store.state)))
 })
 window.addEventListener('pagehide', () => persistence.flush())
+// Another LSOS tab saved: take its state, so this tab's next save does not undo it (issue #22).
+window.addEventListener('storage', (event) => {
+  if (event.storageArea !== localStorage || event.key !== STORAGE_KEY) return
+  const state = persistence.receive(event.newValue)
+  if (state) store.state = state
+})
 
 /**
  * Saves the current state now, for changes made while the page is hiding. The save effect runs

@@ -47,10 +47,23 @@ function onTick() {
   report(tick(clocks.play, clocks.now))
 }
 
+// Only one tab counts play time, or trackers would get it twice (issue #22): a tab that starts
+// counting pauses the others.
+const tabs = typeof BroadcastChannel === 'undefined' ? null : new BroadcastChannel('lsos:clock')
+tabs?.addEventListener('message', () => {
+  if (clocks.play.paused) return
+  clocks.now = Date.now()
+  report(pause(clocks.play, clocks.now))
+  saveNow()
+})
+if (!clocks.play.paused) tabs?.postMessage('counting')
+
 export function togglePause(): void {
   clocks.now = Date.now()
-  if (clocks.play.paused) resume(clocks.play, clocks.now)
-  else report(pause(clocks.play, clocks.now))
+  if (clocks.play.paused) {
+    resume(clocks.play, clocks.now)
+    tabs?.postMessage('counting')
+  } else report(pause(clocks.play, clocks.now))
 }
 
 export function answerGaps(playing: boolean): void {
