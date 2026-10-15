@@ -11,12 +11,13 @@
     bestPayout,
     capacity,
     dailyPayout,
-    DAY_MS,
     estimatedParts,
     fullInMs,
     nextPayoutInMs,
+    syncPayout,
     type SafeState,
   } from '../lib/safes'
+  import Button from './ui/Button.svelte'
   import Countdown from './ui/Countdown.svelte'
   import EditableValue from './ui/EditableValue.svelte'
   import Meter from './ui/Meter.svelte'
@@ -26,7 +27,7 @@
     property: Property
     owned: OwnedProperties
     safeState: SafeState
-    /** Show the controls to correct money, popularity and the next payout. */
+    /** Show the controls to correct money and popularity and to sync the payout time. */
     editing: boolean
     onresync: (safeState: SafeState) => void
   }
@@ -41,6 +42,12 @@
   // "Full in" assumes popularity stays where it is, so it does not rest on the estimated loss.
   const est = (label: string, isEstimate: boolean) => (isEstimate ? `${label} (est.)` : label)
   const money = (value: number) => formatValue(value, 'money')
+  // A random payout shows its range; LSOS counts the middle.
+  const payoutText = $derived(
+    safe.payout.kind === 'range'
+      ? `${money(safe.payout.min)} to ${money(safe.payout.max)} a day`
+      : `${money(payout)} a day`,
+  )
   // The lowest popularity that still pays the most: below it the payout is cut.
   const maxFrom = $derived(safe.payout.kind === 'popularity' ? safe.payout.rows[0]!.from : 0)
   const popularity = $derived(current.popularity)
@@ -80,8 +87,8 @@
   {/if}
   {#if payout < best}
     <p class="warn" role="note">
-      <strong>Payout cut.</strong> Under {maxFrom}% popularity the safe gets {money(payout)} a day instead
-      of {money(best)}.
+      <strong>Payout cut.</strong> At {popularity}% popularity the safe gets {money(payout)} a day;
+      {maxFrom}% or more pays {money(best)}.
     </p>
   {/if}
 {/if}
@@ -99,14 +106,6 @@
     ]}
     onresync={(value) => onresync({ ...current, money: value })}
   />
-  <EditableValue
-    label="Next payout in"
-    value={nextPayoutInMs(current)}
-    unit="duration"
-    min={0}
-    max={DAY_MS}
-    onresync={(value) => onresync({ ...current, sinceMs: DAY_MS - value })}
-  />
 {:else}
   <Meter
     label="Safe"
@@ -118,11 +117,17 @@
 
 <div class="facts">
   <span class="label">{est('Payout', estimated.payout)}</span>
-  <span class="value">{money(payout)} a day</span>
+  <span class="value">{payoutText}</span>
 </div>
 
-{#if !editing}
-  <Countdown label="Next payout in" remainingMs={nextPayoutInMs(current)} />
+<Countdown label="Next payout in" remainingMs={nextPayoutInMs(current)} />
+{#if editing}
+  <div class="sync">
+    <Button onclick={() => onresync(syncPayout(current, safe, owned, property))}
+      >Payout just arrived</Button
+    >
+    <p class="hint">Press when the game says money was added to this safe.</p>
+  </div>
 {/if}
 {#if full === null}
   <p class="hint">Never full: this safe gets nothing a day.</p>
@@ -156,6 +161,13 @@
 
   .value {
     font-variant-numeric: tabular-nums;
+  }
+
+  .sync {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-3);
   }
 
   .warn {

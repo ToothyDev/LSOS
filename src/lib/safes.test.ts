@@ -15,6 +15,7 @@ import {
   nextPayoutInMs,
   parseSafes,
   popularityLoss,
+  syncPayout,
 } from './safes'
 
 const MIN = 60_000
@@ -71,12 +72,18 @@ describe('dailyPayout', () => {
         owning('arcade', slots === undefined ? {} : { 'floor-slots': slots }),
         property('arcade'),
       )
-    expect(arcade()).toBe(5_000)
+    expect(arcade()).toBe(0)
     expect(arcade(35)).toBe(5_000)
     expect(arcade(14)).toBe(2_000)
     expect(arcade(0)).toBe(0)
-    // Out of range reads as the default: all filled.
-    expect(arcade(40)).toBe(5_000)
+    // Out of range reads as the default: none filled.
+    expect(arcade(40)).toBe(0)
+  })
+
+  it('pays the garment factory the middle of its random $1,500 to $2,000', () => {
+    expect(
+      dailyPayout(safe('garment-factory'), owning('garment-factory'), property('garment-factory')),
+    ).toBe(1_750)
   })
 
   it('pays the salvage yard its 0% reputation amount, more with Staff', () => {
@@ -116,8 +123,10 @@ describe('upgrades', () => {
       estimatedParts(safe(id), owning(id, upgrades), property(id))
     expect(parts('nightclub')).toEqual({ payout: false, popularity: true })
     expect(parts('agency')).toEqual({ payout: true, popularity: false })
-    expect(parts('arcade')).toEqual({ payout: false, popularity: false })
+    expect(parts('arcade')).toEqual({ payout: true, popularity: false })
     expect(parts('arcade', { 'floor-slots': 20 })).toEqual({ payout: true, popularity: false })
+    expect(parts('arcade', { 'floor-slots': 35 })).toEqual({ payout: false, popularity: false })
+    expect(parts('garment-factory').payout).toBe(true)
     expect(parts('salvage-yard').payout).toBe(true)
   })
 })
@@ -169,7 +178,11 @@ describe('advanceSafe', () => {
   })
 
   it('has no popularity for other safes', () => {
-    const arcade = [safe('arcade'), owning('arcade'), property('arcade')] as const
+    const arcade = [
+      safe('arcade'),
+      owning('arcade', { 'floor-slots': 35 }),
+      property('arcade'),
+    ] as const
     expect(advanceSafe({ money: 0, sinceMs: 0 }, ...arcade, 3 * DAY_MS)).toEqual({
       money: 15_000,
       sinceMs: 0,
@@ -179,6 +192,24 @@ describe('advanceSafe', () => {
   it('changes nothing without play time', () => {
     const state = emptySafe(safe('nightclub'))
     expect(advanceSafe(state, ...nightclub, 0)).toBe(state)
+  })
+})
+
+describe('syncPayout', () => {
+  const nightclub = [safe('nightclub'), owning('nightclub'), property('nightclub')] as const
+
+  it('pays a payout LSOS has not counted yet and restarts the day', () => {
+    const state = { money: 10_000, sinceMs: 40 * MIN, popularity: 100 }
+    expect(syncPayout(state, ...nightclub)).toEqual({
+      money: 60_000,
+      sinceMs: 0,
+      popularity: 90,
+    })
+  })
+
+  it('only restarts the day when LSOS counted the payout a moment ago', () => {
+    const state = { money: 60_000, sinceMs: 5 * MIN, popularity: 90 }
+    expect(syncPayout(state, ...nightclub)).toEqual({ ...state, sinceMs: 0 })
   })
 })
 
@@ -211,7 +242,10 @@ describe('forecasts', () => {
 
 describe('advanceSafes', () => {
   it('pays owned safes only, starting empty', () => {
-    const owned = { ...owning('arcade'), agency: { owned: false, upgrades: {} } }
+    const owned = {
+      ...owning('arcade', { 'floor-slots': 35 }),
+      agency: { owned: false, upgrades: {} },
+    }
     expect(advanceSafes({}, SAFES, PROPERTIES, owned, DAY_MS)).toEqual({
       arcade: { money: 5_000, sinceMs: 0 },
     })

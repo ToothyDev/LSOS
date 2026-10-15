@@ -129,7 +129,7 @@ export const PROPERTIES: readonly Property[] = [
         id: 'floor-slots',
         label: `Floor slots filled (of ${ARCADE_SLOTS})`,
         max: ARCADE_SLOTS,
-        default: ARCADE_SLOTS,
+        default: 0,
       },
     ],
     card: false,
@@ -153,6 +153,14 @@ export const PROPERTIES: readonly Property[] = [
     ],
     card: false,
     source: SAFES.find((safe) => safe.propertyId === 'salvage-yard')!.source,
+    checked: SAFES_CHECKED,
+  },
+  {
+    id: 'garment-factory',
+    label: 'Garment Factory',
+    upgrades: [],
+    card: false,
+    source: SAFES.find((safe) => safe.propertyId === 'garment-factory')!.source,
     checked: SAFES_CHECKED,
   },
 ]

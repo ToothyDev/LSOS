@@ -59,6 +59,8 @@ export function dailyPayout(
       return payout.withUpgrade && upgrade(owned, property, payout.withUpgrade.upgrade) === true
         ? payout.withUpgrade.amount
         : payout.amount
+    case 'range':
+      return Math.round((payout.min + payout.max) / 2)
   }
 }
 
@@ -90,6 +92,7 @@ export function estimatedParts(
     payout:
       payout.kind === 'steps' ||
       payout.kind === 'fixed' ||
+      payout.kind === 'range' ||
       (payout.kind === 'slots' && Number(upgrade(owned, property, payout.upgrade)) < payout.slots),
     popularity: safe.popularity !== undefined,
   }
@@ -118,6 +121,21 @@ export function advanceSafe(
     if (popularity !== undefined) popularity = Math.max(0, popularity - loss)
   }
   return popularity === undefined ? { money, sinceMs } : { money, sinceMs, popularity }
+}
+
+/**
+ * The safe right after the game says a payout came in: the day restarts now. If LSOS has not
+ * counted that payout yet (its next one was due within half a day), it is paid now, as at the
+ * end of a day; if LSOS counted it less than half a day ago, only the timer moves.
+ */
+export function syncPayout(
+  state: SafeState,
+  safe: Safe,
+  owned: OwnedProperties,
+  property: Property,
+): SafeState {
+  if (state.sinceMs < DAY_MS / 2) return { ...state, sinceMs: 0 }
+  return advanceSafe(state, safe, owned, property, nextPayoutInMs(state))
 }
 
 /** Play time until the next payout. */

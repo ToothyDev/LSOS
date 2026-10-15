@@ -29,6 +29,8 @@ export type SafePayout =
   | { kind: 'slots'; upgrade: string; full: number; slots: number }
   /** A fixed amount, or another with an upgrade bought. */
   | { kind: 'fixed'; amount: number; withUpgrade?: { upgrade: string; amount: number } }
+  /** A random amount from `min` to `max` each day; tracked as the middle of the two. */
+  | { kind: 'range'; min: number; max: number }
 
 /** A one-click popularity change, e.g. a finished promotion job. */
 export interface Boost {
@@ -156,8 +158,8 @@ export const SAFES: readonly Safe[] = [
     capacity: 100_000,
     payout: { kind: 'slots', upgrade: 'floor-slots', full: 5_000, slots: ARCADE_SLOTS },
     estimate:
-      'With empty floor slots the payout is a best estimate: $5,000 shared evenly over the ' +
-      '35 slots.',
+      'With fewer than all 35 floor slots filled the payout is a best estimate: $5,000 shared ' +
+      'evenly over the 35 slots.',
     source:
       'gta.wiki, Arcades: safe holds $100,000, at most $5,000 per in-game day with every ' +
       'floor slot filled, any machine counts the same. 35 slots: faxagate, Arcade Games Guide; ' +
@@ -176,6 +178,18 @@ export const SAFES: readonly Safe[] = [
       'gta.wiki, Salvage Yard: pays every in-game day (48 minutes) by reputation, $250 at 0% ' +
       '($300 with Staff), the Wall Safe holds $250,000. Safe without the Wall Safe $100,000: ' +
       'gtaboss, How to get completely passive income. Open questions: issue #43.',
+    checked: SAFES_CHECKED,
+  },
+  {
+    propertyId: 'garment-factory',
+    capacity: 100_000,
+    payout: { kind: 'range', min: 1_500, max: 2_000 },
+    estimate:
+      'The game pays a random $1,500 to $2,000 a day; LSOS counts the middle, $1,750, so the ' +
+      'safe money is a best estimate. Correct it when you visit.',
+    source:
+      'gta.wiki, Garment Factory: employees generate a random $1,500 to $2,000 daily, collected ' +
+      'from the safe in the office; the safe holds $100,000. No upgrade changes it.',
     checked: SAFES_CHECKED,
   },
 ]
