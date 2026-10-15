@@ -3,7 +3,7 @@
   "private": true,
   "license": "MIT",
   "version": "0.0.0",
-  "description": "Los Santos Operating System: a GTA Online business, heist and cooldown tracker that runs in your browser.",
+  "description": "Los Santos Operating System: a GTA Online business and cooldown tracker that runs in your browser.",
   "type": "module",
   "engines": {
     "node": ">=22"

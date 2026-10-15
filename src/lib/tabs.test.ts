@@ -7,7 +7,7 @@ describe('tabFromHash', () => {
   })
 
   it('accepts a hash without the slash', () => {
-    expect(tabFromHash('#heists')).toBe('heists')
+    expect(tabFromHash('#safes')).toBe('safes')
   })
 
   it('falls back to the default tab for empty or unknown hashes', () => {

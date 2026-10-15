@@ -31,3 +31,4 @@ free number, add one line below. **Replacing one:** write a new decision, then m
 - [018](018-money-fronts.md) Money Fronts: one Car Wash safe card on the Safes tab, paid by the fronts and other businesses, heat per front (est.), missions and legal jobs
 - [019](019-owned-value-bonus.md) Money Front value bonus: owning Car Wash or Smoke on the Water adds 35% to Counterfeit Cash or Weed, far value adds the bonuses (est.), Helitours left out
 - [020](020-shut-down.md) Shut-down businesses: a Running/Shut down button next to Owned for biker businesses and the Bunker; shutting down clears the stock; no production, card greyed, nightclub goods locked, nothing to the Money Fronts safe
+- [021](021-no-heist-tracker.md) No heist cooldown tracker: only Cayo Perico has one worth a timer; Heists tab removed
