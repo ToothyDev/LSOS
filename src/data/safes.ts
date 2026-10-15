@@ -70,6 +70,7 @@ export const SAFES_CHECKED = '2026-10-14'
 /** Arcade floor slots; a machine that takes two counts as two. */
 export const ARCADE_SLOTS = 35
 
+/** In card order: fastest to fill at the best payout first. */
 export const SAFES: readonly Safe[] = [
   {
     propertyId: 'nightclub',
@@ -167,6 +168,18 @@ export const SAFES: readonly Safe[] = [
     checked: SAFES_CHECKED,
   },
   {
+    propertyId: 'garment-factory',
+    capacity: 100_000,
+    payout: { kind: 'range', min: 1_500, max: 2_000 },
+    estimate:
+      'The game pays a random $1,500 to $2,000 a day; LSOS counts the middle, $1,750, so the ' +
+      'safe money is a best estimate. Correct it when you visit.',
+    source:
+      'gta.wiki, Garment Factory: employees generate a random $1,500 to $2,000 daily, collected ' +
+      'from the safe in the office; the safe holds $100,000. No upgrade changes it.',
+    checked: SAFES_CHECKED,
+  },
+  {
     propertyId: 'salvage-yard',
     capacity: 100_000,
     bigger: { upgrade: 'wall-safe', capacity: 250_000 },
@@ -178,18 +191,6 @@ export const SAFES: readonly Safe[] = [
       'gta.wiki, Salvage Yard: pays every in-game day (48 minutes) by reputation, $250 at 0% ' +
       '($300 with Staff), the Wall Safe holds $250,000. Safe without the Wall Safe $100,000: ' +
       'gtaboss, How to get completely passive income. Open questions: issue #43.',
-    checked: SAFES_CHECKED,
-  },
-  {
-    propertyId: 'garment-factory',
-    capacity: 100_000,
-    payout: { kind: 'range', min: 1_500, max: 2_000 },
-    estimate:
-      'The game pays a random $1,500 to $2,000 a day; LSOS counts the middle, $1,750, so the ' +
-      'safe money is a best estimate. Correct it when you visit.',
-    source:
-      'gta.wiki, Garment Factory: employees generate a random $1,500 to $2,000 daily, collected ' +
-      'from the safe in the office; the safe holds $100,000. No upgrade changes it.',
     checked: SAFES_CHECKED,
   },
 ]

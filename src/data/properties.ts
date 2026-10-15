@@ -145,6 +145,14 @@ export const PROPERTIES: readonly Property[] = [
     checked: SAFES_CHECKED,
   },
   {
+    id: 'garment-factory',
+    label: 'Garment Factory',
+    upgrades: [],
+    card: false,
+    source: SAFES.find((safe) => safe.propertyId === 'garment-factory')!.source,
+    checked: SAFES_CHECKED,
+  },
+  {
     id: 'salvage-yard',
     label: 'Salvage Yard',
     upgrades: [
@@ -153,14 +161,6 @@ export const PROPERTIES: readonly Property[] = [
     ],
     card: false,
     source: SAFES.find((safe) => safe.propertyId === 'salvage-yard')!.source,
-    checked: SAFES_CHECKED,
-  },
-  {
-    id: 'garment-factory',
-    label: 'Garment Factory',
-    upgrades: [],
-    card: false,
-    source: SAFES.find((safe) => safe.propertyId === 'garment-factory')!.source,
     checked: SAFES_CHECKED,
   },
 ]
