@@ -30,3 +30,4 @@ free number, add one line below. **Replacing one:** write a new decision, then m
 - [017](017-production-boost.md) Acid Lab: optional far sale, value bonus (named product), no raids; production boost by units made or 24 real hours, once a day
 - [018](018-money-fronts.md) Money Fronts: one Car Wash safe card on the Safes tab, paid by the fronts and other businesses, heat per front (est.), missions and legal jobs
 - [019](019-owned-value-bonus.md) Money Front value bonus: owning Car Wash or Smoke on the Water adds 35% to Counterfeit Cash or Weed, far value adds the bonuses (est.), Helitours left out
+- [020](020-shut-down.md) Shut-down businesses: a flag apart from owned for biker businesses and the Bunker; no production, nightclub goods locked, nothing to the Money Fronts safe

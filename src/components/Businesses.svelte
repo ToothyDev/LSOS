@@ -21,7 +21,12 @@
     type BoostsById,
     type BusinessBarsById,
   } from '../lib/production'
-  import { ownedProperties, upgradeValue, type OwnedProperties } from '../lib/properties'
+  import {
+    isShutDown,
+    ownedProperties,
+    upgradeValue,
+    type OwnedProperties,
+  } from '../lib/properties'
   import type { GoodsStock } from '../lib/nightclub'
   import type { Bars } from '../lib/resync'
   import { hashForTab } from '../lib/tabs'
@@ -205,6 +210,11 @@
 
   /** Short summary of the bought upgrades, e.g. "Equipment, Technician: Cash". */
   function summary(property: Property): string {
+    const shutDown = isShutDown(owned, property.id) ? 'Shut down · ' : ''
+    return shutDown + upgradeSummary(property)
+  }
+
+  function upgradeSummary(property: Property): string {
     const parts = property.upgrades.flatMap((upgrade) => {
       const value = upgradeValue(owned, property.id, upgrade)
       if (upgrade.kind === 'toggle') return value === true ? [upgrade.label] : []
@@ -251,6 +261,7 @@
                 {production}
                 rate={matchingRate(production, owned, property)}
                 running={rateFor(production, owned, property)}
+                shutDown={isShutDown(owned, property.id)}
                 bars={businesses[property.id] ?? emptyBars()}
                 {now}
                 editing={editing === property.id}

@@ -10,6 +10,8 @@ export type UpgradeValue = boolean | string | number
 export interface PropertySettings {
   owned: boolean
   upgrades: Record<string, UpgradeValue>
+  /** Shut down from its laptop: owned, but it makes nothing (issue #38). Absent means running. */
+  shutDown?: boolean
 }
 
 /** Settings by property id. A property without an entry is not owned and has no upgrades. */
@@ -17,6 +19,16 @@ export type OwnedProperties = Record<string, PropertySettings>
 
 export function isOwned(owned: OwnedProperties, propertyId: string): boolean {
   return owned[propertyId]?.owned ?? false
+}
+
+/** Whether the property is marked shut down. Only a property that can be shut down is marked. */
+export function isShutDown(owned: OwnedProperties, propertyId: string): boolean {
+  return owned[propertyId]?.shutDown ?? false
+}
+
+/** Owned and not shut down: what makes a business produce and count for others (issue #38). */
+export function isRunning(owned: OwnedProperties, propertyId: string): boolean {
+  return isOwned(owned, propertyId) && !isShutDown(owned, propertyId)
 }
 
 /** The properties of `catalog` the user owns, in catalog order. */
@@ -60,6 +72,16 @@ export function setOwned(
   return { ...owned, [propertyId]: { upgrades: {}, ...owned[propertyId], owned: value } }
 }
 
+/** Marks a business shut down or running. Kept apart from owned, like the upgrades. */
+export function setShutDown(
+  owned: OwnedProperties,
+  propertyId: string,
+  value: boolean,
+): OwnedProperties {
+  const current = owned[propertyId] ?? { owned: false, upgrades: {} }
+  return { ...owned, [propertyId]: { ...current, shutDown: value } }
+}
+
 export function setUpgrade(
   owned: OwnedProperties,
   propertyId: string,
@@ -93,7 +115,11 @@ export function parseOwnedProperties(data: unknown): OwnedProperties | string {
       }
       upgrades[upgradeId] = value as UpgradeValue
     }
+    if (entry.shutDown !== undefined && typeof entry.shutDown !== 'boolean') {
+      return `The saved shut-down setting of property "${id}" is not true or false.`
+    }
     result[id] = { owned: entry.owned, upgrades }
+    if (entry.shutDown !== undefined) result[id].shutDown = entry.shutDown
   }
   return result
 }

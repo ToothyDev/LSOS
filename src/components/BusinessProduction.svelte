@@ -27,6 +27,8 @@
     rate: ProductionRate | undefined
     /** The same rate if it can run on its own (its supply use is known). */
     running: KnownRate | undefined
+    /** Shut down from its laptop: nothing is made or used until it runs again (issue #38). */
+    shutDown?: boolean
     bars: Bars
     /** Wall-clock time, for supply deliveries. */
     now: number
@@ -47,6 +49,7 @@
     production,
     rate,
     running,
+    shutDown = false,
     bars,
     now,
     editing,
@@ -71,7 +74,9 @@
   const boosting = $derived(boostRunning(boost, production.boost, now))
   const nextBoost = $derived(production.boost ? nextBoostAt(boost, production.boost) : 0)
   const ahead = $derived(
-    running ? forecast(current, production, running, boosting ? boost!.unitsLeft : 0) : null,
+    running && !shutDown
+      ? forecast(current, production, running, boosting ? boost!.unitsLeft : 0)
+      : null,
   )
   const percent = (value: number) => formatValue(value, 'percent')
   // Numbers resting on estimated rates say so (decision 013). The value also counts units made
@@ -115,7 +120,7 @@
   </div>
 {/if}
 
-{#if production.boost && running?.boostedMinutesPerUnit !== undefined}
+{#if production.boost && running?.boostedMinutesPerUnit !== undefined && !shutDown}
   <!-- Play time while it runs; the next one is a real-time wait (daily reset). -->
   <div class="facts">
     {#if boosting}
@@ -137,7 +142,11 @@
   {/if}
 {/if}
 
-{#if ahead}
+{#if shutDown}
+  <p class="note" role="note">
+    <strong>Shut down.</strong> No stock is made and no supplies are used until you start it again.
+  </p>
+{:else if ahead}
   <!-- Only what happens first: the other one cannot happen before it. Play time. -->
   {#if ahead.fullInMs !== null}
     <Countdown

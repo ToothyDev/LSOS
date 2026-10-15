@@ -14,7 +14,7 @@ import {
   warehouseSetup,
   wholeCrates,
 } from './nightclub'
-import type { OwnedProperties, UpgradeValue } from './properties'
+import { setShutDown, type OwnedProperties, type UpgradeValue } from './properties'
 
 const MIN = 60_000
 const nightclub = PROPERTIES.find((p) => p.id === NIGHTCLUB_ID)!
@@ -106,6 +106,15 @@ describe('produceGoods', () => {
     expect(produceGoods(stock, GOODS, PROPERTIES, noCash, 60 * MIN)).toBe(stock)
     const sold = { ...owned, [NIGHTCLUB_ID]: { ...owned[NIGHTCLUB_ID]!, owned: false } }
     expect(produceGoods(stock, GOODS, PROPERTIES, sold, 60 * MIN)).toBe(stock)
+  })
+
+  it('locks goods while their only business is shut down (issue #38)', () => {
+    const stock = {}
+    const shut = setShutDown(owned, 'mc-cash', true)
+    expect(produceGoods(stock, GOODS, PROPERTIES, shut, 60 * MIN)).toBe(stock)
+    const viaWarehouse = owning({ 'technician-1': 'cargo' }, ['hangar', 'special-cargo'])
+    const hangarShut = setShutDown(viaWarehouse, 'hangar', true)
+    expect(produceGoods({}, GOODS, PROPERTIES, hangarShut, 140 * MIN)).toEqual({ cargo: 1 })
   })
 
   it('unlocks cargo with either the hangar or the special cargo warehouse', () => {

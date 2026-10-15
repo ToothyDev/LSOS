@@ -19,7 +19,7 @@ import {
   type Boost,
   type KnownRate,
 } from './production'
-import type { OwnedProperties } from './properties'
+import { setShutDown, type OwnedProperties } from './properties'
 import type { Bars } from './resync'
 
 const MIN = 60_000
@@ -242,6 +242,13 @@ describe('produceAll', () => {
     }
     const next = produceAll(businesses, PROPERTIES, PRODUCTION, owned, 7 * MIN, 0, 100).businesses
     expect(next).toEqual({ ...businesses, bunker: { stock: 1, supplies: 95 } })
+  })
+
+  it('keeps a shut-down business as it is (issue #38)', () => {
+    const businesses = { bunker: { stock: 0, supplies: 100 } }
+    const shut = setShutDown(owned, 'bunker', true)
+    const next = produceAll(businesses, PROPERTIES, PRODUCTION, shut, 7 * MIN, 0, 100)
+    expect(next.businesses).toBe(businesses)
   })
 
   it('returns the same object when nothing changed', () => {

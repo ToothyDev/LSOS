@@ -1,11 +1,13 @@
 <script lang="ts">
-  // Owned yes/no and the upgrades of one property (decision 011).
+  // Owned yes/no, shut down (issue #38) and the upgrades of one property (decision 011).
   import type { Property } from '../data/properties'
   import Button from './ui/Button.svelte'
   import NumberField from './ui/NumberField.svelte'
   import {
     isOwned,
+    isShutDown,
     setOwned,
+    setShutDown,
     setUpgrade,
     upgradeValue,
     type OwnedProperties,
@@ -35,8 +37,19 @@
     </Button>
   </div>
 
-  {#if isPropertyOwned && property.upgrades.length > 0}
+  {#if isPropertyOwned && (property.upgrades.length > 0 || property.canShutDown)}
     <div class="upgrades">
+      {#if property.canShutDown}
+        <label>
+          <input
+            type="checkbox"
+            checked={isShutDown(owned, property.id)}
+            onchange={(event) =>
+              onchange(setShutDown(owned, property.id, event.currentTarget.checked))}
+          />
+          Shut down
+        </label>
+      {/if}
       {#each property.upgrades as upgrade (upgrade.id)}
         {#if upgrade.kind === 'toggle'}
           <label>

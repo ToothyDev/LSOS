@@ -16,9 +16,8 @@
 - **Payout** (`src/data/fronts.ts`), every in-game day (48 minutes of play time), up to
   $100,000: $750 per front ($1,500 after 15 laundering missions) plus a fixed amount for each
   other business owned, from the in-game safe screen (data comment has the sources). A front at
-  100% heat pays nothing; the Car Wash at 100% stops the whole safe. LSOS counts every owned
-  business; the game skips biker businesses and the Bunker while shut down or not set up, which
-  the card says (shutting down: issue #38).
+  100% heat pays nothing; the Car Wash at 100% stops the whole safe. A shut-down business
+  adds nothing (decision 020); one bought but not set up still counts in LSOS.
 - **Heat** per front, saved with the safe (`heat` by front id, data version 9). At the end of
   each day, after the payout, every front below 100% gains 10%, one less per other front below
   100% (8% with all three). A laundering mission or Mr. Faber job adds 10% to the front it was

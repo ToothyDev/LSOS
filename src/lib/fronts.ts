@@ -15,7 +15,7 @@ import {
   type Front,
 } from '../data/fronts'
 import type { Property } from '../data/properties'
-import { isOwned, setUpgrade, upgradeValue, type OwnedProperties } from './properties'
+import { isOwned, isRunning, setUpgrade, upgradeValue, type OwnedProperties } from './properties'
 import { DAY_MS, nextPayoutInMs, type SafeState } from './safes'
 
 /** The heat a front is stopped at: no pay from it, and none at all from the Car Wash. */
@@ -48,10 +48,13 @@ export function frontPay(front: Front, owned: OwnedProperties, catalog: readonly
     : front.amount
 }
 
-/** What the other businesses owned add per day; the warehouse counts by its largest size. */
+/**
+ * What the other businesses owned add per day; the warehouse counts by its largest size. A
+ * shut-down business adds nothing (issue #38).
+ */
 export function sharesPay(owned: OwnedProperties, catalog: readonly Property[]): number {
   let total = 0
-  for (const share of SHARES) if (isOwned(owned, share.propertyId)) total += share.amount
+  for (const share of SHARES) if (isRunning(owned, share.propertyId)) total += share.amount
   const warehouse = catalog.find((p) => p.id === 'special-cargo')
   const size = warehouse?.upgrades.find((u) => u.id === WAREHOUSE_SIZE_UPGRADE)
   if (warehouse && size && isOwned(owned, warehouse.id)) {

@@ -32,6 +32,11 @@ export interface Property {
    * elsewhere, or that only have a safe (Safes tab).
    */
   card?: false
+  /**
+   * True for businesses the game lets you shut down from their laptop: they stay owned but make
+   * nothing (issue #38).
+   */
+  canShutDown?: true
   source: string
   checked: string
 }
@@ -73,6 +78,7 @@ export const PROPERTIES: readonly Property[] = [
     id: 'bunker',
     label: 'Bunker',
     upgrades: PRODUCTION_UPGRADES,
+    canShutDown: true,
     source: BUNKER_SOURCE,
     checked: '2026-10-14',
   },
@@ -232,5 +238,12 @@ export const PROPERTIES: readonly Property[] = [
 ]
 
 function mc(id: string, label: string): Property {
-  return { id, label, upgrades: PRODUCTION_UPGRADES, source: MC_SOURCE, checked: '2026-10-14' }
+  return {
+    id,
+    label,
+    upgrades: PRODUCTION_UPGRADES,
+    canShutDown: true,
+    source: MC_SOURCE,
+    checked: '2026-10-14',
+  }
 }

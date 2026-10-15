@@ -131,8 +131,8 @@
   <span class="value">{money(parts.fronts + parts.others)} a day</span>
 </div>
 <p class="hint">
-  Fronts {money(parts.fronts)} + your other businesses {money(parts.others)}. Biker businesses and
-  the Bunker only count while set up and not shut down.
+  Fronts {money(parts.fronts)} + your other businesses {money(parts.others)}. A shut-down business
+  adds nothing.
 </p>
 
 <Countdown label="Next payout in" remainingMs={nextPayoutInMs(current)} />
