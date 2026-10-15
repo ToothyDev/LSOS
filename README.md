@@ -4,8 +4,8 @@
 > ([Claude Code](https://claude.com/claude-code)).
 
 A GTA Online companion that runs in your browser. Keep it open while you play, and it tracks your
-businesses, safes and cooldowns, so you know when stock is full, a safe needs emptying or a heist
-is ready again.
+businesses, safes and cooldowns, so you know when stock is full or a safe needs
+emptying.
 
 > **Status:** early development. Not usable yet; see the [issues](https://github.com/ToothyDev/LSOS/issues) for what's planned.
 
