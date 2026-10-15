@@ -1,7 +1,7 @@
 <script lang="ts" generics="T">
-  // A grid of cards the user can put in their own order (decisions 014, 026): drag a card, or
-  // press the arrow keys on its title bar. The cards are snippets; each gets the handlers for its
-  // title bar (`Panel`'s `move`) and whether it is being moved. The parent saves the order.
+  // A grid of cards the user can put in their own order (decisions 014, 026): drag a card by its
+  // title bar, or press the arrow keys there. The cards are snippets; each gets the handlers for
+  // its title bar (`Panel`'s `move`) and whether it is being moved. The parent saves the order.
   import { tick, type Snippet } from 'svelte'
   import type { HTMLAttributes } from 'svelte/elements'
   import { flip } from 'svelte/animate'
@@ -27,7 +27,7 @@
   // one it is over (only those two move). Saved on release.
   let preview = $state<string[] | null>(null)
   let moving = $state<string | null>(null)
-  // A press on a card that has not moved far enough yet to lift it, so a click stays a click.
+  // A press on a title bar that has not moved far enough yet to lift it, so a click stays a click.
   let pressed: { id: string; x: number; y: number } | null = null
   // The dragged card follows the pointer: where on the card it was grabbed, and how far it is
   // from its slot in the grid. Its slot stays outlined.
@@ -47,9 +47,6 @@
   // size per side), so a card resting on a border does not flick back and forth.
   const SWAP_INSET = 0.1
   const SETTLE_MS = 200
-  // Controls inside a card keep their own pointer handling; a press on them never drags.
-  const CONTROLS =
-    'a, button, input, select, textarea, label, summary, [contenteditable], [tabindex]'
 
   function save(ids: string[]) {
     if (ids.join() !== sorted.join()) onorder(saveOrder(ids, order))
@@ -97,7 +94,8 @@
     follow(key, x, y)
   }
 
-  // The rest of a drag is followed on the window, where the pointer goes when it leaves the card.
+  // The rest of a drag is followed on the window, where the pointer goes when it leaves the
+  // title bar.
   async function drag(event: PointerEvent) {
     const { clientX: x, clientY: y } = event
     if (moving === null && pressed) {
@@ -140,21 +138,17 @@
   }
 
   /**
-   * A press anywhere on a card picks it up, except on its controls. A touch picks it up only by
-   * its title bar (`touch-action: none` there), so swiping over a card still scrolls the page.
+   * Handlers for the title bar of one card, the only place to pick it up, so text and controls
+   * on the card work as usual. `touch-action: none` there makes a touch drag instead of scroll.
    */
-  function press(key: string, event: PointerEvent) {
-    if (event.button !== 0 || moving !== null || !(event.target instanceof Element)) return
-    const handle = event.target.closest('[data-move-handle]')
-    if (!handle && (event.pointerType === 'touch' || event.target.closest(CONTROLS))) return
-    // No text selection or focus change while dragging.
-    event.preventDefault()
-    pressed = { id: key, x: event.clientX, y: event.clientY }
-  }
-
-  /** Keyboard handlers for the title bar of one card. */
   function handle(key: string): HTMLAttributes<HTMLDivElement> {
     return {
+      onpointerdown: (event) => {
+        if (event.button !== 0 || moving !== null) return
+        // No text selection or focus change while dragging.
+        event.preventDefault()
+        pressed = { id: key, x: event.clientX, y: event.clientY }
+      },
       onkeydown: async (event) => {
         const from = sorted.indexOf(key)
         const to =
@@ -192,8 +186,6 @@
         class:lifted={moving === key}
         class:settling={settling === key}
         style:translate={moving === key ? `${lift.x}px ${lift.y}px` : undefined}
-        onpointerdown={(event) => press(key, event)}
-        role="presentation"
       >
         {@render card(item, handle(key), moving === key)}
       </div>
