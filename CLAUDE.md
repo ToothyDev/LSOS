@@ -29,6 +29,7 @@ Svelte 5 + TypeScript + Vite. Public repository.
 | Value bonus for owning a front                 | `ownedBonus` in `data/production.ts` (019)        |
 | Shut-down businesses (owned, not running)      | `isRunning` in `lib/properties.ts` (020)          |
 | Theme tokens                                   | `src/app.css` (decision 009)                      |
+| Link previews (Open Graph), preview image      | `index.html`, `scripts/og-image.html`             |
 | CI, templates                                  | `.github/`                                        |
 | Skills: `handoff`, `finish-pr`; agent: `scout` | `.claude/`                                        |
 
