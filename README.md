@@ -24,7 +24,8 @@ emptying.
   collected, spun), and get optional alerts as pop-ups or browser notifications.
 - **Resync anytime.** When an estimate drifts from what the game shows, click the value and type
   the real one.
-- **Weekly events** (bonuses, discounts) come from a data file in this repo that's updated weekly.
+- **Weekly events** (bonuses, discounts, rotations) come from a data file in this repo that's updated
+  weekly, copied from gta.wiki. A Breaking News bar shows the bonuses on every tab.
 
 Targets the current-gen edition (PC Enhanced, PS5, Xbox Series X|S).
 

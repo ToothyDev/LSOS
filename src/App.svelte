@@ -8,11 +8,14 @@
   import SaveStatus from './components/SaveStatus.svelte'
   import Settings from './components/Settings.svelte'
   import Timers from './components/Timers.svelte'
+  import NewsBar from './components/NewsBar.svelte'
+  import Weekly from './components/Weekly.svelte'
   import TabBar from './components/ui/TabBar.svelte'
   import { GOODS } from './data/nightclub'
   import { PRODUCTION } from './data/production'
   import { PROPERTIES } from './data/properties'
   import { SAFES } from './data/safes'
+  import { WEEK } from './data/weekly'
   import { clocks } from './lib/clock.svelte'
   import { dismissPopup, overview, quick, undoQuick } from './lib/overview.svelte'
   import './lib/production.svelte'
@@ -66,6 +69,7 @@
   <div class="window">
     <ClockBar title={kit ? 'Component kit' : TABS.find((tab) => tab.id === active)!.label} />
     <SaveStatus />
+    <NewsBar week={WEEK} owned={store.state.properties} now={clocks.now} />
 
     <main>
       {#if kit && kitModule}
@@ -125,6 +129,8 @@
           order={store.state.timerOrder}
           onorder={(order) => (store.state.timerOrder = order)}
         />
+      {:else if active === 'weekly'}
+        <Weekly week={WEEK} owned={store.state.properties} now={clocks.now} />
       {:else if active === 'settings'}
         <Settings />
       {:else}

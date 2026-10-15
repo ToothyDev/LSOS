@@ -1,10 +1,18 @@
-# 027: What the weekly file holds, its week and its source
+# 027: Weekly events: one typed file per week, its contents, week and source
 
 2026-10-15, issue #16 (format) and #17 (routine). Builds on decision 005.
 
 ## Decision
 
-- **Contents of `public/weekly.json`**, per week:
+- **One typed TypeScript file, not JSON.** The week is `WEEK` in `src/data/weekly.ts`, typed by
+  `Week` in `src/lib/weekly.ts`, and bundled with the site. The type checker is the schema, and
+  a unit test runs `weekProblems` on it (dates in order, factors above 1, discounts 1 to 100%,
+  known property ids, a gta.wiki source), so `npm run verify` and CI reject a bad week before it
+  merges. No fetch, loading state or runtime validator. This replaces the `public/weekly.json`
+  of issue #16; decision 005 (a committed file, updated by pull request) still holds. Most
+  entries are plain strings, copied as the wiki words them; only what the UI sorts or groups
+  by has fields (a multiplier's factor and property, a discount's kind and percent).
+- **Contents**, per week:
   - **Money multipliers**: activity, factor (2x, 3x, ...), what it pays (GTA$, RP or both).
   - **Weekly Challenge**: the objective and its reward.
   - **Rotations**: Salvage Yard robbery vehicles, FIB Priority File, Kortz Center paintings,
@@ -25,6 +33,14 @@
   - **Daily, map-bound rotations**: the Gun Van's location, and the daily Junk Energy and RC
     Time Trials. They change every day and only make sense on a map, which LSOS does not have.
     The Gun Van's weekly stock and discounts stay (they are not tied to a place).
+- **Shown** on the Weekly tab (bonus payouts with owned ones first, challenge and gifts,
+  rotation, discounts by vehicles, properties and Gun Van; then a collapsed "Also running" list)
+  and in a Breaking News bar on every tab (multipliers, then gifts; links to the Weekly tab).
+  The Weekly panels keep a fixed order: unlike the business cards, there is nothing to compare
+  between them. A multiplier names its `property` id when it pays through one (e.g. bounties
+  through the Bail Office), so owners see it first.
+- **Out of date:** once `now >= end` the bar says the weekly events are out of date and the tab
+  shows a warning over dimmed panels, instead of old bonuses as current.
 - **The week** runs Thursday to the next Thursday. The file stores explicit `start` and `end`
   instants and the site uses only those (staleness: `now >= end`), never a weekday rule: some
   events ran 12 to 14 days (gta.wiki, Lucky Wheel). Instants are written as Thursday 2:00 AM US
