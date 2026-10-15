@@ -16,7 +16,14 @@
   import { SAFES } from './data/safes'
   import { WEEK } from './data/weekly'
   import { clocks } from './lib/clock.svelte'
-  import { dismissPopup, overview, quick, undoQuick } from './lib/overview.svelte'
+  import {
+    dismissPopup,
+    hideFromOverview,
+    overview,
+    quick,
+    showOnOverview,
+    undoQuick,
+  } from './lib/overview.svelte'
   import './lib/production.svelte'
   import './lib/safes.svelte'
   import { setProperties, store } from './lib/store.svelte'
@@ -82,6 +89,8 @@
           paused={clocks.play.paused}
           onquick={quick}
           onundo={undoQuick}
+          onhide={hideFromOverview}
+          onshow={showOnOverview}
         />
       {:else if active === 'businesses'}
         <Businesses

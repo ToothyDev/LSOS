@@ -6,7 +6,15 @@ import { PROPERTIES } from '../data/properties'
 import { SAFES } from '../data/safes'
 import { LUCKY_WHEEL, MANSION_BOOST } from '../data/timers'
 import { nearIds, newlyNear, sortEvents, type NextEvent } from './events'
-import { allEvents, clubPopularity, holdings, quickAction, type TrackerData } from './overview'
+import {
+  allEvents,
+  clubPopularity,
+  hiddenLabel,
+  holdings,
+  quickAction,
+  visibleEvents,
+  type TrackerData,
+} from './overview'
 import type { OwnedProperties } from './properties'
 import { DAY_MS } from './safes'
 import { defaultState, type AppState } from './state'
@@ -176,6 +184,43 @@ describe('allEvents', () => {
       estimated: true,
     })
     expect(find(events, 'safe:car-wash')).toMatchObject({ source: 'Money Fronts' })
+  })
+})
+
+describe('visibleEvents', () => {
+  const owned = owning({ 'car-wash': {}, nightclub: {} })
+
+  it('leaves out every item of a hidden card, and only those', () => {
+    const events = allEvents(state({ properties: owned }), DATA, NOW)
+    const ids = visibleEvents(events, ['car-wash']).map((e) => e.id)
+    expect(events.some((e) => e.focus === 'car-wash')).toBe(true)
+    expect(ids.some((id) => id.endsWith(':car-wash'))).toBe(false)
+    expect(ids).toEqual(events.filter((e) => e.focus !== 'car-wash').map((e) => e.id))
+  })
+
+  it('hides the Lucky Wheel, which belongs to no property', () => {
+    const events = allEvents(state({ properties: owned }), DATA, NOW)
+    expect(find(events, 'lucky-wheel')).toBeDefined()
+    expect(find(visibleEvents(events, ['lucky-wheel']), 'lucky-wheel')).toBeUndefined()
+  })
+
+  it('keeps hidden cards in the money waiting', () => {
+    const safes = { 'car-wash': { money: 5_000, sinceMs: 0 } }
+    const s = state({ properties: owned, safes, overviewHidden: ['car-wash'] })
+    expect(holdings(s, DATA, NOW).safes).toBe(5_000)
+  })
+})
+
+describe('hiddenLabel', () => {
+  it('names properties by the catalog, and the Lucky Wheel', () => {
+    expect(hiddenLabel('car-wash', PROPERTIES)).toBe(
+      PROPERTIES.find((p) => p.id === 'car-wash')?.label,
+    )
+    expect(hiddenLabel('lucky-wheel', PROPERTIES)).toBe('Lucky Wheel')
+  })
+
+  it('falls back to the id for a card no longer known', () => {
+    expect(hiddenLabel('gone', PROPERTIES)).toBe('gone')
   })
 })
 

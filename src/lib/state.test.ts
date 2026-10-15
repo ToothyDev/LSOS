@@ -13,6 +13,8 @@ import {
 const ALERTS = { browser: false, popup: false, leadMs: 600_000, unfocusedOnly: false }
 // Version 13 defaults: safe and timer cards in their default order.
 const ORDERS = { safeOrder: [], timerOrder: [] }
+// Version 14 defaults: nothing hidden from the Overview.
+const HIDDEN = { overviewHidden: [] }
 
 describe('parseState', () => {
   it('round-trips the default state', () => {
@@ -30,7 +32,8 @@ describe('parseState', () => {
     expect(result).toEqual({
       ok: true,
       state: {
-        version: 13,
+        version: 14,
+        ...HIDDEN,
         clock: { trackOnOpen: false },
         properties: {},
         businesses: {},
@@ -52,7 +55,8 @@ describe('parseState', () => {
     expect(result).toEqual({
       ok: true,
       state: {
-        version: 13,
+        version: 14,
+        ...HIDDEN,
         clock: { trackOnOpen: true },
         properties: {},
         businesses: {},
@@ -77,7 +81,8 @@ describe('parseState', () => {
     expect(result).toEqual({
       ok: true,
       state: {
-        version: 13,
+        version: 14,
+        ...HIDDEN,
         clock: { trackOnOpen: false },
         properties,
         businesses: {},
@@ -103,7 +108,8 @@ describe('parseState', () => {
     expect(result).toEqual({
       ok: true,
       state: {
-        version: 13,
+        version: 14,
+        ...HIDDEN,
         clock: { trackOnOpen: true },
         properties,
         businesses,
@@ -133,7 +139,8 @@ describe('parseState', () => {
       ok: true,
       state: {
         ...sample,
-        version: 13,
+        version: 14,
+        ...HIDDEN,
         ...ORDERS,
         nightclub: {},
         safes: {},
@@ -158,7 +165,8 @@ describe('parseState', () => {
       ok: true,
       state: {
         ...sample,
-        version: 13,
+        version: 14,
+        ...HIDDEN,
         ...ORDERS,
         safes: {},
         boosts: {},
@@ -181,7 +189,15 @@ describe('parseState', () => {
     }
     expect(parseState(JSON.stringify(sample))).toEqual({
       ok: true,
-      state: { ...sample, version: 13, ...ORDERS, boosts: {}, timers: {}, alerts: ALERTS },
+      state: {
+        ...sample,
+        version: 14,
+        ...ORDERS,
+        ...HIDDEN,
+        boosts: {},
+        timers: {},
+        alerts: ALERTS,
+      },
       fromVersion: 7,
     })
   })
@@ -199,7 +215,7 @@ describe('parseState', () => {
     }
     expect(parseState(JSON.stringify(sample))).toEqual({
       ok: true,
-      state: { ...sample, version: 13, ...ORDERS, timers: {}, alerts: ALERTS },
+      state: { ...sample, version: 14, ...ORDERS, ...HIDDEN, timers: {}, alerts: ALERTS },
       fromVersion: 8,
     })
   })
@@ -217,7 +233,7 @@ describe('parseState', () => {
     }
     expect(parseState(JSON.stringify(sample))).toEqual({
       ok: true,
-      state: { ...sample, version: 13, ...ORDERS, timers: {}, alerts: ALERTS },
+      state: { ...sample, version: 14, ...ORDERS, ...HIDDEN, timers: {}, alerts: ALERTS },
       fromVersion: 9,
     })
   })
@@ -235,7 +251,7 @@ describe('parseState', () => {
     }
     expect(parseState(JSON.stringify(sample))).toEqual({
       ok: true,
-      state: { ...sample, version: 13, ...ORDERS, timers: {}, alerts: ALERTS },
+      state: { ...sample, version: 14, ...ORDERS, ...HIDDEN, timers: {}, alerts: ALERTS },
       fromVersion: 10,
     })
   })
@@ -254,7 +270,7 @@ describe('parseState', () => {
     }
     expect(parseState(JSON.stringify(sample))).toEqual({
       ok: true,
-      state: { ...sample, version: 13, ...ORDERS, alerts: ALERTS },
+      state: { ...sample, version: 14, ...ORDERS, ...HIDDEN, alerts: ALERTS },
       fromVersion: 11,
     })
   })
@@ -274,9 +290,47 @@ describe('parseState', () => {
     }
     expect(parseState(JSON.stringify(sample))).toEqual({
       ok: true,
-      state: { ...sample, version: 13, ...ORDERS },
+      state: { ...sample, version: 14, ...ORDERS, ...HIDDEN },
       fromVersion: 12,
     })
+  })
+
+  it('migrates a version 13 sample, with nothing hidden from the Overview', () => {
+    const sample = {
+      version: 13,
+      clock: { trackOnOpen: false },
+      properties: { 'car-wash': { owned: true, upgrades: {} } },
+      businesses: {},
+      businessOrder: [],
+      safeOrder: ['car-wash'],
+      timerOrder: [],
+      nightclub: {},
+      safes: { 'car-wash': { money: 5_000, sinceMs: 0 } },
+      boosts: {},
+      timers: {},
+      alerts: ALERTS,
+    }
+    expect(parseState(JSON.stringify(sample))).toEqual({
+      ok: true,
+      state: { ...sample, version: 14, ...HIDDEN },
+      fromVersion: 13,
+    })
+  })
+
+  it('keeps the cards hidden from the Overview, once each', () => {
+    const text = JSON.stringify({
+      ...defaultState(),
+      overviewHidden: ['car-wash', 'lucky-wheel', 'car-wash'],
+    })
+    expect(parseState(text)).toMatchObject({
+      ok: true,
+      state: { overviewHidden: ['car-wash', 'lucky-wheel'] },
+    })
+  })
+
+  it('rejects unreadable hidden cards', () => {
+    const text = JSON.stringify({ ...defaultState(), overviewHidden: [1] })
+    expect(parseState(text)).toMatchObject({ ok: false, reason: 'invalid' })
   })
 
   it('keeps the safe and timer card order', () => {

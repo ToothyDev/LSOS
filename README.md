@@ -21,7 +21,8 @@ emptying.
   for your upgrades, LSOS uses a best estimate and labels those numbers "(est.)".
 - **Overview for a second screen.** One page lists what is ready now and what comes next across
   every tracker, soonest first, with the money waiting. Mark things done right there (sold,
-  collected, spun), and get optional alerts as pop-ups or browser notifications.
+  collected, spun), hide what you don't care about, and get optional alerts as pop-ups or
+  browser notifications.
 - **Resync anytime.** When an estimate drifts from what the game shows, click the value and type
   the real one.
 - **Weekly events** (bonuses, discounts, rotations) come from a data file in this repo that's updated
