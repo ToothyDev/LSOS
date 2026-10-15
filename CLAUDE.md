@@ -30,6 +30,7 @@ Svelte 5 + TypeScript + Vite. Public repository.
 | Shut-down businesses (owned, not running)      | `isRunning` in `lib/properties.ts` (020)           |
 | Bunker staff on manufacturing/both/research    | `staffSplit` in `data/production.ts` (025)         |
 | Real-time timers: Lucky Wheel, Mansion boost   | `data/timers.ts`, `lib/timers.ts` (022)            |
+| Weekly events and the Weekly tab               | `data/weekly.ts`, `lib/weekly.ts` (decision 027)   |
 | Overview tab, next events, notifications       | `lib/events.ts`, `lib/overview.ts` (dec. 023)      |
 | Theme tokens                                   | `src/app.css` (decision 009)                       |
 | Link previews (Open Graph), preview image      | `index.html`, `scripts/og-image.html`              |
