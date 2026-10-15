@@ -232,12 +232,6 @@
     gap: var(--space-2);
   }
 
-  input[type='checkbox'] {
-    accent-color: var(--accent);
-    height: 1.125rem;
-    width: 1.125rem;
-  }
-
   .row {
     align-items: center;
     display: grid;

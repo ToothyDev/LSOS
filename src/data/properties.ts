@@ -70,7 +70,7 @@ const BUNKER_SOURCE =
   'gta.wiki, Disruption Logistics (Buy Upgrades): equipment, staff and security upgrades, ' +
   'and staff on Manufacturing, Research or an even split to Both.'
 
-export const PROPERTIES: readonly Property[] = [
+const CATALOG: readonly Property[] = [
   mc('mc-cocaine', 'Cocaine Lockup'),
   mc('mc-meth', 'Methamphetamine Lab'),
   mc('mc-cash', 'Counterfeit Cash Factory'),
@@ -260,6 +260,45 @@ export const PROPERTIES: readonly Property[] = [
     checked: FRONTS_CHECKED,
   })),
 ]
+
+/**
+ * The order of Settings and of the cards on each tab until the user moves them (issue #60):
+ * roughly how often each is used. Money makers first, MC businesses by money per hour at full
+ * upgrades (from `production.ts`: Cocaine $70k, Meth $49.6k, Cash $45.9k, Weed $39.4k,
+ * Documents $35k); properties that only unlock something or add to a safe last.
+ */
+export const USE_ORDER = [
+  'acid-lab',
+  'bunker',
+  'nightclub',
+  'mc-cocaine',
+  'mc-meth',
+  'mc-cash',
+  'mc-weed',
+  'mc-documents',
+  'car-wash',
+  'helitours',
+  'smoke-on-the-water',
+  'agency',
+  'salvage-yard',
+  'arcade',
+  'garment-factory',
+  'special-cargo',
+  'hangar',
+  'vehicle-warehouse',
+  'auto-shop',
+  'mckenzie-hangar',
+  MANSION_BOOST.propertyId,
+  'bail-office',
+] as const
+
+const rank = (property: Property) => {
+  const index = (USE_ORDER as readonly string[]).indexOf(property.id)
+  return index === -1 ? USE_ORDER.length : index
+}
+
+/** Every property, in `USE_ORDER`. */
+export const PROPERTIES: readonly Property[] = [...CATALOG].sort((a, b) => rank(a) - rank(b))
 
 function mc(id: string, label: string): Property {
   return {

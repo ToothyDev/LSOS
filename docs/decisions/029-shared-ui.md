@@ -31,6 +31,16 @@
 - **Money Fronts heat:** each front's bar has its three actions right under it, as small
   buttons in one row: +10% Laundering, +10% Faber, Legal job.
 - **One card width:** `--card-width` (20rem) for every card grid.
+- **Order by use:** `USE_ORDER` in `src/data/properties.ts` sorts Settings and gives each tab
+  its card order until the user moves the cards:
+  - Acid Lab, Bunker and Nightclub first.
+  - Then the MC businesses by money per hour at full upgrades, from `production.ts`: Cocaine,
+    Meth, Cash, Weed, Documents.
+  - Then the Money Fronts and the safes. The properties that only unlock something or add to a
+    safe come last, with the Mansion and the Bail Enforcement Office at the bottom.
+  - A test checks that the list names every property.
+- **Bars grab at their ends:** the draggable area reaches half a handle past each end of the
+  bar, so a handle at 0% or 100% can be grabbed anywhere on it.
 - **Settings is a list with a detail panel:**
   - Every property is a row that keeps its height, with a gear in front of its name, a
     one-line upgrade summary, and Owned (and Running) buttons in fixed-width slots.

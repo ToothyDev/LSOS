@@ -106,6 +106,14 @@ a {
   color: var(--accent-text);
 }
 
+/* Every checkbox in the theme's green, a little larger than the browser's. */
+input[type='checkbox'] {
+  accent-color: var(--accent);
+  flex: none;
+  height: 1.125rem;
+  width: 1.125rem;
+}
+
 :focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;

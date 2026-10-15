@@ -50,11 +50,14 @@
   const frontProperties = $derived(
     FRONTS.flatMap((front) => catalog.filter((p) => p.id === front.propertyId)),
   )
-  // Money Fronts first until moved, then the property safes.
-  const cards = $derived([
-    ...(fronts ? [{ id: CAR_WASH, label: 'Money Fronts' }] : []),
-    ...shown.map(({ property }) => ({ id: property.id, label: property.label })),
-  ])
+  // In the catalog's order until moved (issue #60); Money Fronts goes where the Car Wash is.
+  const place = (id: string) => catalog.findIndex((p) => p.id === id)
+  const cards = $derived(
+    [
+      ...(fronts ? [{ id: CAR_WASH, label: 'Money Fronts' }] : []),
+      ...shown.map(({ property }) => ({ id: property.id, label: property.label })),
+    ].sort((a, b) => place(a.id) - place(b.id)),
+  )
   // The card whose settings are open, one at a time.
   let open = $state<string | null>(null)
 </script>

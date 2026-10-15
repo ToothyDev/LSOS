@@ -91,13 +91,6 @@
     display: contents;
   }
 
-  input[type='checkbox'] {
-    accent-color: var(--accent);
-    flex: none;
-    height: 1.125rem;
-    width: 1.125rem;
-  }
-
   .visually-hidden {
     clip-path: inset(50%);
     height: 1px;

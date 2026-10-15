@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { Property, Upgrade } from '../data/properties'
+import { PROPERTIES, USE_ORDER, type Property, type Upgrade } from '../data/properties'
 import {
   isOwned,
   isRunning,
@@ -89,6 +89,12 @@ describe('upgradeValue', () => {
     const owned = { a: { owned: true, upgrades: { equipment: 'yes', tech: 'gone' } } }
     expect(upgradeValue(owned, 'a', toggle)).toBe(false)
     expect(upgradeValue(owned, 'a', choice)).toBe('none')
+  })
+})
+
+describe('USE_ORDER', () => {
+  it('lists every property once, so each has its place', () => {
+    expect(PROPERTIES.map((p) => p.id)).toEqual([...USE_ORDER])
   })
 })
 

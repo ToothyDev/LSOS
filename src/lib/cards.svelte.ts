@@ -2,7 +2,7 @@
 // boost started, a spin marked, an Overview action. A UI timer, not game time (decision 003
 // covers tracker logic only).
 
-export const UNDO_MS = 15_000
+const UNDO_MS = 15_000
 
 export class TimedUndo {
   /** The press that can be taken back now: where it was (`key`), what it did, how to undo. */
