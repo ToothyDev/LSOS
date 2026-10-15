@@ -2,6 +2,7 @@ export const TABS = [
   { id: 'overview', label: 'Overview' },
   { id: 'businesses', label: 'Businesses' },
   { id: 'safes', label: 'Safes' },
+  { id: 'timers', label: 'Timers' },
   { id: 'weekly', label: 'Weekly' },
   { id: 'settings', label: 'Settings' },
 ] as const

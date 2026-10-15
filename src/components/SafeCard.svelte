@@ -19,6 +19,7 @@
   } from '../lib/safes'
   import Button from './ui/Button.svelte'
   import Countdown from './ui/Countdown.svelte'
+  import Fact from './ui/Fact.svelte'
   import EditableBar from './ui/EditableBar.svelte'
   import EditableValue from './ui/EditableValue.svelte'
   import Meter from './ui/Meter.svelte'
@@ -103,10 +104,7 @@
   />
 {/if}
 
-<div class="facts">
-  <span class="label">{est('Payout', estimated.payout)}</span>
-  <span class="value">{payoutText}</span>
-</div>
+<Fact label={est('Payout', estimated.payout)}>{payoutText}</Fact>
 
 <Countdown label="Next payout in" remainingMs={nextPayoutInMs(current)} />
 {#if editing}
@@ -130,25 +128,6 @@
 <style>
   p {
     margin: 0;
-  }
-
-  .facts {
-    align-items: baseline;
-    display: flex;
-    gap: var(--space-3);
-    justify-content: space-between;
-  }
-
-  .label {
-    color: var(--muted);
-    font-family: var(--font-display);
-    font-size: var(--text-sm);
-    letter-spacing: var(--tracking);
-    text-transform: uppercase;
-  }
-
-  .value {
-    font-variant-numeric: tabular-nums;
   }
 
   .sync {

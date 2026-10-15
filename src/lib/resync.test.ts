@@ -14,19 +14,20 @@ import {
 const MIN = 60_000
 
 describe('formatValue', () => {
-  it('shows percent, money and h:mm', () => {
+  it('shows percent, money and h:mm:ss', () => {
     expect(formatValue(39.6, 'percent')).toBe('40%')
     expect(formatValue(1_234_567, 'money')).toBe('$1,234,567')
-    expect(formatValue(65 * MIN, 'duration')).toBe('1:05')
+    expect(formatValue(65 * MIN, 'duration')).toBe('1:05:00')
     expect(formatValue(11.7, 'crates')).toBe('11')
     expect(formatValue(3.9999999, 'crates')).toBe('4')
   })
 
-  it('rounds time left up to the minute, so 0:00 means done', () => {
-    expect(formatValue(1, 'duration')).toBe('0:01')
-    expect(formatValue(59 * MIN + 1, 'duration')).toBe('1:00')
-    expect(formatValue(0, 'duration')).toBe('0:00')
-    expect(formatValue(-5 * MIN, 'duration')).toBe('0:00')
+  it('rounds time left up to the second, so 0:00:00 means done', () => {
+    expect(formatValue(1, 'duration')).toBe('0:00:01')
+    expect(formatValue(59 * MIN + 1, 'duration')).toBe('0:59:01')
+    expect(formatValue(24 * 60 * MIN, 'duration')).toBe('24:00:00')
+    expect(formatValue(0, 'duration')).toBe('0:00:00')
+    expect(formatValue(-5 * MIN, 'duration')).toBe('0:00:00')
   })
 })
 
@@ -43,8 +44,13 @@ describe('parseValue', () => {
     expect(parseValue('1.2M', 'money')).toBe(1_200_000)
   })
 
-  it('reads h:mm or plain minutes as milliseconds', () => {
+  it('reads h:mm, h:mm:ss, hours and minutes, or plain minutes as milliseconds', () => {
     expect(parseValue('1:05', 'duration')).toBe(65 * MIN)
+    expect(parseValue('21:30', 'duration')).toBe((21 * 60 + 30) * MIN)
+    expect(parseValue('1:05:30', 'duration')).toBe(65 * MIN + 30_000)
+    expect(parseValue('5h 30m', 'duration')).toBe(330 * MIN)
+    expect(parseValue('5h', 'duration')).toBe(300 * MIN)
+    expect(parseValue('30 min', 'duration')).toBe(30 * MIN)
     expect(parseValue('0:7', 'duration')).toBe(7 * MIN)
     expect(parseValue('45', 'duration')).toBe(45 * MIN)
     expect(parseValue('0', 'duration')).toBe(0)
@@ -64,7 +70,9 @@ describe('parseValue', () => {
     expect(parseValue('1e3', 'percent')).toBeNull()
     expect(parseValue('$', 'money')).toBeNull()
     expect(parseValue('1:60', 'duration')).toBeNull()
-    expect(parseValue('1:2:3', 'duration')).toBeNull()
+    expect(parseValue('1:2:3:4', 'duration')).toBeNull()
+    expect(parseValue('1:00:60', 'duration')).toBeNull()
+    expect(parseValue('h', 'duration')).toBeNull()
   })
 })
 

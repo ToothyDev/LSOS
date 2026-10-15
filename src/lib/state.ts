@@ -10,9 +10,10 @@ import {
 } from './production'
 import { parseOwnedProperties, type OwnedProperties } from './properties'
 import { parseSafes, type SafesById } from './safes'
+import { parseTimers, type Timers } from './timers'
 
 /** Bump when the stored shape changes, and add a migration from the previous version. */
-export const CURRENT_VERSION = 10
+export const CURRENT_VERSION = 11
 
 /** All user state. Trackers add their own sections here as they are built. */
 export interface AppState {
@@ -31,6 +32,8 @@ export interface AppState {
   safes: SafesById
   /** The last production boost of each business, e.g. the Acid Lab's (issue #9). */
   boosts: BoostsById
+  /** Real-time timers: the Lucky Wheel and the Mansion boost (issues #13, #14). */
+  timers: Timers
 }
 
 export function defaultState(): AppState {
@@ -43,6 +46,7 @@ export function defaultState(): AppState {
     nightclub: {},
     safes: {},
     boosts: {},
+    timers: {},
   }
 }
 
@@ -73,6 +77,8 @@ export const MIGRATIONS: Readonly<Record<number, Migration>> = {
   // Version 10 adds a shut-down flag per owned business (issue #38); nothing is shut down yet,
   // but an older LSOS would drop the flag, so it must not read this data.
   9: (data) => ({ ...data }),
+  // Version 11 adds the real-time timers (issues #13, #14); none started yet.
+  10: (data) => ({ ...data, timers: {} }),
 }
 
 export type ParseResult =
@@ -155,6 +161,8 @@ function toState(data: StoredData): AppState | string {
   if (typeof safes === 'string') return safes
   const boosts = parseBoosts(data.boosts)
   if (typeof boosts === 'string') return boosts
+  const timers = parseTimers(data.timers)
+  if (typeof timers === 'string') return timers
   return {
     version: CURRENT_VERSION,
     clock,
@@ -164,6 +172,7 @@ function toState(data: StoredData): AppState | string {
     nightclub,
     safes,
     boosts,
+    timers,
   }
 }
 

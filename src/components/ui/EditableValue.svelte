@@ -50,7 +50,7 @@
   const HINTS: Record<ValueUnit, string> = {
     percent: 'A percentage, e.g. 40',
     money: 'An amount, e.g. 120,000 or 120k',
-    duration: 'Time left as h:mm, e.g. 1:05',
+    duration: 'Time left, e.g. 21:30 (hours:minutes) or 5h 30m',
     crates: 'Whole crates, e.g. 12',
   }
 

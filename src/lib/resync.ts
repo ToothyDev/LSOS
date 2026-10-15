@@ -1,6 +1,7 @@
 // Resync: correcting a tracked value by hand (decision 003, decision 010).
 // The tracker stores the typed value as of now and keeps counting from there; this module only
 // parses, formats and undoes what the user types.
+import { formatDuration } from './clock'
 
 /**
  * percent: stock and supplies. money: safes, in dollars. duration: time left, in milliseconds.
@@ -28,8 +29,8 @@ export function clampValue(value: number, { min, max }: ValueBounds = {}): numbe
 }
 
 /**
- * Text for a value in its unit: "40%", "$120,000", "1:05" (h:mm). Time left is rounded up to the
- * minute, so "0:00" only shows once it is done.
+ * Text for a value in its unit: "40%", "$120,000", "1:05:00" (h:mm:ss, like `Countdown`, so it
+ * visibly ticks). Time left is rounded up to the second, so "0:00:00" only shows once it is done.
  */
 export function formatValue(value: number, unit: ValueUnit): string {
   switch (unit) {
@@ -37,10 +38,8 @@ export function formatValue(value: number, unit: ValueUnit): string {
       return `${Math.round(value)}%`
     case 'money':
       return `$${Math.round(value).toLocaleString('en-US')}`
-    case 'duration': {
-      const minutes = Math.ceil(Math.max(0, value) / MINUTE_MS)
-      return `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')}`
-    }
+    case 'duration':
+      return formatDuration(Math.ceil(Math.max(0, value) / 1000) * 1000)
     case 'crates':
       // Whole crates made so far; the margin keeps 3.9999... at 4 after float math.
       return String(Math.floor(value + 1e-6))
@@ -53,7 +52,8 @@ export function formatValue(value: number, unit: ValueUnit): string {
  *
  * - percent: "40" or "40%"
  * - money: "120000", "$120,000", "120k", "1.2m"
- * - duration: "1:05" (h:mm) or "45" (minutes); returns milliseconds
+ * - duration: "21:30" (h:mm), "21:30:15" (h:mm:ss), "5h 30m", "5h", "30m" or "45" (minutes);
+ *   returns milliseconds
  * - crates: a whole number, e.g. "12"
  */
 export function parseValue(text: string, unit: ValueUnit): number | null {
@@ -70,11 +70,16 @@ export function parseValue(text: string, unit: ValueUnit): number | null {
       return Math.round(amount * factor)
     }
     case 'duration': {
-      const clock = /^(\d+):(\d{1,2})$/.exec(trimmed)
+      const clock = /^(\d+):(\d{1,2})(?::(\d{1,2}))?$/.exec(trimmed)
       if (clock) {
         const minutes = Number(clock[2])
-        if (minutes > 59) return null
-        return (Number(clock[1]) * 60 + minutes) * MINUTE_MS
+        const seconds = Number(clock[3] ?? 0)
+        if (minutes > 59 || seconds > 59) return null
+        return (Number(clock[1]) * 60 + minutes) * MINUTE_MS + seconds * 1000
+      }
+      const units = /^(?:(\d+)\s*h)?\s*(?:(\d+)\s*m(?:in)?)?$/.exec(trimmed)
+      if (units && (units[1] || units[2])) {
+        return (Number(units[1] ?? 0) * 60 + Number(units[2] ?? 0)) * MINUTE_MS
       }
       const minutes = nonNegative(trimmed)
       return minutes === null ? null : Math.round(minutes * MINUTE_MS)

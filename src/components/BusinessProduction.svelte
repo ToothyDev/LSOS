@@ -1,9 +1,11 @@
 <script lang="ts">
   // Stock, supplies, value and what comes next for one business (issue #6). Collapsed it shows
   // only that; `editing` adds the resync controls. A business with a production boost shows it
-  // and lets the user start it (issue #9). Logic: lib/production.ts.
+  // and lets the user start it (issue #9), and the Mansion boost while it is on (issue #14).
+  // Logic: lib/production.ts.
   import { SUPPLY_PURCHASE } from '../data/business-events'
   import type { Production, ProductionRate } from '../data/production'
+  import { MANSION_BOOST } from '../data/timers'
   import {
     boostRunning,
     estimatedParts,
@@ -19,6 +21,7 @@
   import BusinessBars from './ui/BusinessBars.svelte'
   import Button from './ui/Button.svelte'
   import Countdown from './ui/Countdown.svelte'
+  import Fact from './ui/Fact.svelte'
   import Meter from './ui/Meter.svelte'
 
   interface Props {
@@ -43,6 +46,8 @@
     boost?: Boost
     /** Called with the new boost, or undefined to take back one started by mistake. */
     onboost?: (boost: Boost | undefined) => void
+    /** When the Mansion boost on this business ends (wall clock), while it is on (issue #14). */
+    mansionEndsAt?: number
   }
 
   let {
@@ -58,6 +63,7 @@
     farEstimated = false,
     boost,
     onboost = () => {},
+    mansionEndsAt,
   }: Props = $props()
 
   const current = $derived(settleBars(bars, now, SUPPLY_PURCHASE.fillsTo))
@@ -73,15 +79,27 @@
   )
   const boosting = $derived(boostRunning(boost, production.boost, now))
   const nextBoost = $derived(production.boost ? nextBoostAt(boost, production.boost) : 0)
+  const mansionOn = $derived(mansionEndsAt !== undefined && now < mansionEndsAt)
   const ahead = $derived(
     running && !shutDown
-      ? forecast(current, production, running, boosting ? boost!.unitsLeft : 0)
+      ? forecast(
+          current,
+          production,
+          running,
+          boosting ? boost!.unitsLeft : 0,
+          mansionOn ? { msLeft: mansionEndsAt! - now, speed: MANSION_BOOST.speed } : undefined,
+        )
       : null,
   )
   const percent = (value: number) => formatValue(value, 'percent')
   // Numbers resting on estimated rates say so (decision 013). The value also counts units made
   // at an estimated rate.
-  const estimated = $derived(estimatedParts(rate))
+  // No source gives the speed of both boosts at once: LSOS multiplies them (est.).
+  const stacked = $derived(boosting && mansionOn)
+  const estimated = $derived.by(() => {
+    const parts = estimatedParts(rate)
+    return { ...parts, production: parts.production || stacked }
+  })
   const est = (label: string, isEstimate: boolean) => (isEstimate ? `${label} (est.)` : label)
 </script>
 
@@ -106,40 +124,45 @@
 {/if}
 
 {#if value}
-  <div class="facts">
-    <span class="label">{est('Value', estimated.value || estimated.production)}</span>
+  <!-- Far sales pay more, so that is the headline; nearby is the alternative. -->
+  <Fact
+    label={est('Value', estimated.value || estimated.production)}
+    title={value.far !== null ? (farTitle ?? undefined) : undefined}
+  >
     {#if value.far !== null}
-      <!-- Far sales pay more, so that is the headline; nearby is the alternative. -->
-      <span class="value" title={farTitle}>
-        {formatValue(value.far, 'money')} far{farEstimated ? ' (est.)' : ''}
-        <span class="alt">· {formatValue(value.nearby, 'money')} nearby</span>
-      </span>
+      {formatValue(value.far, 'money')} far{farEstimated ? ' (est.)' : ''}
+      <span class="alt">· {formatValue(value.nearby, 'money')} nearby</span>
     {:else}
-      <span class="value">{formatValue(value.nearby, 'money')}</span>
+      {formatValue(value.nearby, 'money')}
     {/if}
-  </div>
+  </Fact>
 {/if}
 
 {#if production.boost && running?.boostedMinutesPerUnit !== undefined && !shutDown}
   <!-- Play time while it runs; the next one is a real-time wait (daily reset). -->
-  <div class="facts">
-    {#if boosting}
-      <span class="label">Boost on</span>
-      <span class="value">
-        {Math.ceil(boost!.unitsLeft)}
-        {production.unitName} left
-        <Button onclick={() => onboost(undefined)} title="Take back a boost started by mistake"
-          >Undo</Button
-        >
-      </span>
-    {:else if now >= nextBoost}
-      <span class="label">Boost ready</span>
+  {#if boosting}
+    <Fact label="Boost on">
+      {Math.ceil(boost!.unitsLeft)}
+      {production.unitName} left
+      <Button onclick={() => onboost(undefined)} title="Take back a boost started by mistake"
+        >Undo</Button
+      >
+    </Fact>
+  {:else if now >= nextBoost}
+    <Fact label="Boost ready">
       <Button onclick={() => onboost(startBoost(production.boost!, now))}>Boost started</Button>
-    {/if}
-  </div>
+    </Fact>
+  {/if}
   {#if !boosting && now < nextBoost}
     <Countdown label="Next boost in" remainingMs={nextBoost - now} />
   {/if}
+{/if}
+
+{#if mansionOn && !shutDown}
+  <Countdown
+    label="Mansion boost ×{MANSION_BOOST.speed} ends in"
+    remainingMs={mansionEndsAt! - now}
+  />
 {/if}
 
 {#if shutDown}
@@ -167,6 +190,12 @@
       <strong>Estimate.</strong> No reliable data for these upgrades. {rate.estimate.how}
     </p>
   {/if}
+  {#if stacked}
+    <p class="note" role="note">
+      <strong>Estimate.</strong> No source gives the speed with both boosts on: LSOS takes the
+      boosted speed ×{MANSION_BOOST.speed}.
+    </p>
+  {/if}
 {:else}
   <p class="note" role="note">
     <strong>Not tracked.</strong>
@@ -180,26 +209,6 @@
 {/if}
 
 <style>
-  .facts {
-    align-items: baseline;
-    display: flex;
-    gap: var(--space-3);
-    justify-content: space-between;
-  }
-
-  .label {
-    color: var(--muted);
-    font-family: var(--font-display);
-    font-size: var(--text-sm);
-    letter-spacing: var(--tracking);
-    text-transform: uppercase;
-  }
-
-  .value {
-    font-variant-numeric: tabular-nums;
-    text-align: right;
-  }
-
   .alt {
     color: var(--muted);
     font-size: var(--text-sm);

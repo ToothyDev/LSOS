@@ -4,6 +4,7 @@ import type { Production, ProductionBoost, ProductionRate } from '../data/produc
 import type { Property } from '../data/properties'
 import { isOwned, isRunning, isShutDown, upgradeValue, type OwnedProperties } from './properties'
 import { settleBars, type Bars } from './resync'
+import { mansionBoostOn, type MansionBoost, type MansionBoostData } from './timers'
 
 /** A rate with everything needed to run production on its own. */
 export type KnownRate = ProductionRate & { unitsPerFullSupplies: number }
@@ -105,16 +106,31 @@ export interface Forecast {
   suppliesOutInMs: number | null
 }
 
+/** A speed-up for part of a forecast: `speed` times as fast for the next `msLeft`. */
+export interface SpeedUp {
+  msLeft: number
+  speed: number
+}
+
 /**
  * What comes first, in play time. With `boostUnitsLeft`, that many units are made at the
- * boosted speed first (the rate must have one).
+ * boosted speed first (the rate must have one). With `speedUp`, everything runs that much
+ * faster until its time is up, counted as play time (the Mansion boost, issue #14).
  */
 export function forecast(
   bars: Bars,
   production: Production,
   rate: KnownRate,
   boostUnitsLeft = 0,
+  speedUp?: SpeedUp,
 ): Forecast {
+  if (speedUp && speedUp.msLeft > 0 && speedUp.speed !== 1) {
+    const fast = spedUp(rate, speedUp.speed)
+    const during = forecast(bars, production, fast, boostUnitsLeft)
+    if ((during.fullInMs ?? during.suppliesOutInMs ?? 0) <= speedUp.msLeft) return during
+    const after = boostedRun(bars, production, fast, boostUnitsLeft, speedUp.msLeft)
+    return later(forecast(after.bars, production, rate, after.unitsLeft), speedUp.msLeft)
+  }
   if (boostUnitsLeft <= 0 || rate.boostedMinutesPerUnit === undefined) {
     return plainForecast(bars, production, rate)
   }
@@ -122,10 +138,14 @@ export function forecast(
   const boostMs = boostUnitsLeft * fast.minutesPerUnit * MINUTE_MS
   const boosted = plainForecast(bars, production, fast)
   if ((boosted.fullInMs ?? boosted.suppliesOutInMs ?? 0) <= boostMs) return boosted
-  const rest = plainForecast(produce(bars, production, fast, boostMs), production, rate)
+  return later(plainForecast(produce(bars, production, fast, boostMs), production, rate), boostMs)
+}
+
+/** `forecast` as seen `ms` earlier. */
+function later(ahead: Forecast, ms: number): Forecast {
   return {
-    fullInMs: rest.fullInMs === null ? null : rest.fullInMs + boostMs,
-    suppliesOutInMs: rest.suppliesOutInMs === null ? null : rest.suppliesOutInMs + boostMs,
+    fullInMs: ahead.fullInMs === null ? null : ahead.fullInMs + ms,
+    suppliesOutInMs: ahead.suppliesOutInMs === null ? null : ahead.suppliesOutInMs + ms,
   }
 }
 
@@ -232,6 +252,43 @@ export function nextBoostAt(boost: Boost | undefined, data: ProductionBoost): nu
   return reset > boost.startedAt ? reset : reset + DAY_MS
 }
 
+/** `rate` running `speed` times as fast, e.g. during the Mansion boost (issue #14). */
+export function spedUp(rate: KnownRate, speed: number): KnownRate {
+  if (speed === 1) return rate
+  return {
+    ...rate,
+    minutesPerUnit: rate.minutesPerUnit / speed,
+    ...(rate.boostedMinutesPerUnit !== undefined && {
+      boostedMinutesPerUnit: rate.boostedMinutesPerUnit / speed,
+    }),
+  }
+}
+
+/**
+ * `ms` of production with `unitsLeft` units still to make at the boosted speed (the rate must
+ * have one), then at the normal speed. Returns the units the boost still has left.
+ */
+function boostedRun(
+  bars: Bars,
+  production: Production,
+  rate: KnownRate,
+  unitsLeft: number,
+  ms: number,
+): { bars: Bars; unitsLeft: number } {
+  const boosted = rate.boostedMinutesPerUnit
+  if (unitsLeft <= 0 || boosted === undefined) {
+    return { bars: produce(bars, production, rate, ms), unitsLeft }
+  }
+  const fast: KnownRate = { ...rate, minutesPerUnit: boosted }
+  const boostMs = Math.min(ms, unitsLeft * boosted * MINUTE_MS)
+  const after = produce(bars, production, fast, boostMs)
+  if (after === bars) return { bars, unitsLeft }
+  const made = ((after.stock - bars.stock) * production.maxUnits) / 100
+  // The small margin ends the boost despite floating-point leftovers.
+  const left = unitsLeft - made < 1e-6 ? 0 : unitsLeft - made
+  return { bars: produce(after, production, rate, ms - boostMs), unitsLeft: left }
+}
+
 /**
  * `ms` of production starting at wall-clock time `at`, boosted while the boost runs. The boost
  * counts the units it made.
@@ -244,28 +301,20 @@ function step(
   ms: number,
   at: number,
 ): { bars: Bars; boost: Boost | undefined } {
-  const boosted = rate.boostedMinutesPerUnit
-  if (!boost || boosted === undefined || !boostRunning(boost, production.boost, at)) {
+  if (!boost || !boostRunning(boost, production.boost, at)) {
     return { bars: produce(bars, production, rate, ms), boost }
   }
-  const fast: KnownRate = { ...rate, minutesPerUnit: boosted }
-  const boostMs = Math.min(ms, boost.unitsLeft * boosted * MINUTE_MS)
-  const after = produce(bars, production, fast, boostMs)
-  if (after === bars) return { bars, boost }
-  const made = ((after.stock - bars.stock) * production.maxUnits) / 100
-  // The small margin ends the boost despite floating-point leftovers.
-  const unitsLeft = boost.unitsLeft - made < 1e-6 ? 0 : boost.unitsLeft - made
-  return {
-    bars: produce(after, production, rate, ms - boostMs),
-    boost: { ...boost, unitsLeft },
-  }
+  const run = boostedRun(bars, production, rate, boost.unitsLeft, ms)
+  if (run.unitsLeft === boost.unitsLeft) return { bars: run.bars, boost }
+  return { bars: run.bars, boost: { ...boost, unitsLeft: run.unitsLeft } }
 }
 
 /**
  * Counts a stretch of play time for every running business with a known rate: a shut-down one
  * keeps its bars as they are (issue #38). The stretch is
  * taken to end at `now` (wall clock), which is exact for normal ticks: supplies bought that
- * arrived during it count from their arrival, and a boost runs from its start to its end.
+ * arrived during it count from their arrival, and a boost runs from its start to its end, as
+ * does the Mansion boost (`mansion`, issue #14) for the business it boosts.
  * Returns `businesses` and `boosts` themselves if nothing changed, so an idle tick does not
  * trigger a save.
  */
@@ -278,6 +327,7 @@ export function produceAll(
   now: number,
   fillsTo: number,
   boosts: BoostsById = {},
+  mansion?: { boost: MansionBoost | undefined; data: MansionBoostData },
 ): { businesses: BusinessBarsById; boosts: BoostsById } {
   let next = { businesses, boosts }
   for (const production of productions) {
@@ -291,13 +341,17 @@ export function produceAll(
     // Where something changes during the stretch, in wall-clock time.
     const start = now - playMs
     const ends = boost && production.boost ? boost.startedAt + production.boost.maxRealMs : 0
-    const cuts = [bars.suppliesDueAt, boost?.startedAt, boost && ends]
+    const sped = mansion?.boost?.propertyId === id ? mansion.boost : undefined
+    const spedEnds = sped && sped.startedAt + mansion!.data.durationMs
+    const cuts = [bars.suppliesDueAt, boost?.startedAt, boost && ends, sped?.startedAt, spedEnds]
       .filter((t): t is number => t !== undefined && t > start && t < now)
       .sort((a, b) => a - b)
     let at = start
     for (const cut of [...cuts, now]) {
       bars = settleBars(bars, at, fillsTo)
-      ;({ bars, boost } = step(bars, production, rate, boost, cut - at, at))
+      const fast = mansion && mansionBoostOn(mansion.boost, mansion.data, id, at)
+      const r = fast ? spedUp(rate, mansion.data.speed) : rate
+      ;({ bars, boost } = step(bars, production, r, boost, cut - at, at))
       at = cut
     }
     bars = settleBars(bars, now, fillsTo)

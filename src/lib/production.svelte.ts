@@ -1,9 +1,10 @@
-// Runs business and nightclub production on play time (issues #6, #7). Logic lives in production.ts; this file
+// Runs business and nightclub production on play time (issues #6, #7), with the Mansion boost (#14). Logic lives in production.ts; this file
 // only wires it to the play clock and the store.
 import { SUPPLY_PURCHASE } from '../data/business-events'
 import { GOODS } from '../data/nightclub'
 import { PRODUCTION } from '../data/production'
 import { PROPERTIES } from '../data/properties'
+import { MANSION_BOOST } from '../data/timers'
 import { onPlayTime } from './clock.svelte'
 import { produceGoods } from './nightclub'
 import { produceAll } from './production'
@@ -19,6 +20,7 @@ onPlayTime((ms) => {
     Date.now(),
     SUPPLY_PURCHASE.fillsTo,
     store.state.boosts,
+    { boost: store.state.timers.mansionBoost, data: MANSION_BOOST },
   )
   store.state.businesses = produced.businesses
   store.state.boosts = produced.boosts
