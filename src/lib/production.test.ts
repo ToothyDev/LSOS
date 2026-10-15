@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { PRODUCTION, type Production } from '../data/production'
 import { PROPERTIES } from '../data/properties'
+import { MANSION_BOOST } from '../data/timers'
 import {
   clearShutDownStock,
   estimatedParts,
@@ -388,6 +389,65 @@ describe('acid lab', () => {
     expect(nextBoostAt(at('2026-10-15T06:00:00Z'), acid.boost!)).toBe(
       Date.parse('2026-10-16T06:00:00Z'),
     )
+  })
+})
+
+describe('mansion boost (issue #14)', () => {
+  const owned = owning('bunker', { equipment: true, staff: true })
+  const DAY = 24 * 60 * MIN
+  const mansion = (propertyId: string, startedAt = 0) => ({
+    boost: { propertyId, startedAt },
+    data: MANSION_BOOST,
+  })
+  const run = (playMs: number, now: number, boosted = mansion('bunker')) =>
+    produceAll(
+      { bunker: { stock: 0, supplies: 100 } },
+      PROPERTIES,
+      PRODUCTION,
+      owned,
+      playMs,
+      now,
+      100,
+      {},
+      boosted,
+    ).businesses.bunker
+
+  it('makes three times as much while on, using supplies per unit as before', () => {
+    expect(run(7 * MIN, 7 * MIN)).toEqual({ stock: 3, supplies: 85 })
+  })
+
+  it('stops after 24 real hours', () => {
+    // 7 minutes boosted (3 units), then 7 minutes not (1 unit).
+    const bars = run(14 * MIN, DAY + 7 * MIN)!
+    expect(bars.stock).toBeCloseTo(4, 9)
+    expect(bars.supplies).toBeCloseTo(80, 9)
+  })
+
+  it('starts when it was activated and only for the business boosted', () => {
+    // 7 minutes before the start (1 unit), then 7 minutes boosted (3 units).
+    expect(run(14 * MIN, 14 * MIN, mansion('bunker', 7 * MIN))!.stock).toBeCloseTo(4, 9)
+    expect(run(7 * MIN, 7 * MIN, mansion('mc-weed'))).toEqual({ stock: 1, supplies: 95 })
+  })
+
+  it('forecasts three times as fast until it ends', () => {
+    const bars = { stock: 0, supplies: 100 }
+    expect(forecast(bars, bunker, fast, 0, { msLeft: DAY, speed: 3 }).suppliesOutInMs).toBeCloseTo(
+      (140 / 3) * MIN,
+      6,
+    )
+    // 9 units in 21 minutes, then the other 11 units of supplies at 7 minutes each.
+    expect(forecast(bars, bunker, fast, 0, { msLeft: 21 * MIN, speed: 3 })).toEqual({
+      fullInMs: null,
+      suppliesOutInMs: 98 * MIN,
+    })
+  })
+
+  it('speeds up the Acid Lab boost too, by estimate', () => {
+    const rate = rateFor(acid, owning('acid-lab', { equipment: true }), property('acid-lab'))!
+    // 80 units at 15 s, then 20 at 30 s until supplies run out.
+    const ahead = forecast({ stock: 0, supplies: 100 }, acid, rate, 80, { msLeft: DAY, speed: 3 })
+    expect(ahead.fullInMs).toBeNull()
+    expect(ahead.suppliesOutInMs).toBeCloseTo(30 * MIN, 6)
   })
 })
 

@@ -5,6 +5,7 @@
   import Safes from './components/Safes.svelte'
   import SaveStatus from './components/SaveStatus.svelte'
   import Settings from './components/Settings.svelte'
+  import Timers from './components/Timers.svelte'
   import TabBar from './components/ui/TabBar.svelte'
   import { GOODS } from './data/nightclub'
   import { PRODUCTION } from './data/production'
@@ -57,6 +58,7 @@
           now={clocks.now}
           onresync={(id, bars) =>
             (store.state.businesses = { ...store.state.businesses, [id]: bars })}
+          mansionBoost={store.state.timers.mansionBoost}
           boosts={store.state.boosts}
           onboost={(id, boost) => {
             const { [id]: _, ...rest } = store.state.boosts
@@ -77,6 +79,14 @@
           onchange={setProperties}
           stored={store.state.safes}
           onresync={(id, safe) => (store.state.safes = { ...store.state.safes, [id]: safe })}
+        />
+      {:else if active === 'timers'}
+        <Timers
+          catalog={PROPERTIES}
+          owned={store.state.properties}
+          timers={store.state.timers}
+          now={clocks.now}
+          onchange={(timers) => (store.state.timers = timers)}
         />
       {:else if active === 'settings'}
         <Settings />

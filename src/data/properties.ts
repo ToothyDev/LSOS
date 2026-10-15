@@ -56,6 +56,7 @@ import {
   WAREHOUSE_SIZE_UPGRADE,
 } from './fronts'
 import { ARCADE_SLOTS, SAFES, SAFES_CHECKED } from './safes'
+import { MANSION_BOOST } from './timers'
 
 // Equipment and staff speed up production and raise the value; equipment also makes supplies
 // last longer. The security upgrade only changes raids, which LSOS does not predict: left out.
@@ -124,6 +125,15 @@ export const PROPERTIES: readonly Property[] = [
     card: false,
     source: NIGHTCLUB_SOURCE,
     checked: NIGHTCLUB_CHECKED,
+  },
+  // Owning one gives the business production boost on the Timers tab (issue #14).
+  {
+    id: MANSION_BOOST.propertyId,
+    label: 'Mansion',
+    upgrades: [],
+    card: false,
+    source: MANSION_BOOST.source,
+    checked: MANSION_BOOST.checked,
   },
   {
     id: 'nightclub',

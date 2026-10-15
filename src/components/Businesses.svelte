@@ -10,6 +10,7 @@
   import { NIGHTCLUB_ID, type Goods } from '../data/nightclub'
   import type { Production } from '../data/production'
   import type { Property } from '../data/properties'
+  import { MANSION_BOOST } from '../data/timers'
   import { applyOrder, cardAt, moveId, saveOrder, swapAt, type CardBox } from '../lib/order'
   import {
     emptyBars,
@@ -30,6 +31,7 @@
   import type { GoodsStock } from '../lib/nightclub'
   import type { Bars } from '../lib/resync'
   import { hashForTab } from '../lib/tabs'
+  import { mansionBoostOn, type MansionBoost } from '../lib/timers'
   import BusinessProduction from './BusinessProduction.svelte'
   import NightclubWarehouse from './NightclubWarehouse.svelte'
   import PropertySettings from './PropertySettings.svelte'
@@ -50,6 +52,8 @@
     /** The last production boost by property id (issue #9). */
     boosts?: BoostsById
     onboost?: (propertyId: string, boost: Boost | undefined) => void
+    /** The last Mansion boost (issue #14). */
+    mansionBoost?: MansionBoost
     /** Saved card order: property ids (issue #30). */
     order?: readonly string[]
     onorder?: (order: string[]) => void
@@ -69,6 +73,7 @@
     onresync = () => {},
     boosts = {},
     onboost = () => {},
+    mansionBoost,
     order = [],
     onorder = () => {},
     goods = [],
@@ -266,6 +271,9 @@
                 farEstimated={farValueEstimated(production, owned)}
                 boost={boosts[property.id]}
                 onboost={(boost) => onboost(property.id, boost)}
+                mansionEndsAt={mansionBoostOn(mansionBoost, MANSION_BOOST, property.id, now)
+                  ? mansionBoost!.startedAt + MANSION_BOOST.durationMs
+                  : undefined}
               />
             {/if}
             {#if warehouse}

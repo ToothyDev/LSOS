@@ -1,9 +1,11 @@
 <script lang="ts">
   // Stock, supplies, value and what comes next for one business (issue #6). Collapsed it shows
   // only that; `editing` adds the resync controls. A business with a production boost shows it
-  // and lets the user start it (issue #9). Logic: lib/production.ts.
+  // and lets the user start it (issue #9), and the Mansion boost while it is on (issue #14).
+  // Logic: lib/production.ts.
   import { SUPPLY_PURCHASE } from '../data/business-events'
   import type { Production, ProductionRate } from '../data/production'
+  import { MANSION_BOOST } from '../data/timers'
   import {
     boostRunning,
     estimatedParts,
@@ -43,6 +45,8 @@
     boost?: Boost
     /** Called with the new boost, or undefined to take back one started by mistake. */
     onboost?: (boost: Boost | undefined) => void
+    /** When the Mansion boost on this business ends (wall clock), while it is on (issue #14). */
+    mansionEndsAt?: number
   }
 
   let {
@@ -58,6 +62,7 @@
     farEstimated = false,
     boost,
     onboost = () => {},
+    mansionEndsAt,
   }: Props = $props()
 
   const current = $derived(settleBars(bars, now, SUPPLY_PURCHASE.fillsTo))
@@ -73,15 +78,27 @@
   )
   const boosting = $derived(boostRunning(boost, production.boost, now))
   const nextBoost = $derived(production.boost ? nextBoostAt(boost, production.boost) : 0)
+  const mansionOn = $derived(mansionEndsAt !== undefined && now < mansionEndsAt)
   const ahead = $derived(
     running && !shutDown
-      ? forecast(current, production, running, boosting ? boost!.unitsLeft : 0)
+      ? forecast(
+          current,
+          production,
+          running,
+          boosting ? boost!.unitsLeft : 0,
+          mansionOn ? { msLeft: mansionEndsAt! - now, speed: MANSION_BOOST.speed } : undefined,
+        )
       : null,
   )
   const percent = (value: number) => formatValue(value, 'percent')
   // Numbers resting on estimated rates say so (decision 013). The value also counts units made
   // at an estimated rate.
-  const estimated = $derived(estimatedParts(rate))
+  // No source gives the speed of both boosts at once: LSOS multiplies them (est.).
+  const stacked = $derived(boosting && mansionOn)
+  const estimated = $derived.by(() => {
+    const parts = estimatedParts(rate)
+    return { ...parts, production: parts.production || stacked }
+  })
   const est = (label: string, isEstimate: boolean) => (isEstimate ? `${label} (est.)` : label)
 </script>
 
@@ -142,6 +159,13 @@
   {/if}
 {/if}
 
+{#if mansionOn && !shutDown}
+  <Countdown
+    label="Mansion boost ×{MANSION_BOOST.speed} ends in"
+    remainingMs={mansionEndsAt! - now}
+  />
+{/if}
+
 {#if shutDown}
   <p class="note quiet" role="note">
     <strong>Shut down.</strong> No stock is made and no supplies are used until you start it again.
@@ -165,6 +189,12 @@
   {#if rate?.estimate}
     <p class="note" role="note">
       <strong>Estimate.</strong> No reliable data for these upgrades. {rate.estimate.how}
+    </p>
+  {/if}
+  {#if stacked}
+    <p class="note" role="note">
+      <strong>Estimate.</strong> No source gives the speed with both boosts on: LSOS takes the
+      boosted speed ×{MANSION_BOOST.speed}.
     </p>
   {/if}
 {:else}

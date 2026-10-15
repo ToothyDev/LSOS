@@ -32,3 +32,4 @@ free number, add one line below. **Replacing one:** write a new decision, then m
 - [019](019-owned-value-bonus.md) Money Front value bonus: owning Car Wash or Smoke on the Water adds 35% to Counterfeit Cash or Weed, far value adds the bonuses (est.), Helitours left out
 - [020](020-shut-down.md) Shut-down businesses: a Running/Shut down button next to Owned for biker businesses and the Bunker; shutting down clears the stock; no production, card greyed, nightclub goods locked, nothing to the Money Fronts safe
 - [021](021-no-heist-tracker.md) No heist cooldown tracker: only Cayo Perico has one worth a timer; Heists tab removed
+- [022](022-real-time-timers.md) Timers tab on real time: Lucky Wheel (24 h) and Mansion production boost (×3 for 24 h, 24 h cooldown, not the same business twice in a row; with the Acid Lab boost: est.)
