@@ -60,14 +60,11 @@
     label={est('Popularity', estimated.popularity)}
     value={popularity}
     segments={BAR_SEGMENTS.count}
-    presets={[
-      { label: 'Maxed', value: 100, title: 'Full bar, e.g. after switching to a new DJ' },
-      ...(safe.popularity?.boosts ?? []).map((boost) => ({
-        label: boost.label,
-        value: Math.min(100, popularity + boost.adds),
-        title: boost.title,
-      })),
-    ]}
+    presets={(safe.popularity?.boosts ?? []).map((boost) => ({
+      label: boost.label,
+      value: Math.min(100, popularity + boost.adds),
+      title: boost.title,
+    }))}
     onresync={(value) => onresync({ ...current, popularity: value })}
   />
   {#if payout < best}

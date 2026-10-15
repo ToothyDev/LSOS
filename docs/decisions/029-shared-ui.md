@@ -24,8 +24,8 @@
   - The read-only extras stay, next to the editable value: units, "of $cap", value per goods.
   - Decided after trying both styles side by side.
 - **Fewer one-click presets** (amends 010): no Full on stock, safes or goods, and no Raided.
-  Sold, Supplies bought, Collected and popularity Maxed stay. Rarely used, and every value can
-  be typed or dragged instead.
+  No Maxed on popularity either. Sold, Supplies bought, Collected and the popularity boosts stay.
+  Rarely used, and every value can be typed or dragged instead.
 - **No card footer.** The settings gear is a small button at the right end of the title bar.
   One card per tab has its settings open at a time.
 - **Money Fronts heat:** each front's bar has its three actions right under it, as small
