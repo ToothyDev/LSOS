@@ -5,7 +5,10 @@
     label: string
     value: number
     max: number
-    /** stock: green, supplies: blue, as on the in-game business screens; heat: amber. */
+    /**
+     * stock: green, supplies: blue, as on the in-game business screens; heat: amber, red when
+     * full, like the in-game heat bar.
+     */
     kind?: 'stock' | 'supplies' | 'heat'
     /** Text shown next to the label, e.g. "40 / 100" or "$120,000". Defaults to a percentage. */
     valueText?: string
@@ -83,7 +86,7 @@
   }
 </script>
 
-<div class="meter {kind}">
+<div class="meter {kind}" class:maxed={kind === 'heat' && shown >= max}>
   {#if !bare}
     <div class="labels">
       <span class="label">{label}</span>
@@ -209,6 +212,14 @@
 
   .heat .fill {
     background: var(--warn);
+  }
+
+  .heat.maxed .value {
+    color: var(--danger);
+  }
+
+  .heat.maxed .fill {
+    background: var(--danger);
   }
 
   .segments {

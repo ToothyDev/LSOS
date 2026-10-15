@@ -17,16 +17,20 @@
   $100,000: $750 per front ($1,500 after 15 laundering missions) plus a fixed amount for each
   other business owned, from the in-game safe screen (data comment has the sources). A front at
   100% heat pays nothing; the Car Wash at 100% stops the whole safe. LSOS counts every owned
-  business; the game skips biker businesses and the Bunker while paused or not set up, which the
-  card says.
+  business; the game skips biker businesses and the Bunker while shut down or not set up, which
+  the card says (shutting down: issue #38).
 - **Heat** per front, saved with the safe (`heat` by front id, data version 9). At the end of
   each day, after the payout, every front below 100% gains 10%, one less per other front below
   100% (8% with all three). A laundering mission or Mr. Faber job adds 10% to the front it was
   launched from; a laundering mission counts toward that front's 15, a Faber job toward all
   three. Legal work clears the front's heat. The rise comes from a player's notes, and which
   fronts rise is LSOS's reading of them, so heat is marked "(est.)" (decision 013).
-- **"Full in"** assumes heat stays where it is now, like popularity on the other safes. A
-  separate "Car Wash 100% heat in (est.)" countdown says when the safe would stop.
+- **One countdown, whichever comes first:** "Full in", assuming heat stays where it is now
+  (like popularity on the other safes), or "Car Wash max heat in (est.)" when the Car Wash would
+  reach 100% and stop the safe sooner.
+- **Heat bars** are amber, red at 100% like the in-game bar (Meter `heat` kind).
+- **Dragging a bar** shows the value under the pointer while dragging, on every editable
+  percentage bar (stock, supplies, popularity, heat): one `ui/EditableBar` component.
 - **Edit mode** adds the resync controls (decision 010: heat values and bars, safe money with
   Collected/Full, "Payout just arrived" with the half-day rule of decision 016) and per front
   "Laundering +10%", "Faber job +10%" and "Legal job" buttons.

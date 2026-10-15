@@ -12,8 +12,7 @@
   } from '../../lib/resync'
   import Button from './Button.svelte'
   import Countdown from './Countdown.svelte'
-  import EditableValue from './EditableValue.svelte'
-  import Meter from './Meter.svelte'
+  import EditableBar from './EditableBar.svelte'
 
   interface Props {
     /** Stock and supplies in percent; leave supplies out for a business with only a stock bar. */
@@ -42,11 +41,6 @@
   // One undo for the whole business: the last edit, Full or event, whichever bars it changed.
   // Dragging and nudging one bar with the keys in a row count as one edit.
   let last = $state<BarsEdit | null>(null)
-  // The level under the pointer while a bar is dragged, shown as its value.
-  let dragging = $state<{ stock: number | null; supplies: number | null }>({
-    stock: null,
-    supplies: null,
-  })
 
   function set(after: Bars, label: string, group?: string) {
     if (
@@ -71,56 +65,35 @@
 </script>
 
 <div class="bars">
-  <EditableValue
+  <EditableBar
     label="Stock"
-    value={dragging.stock ?? bars.stock}
-    unit="percent"
-    min={0}
-    max={100}
+    value={bars.stock}
+    segments={BAR_SEGMENTS.count}
     undoable={false}
     onresync={(stock) => set({ ...bars, stock }, `stock was ${formatValue(bars.stock, 'percent')}`)}
-  >
-    <Meter
-      label="Stock"
-      value={bars.stock}
-      max={100}
-      segments={BAR_SEGMENTS.count}
-      bare
-      onpreview={(value) => (dragging.stock = value)}
-      onset={(stock) =>
-        set({ ...bars, stock }, `stock was ${formatValue(bars.stock, 'percent')}`, 'stock')}
-    />
-  </EditableValue>
+    onset={(stock) =>
+      set({ ...bars, stock }, `stock was ${formatValue(bars.stock, 'percent')}`, 'stock')}
+  />
   {#if bars.supplies !== undefined}
-    <EditableValue
+    <EditableBar
       label="Supplies"
-      value={dragging.supplies ?? bars.supplies}
-      unit="percent"
-      min={0}
-      max={100}
+      value={bars.supplies}
+      kind="supplies"
+      segments={BAR_SEGMENTS.count}
       undoable={false}
       onresync={(supplies) =>
         set({ ...bars, supplies }, `supplies was ${formatValue(bars.supplies ?? 0, 'percent')}`)}
+      onset={(supplies) =>
+        set(
+          { ...bars, supplies },
+          `supplies was ${formatValue(bars.supplies ?? 0, 'percent')}`,
+          'supplies',
+        )}
     >
-      <Meter
-        label="Supplies"
-        value={bars.supplies}
-        max={100}
-        kind="supplies"
-        segments={BAR_SEGMENTS.count}
-        bare
-        onpreview={(value) => (dragging.supplies = value)}
-        onset={(supplies) =>
-          set(
-            { ...bars, supplies },
-            `supplies was ${formatValue(bars.supplies ?? 0, 'percent')}`,
-            'supplies',
-          )}
-      />
       {#if dueAt !== undefined}
         <Countdown label="Supplies arrive in" remainingMs={dueAt - now} />
       {/if}
-    </EditableValue>
+    </EditableBar>
   {/if}
   <!-- All actions in one row to keep the card short. -->
   <div class="actions">

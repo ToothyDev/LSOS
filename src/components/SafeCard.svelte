@@ -19,6 +19,7 @@
   } from '../lib/safes'
   import Button from './ui/Button.svelte'
   import Countdown from './ui/Countdown.svelte'
+  import EditableBar from './ui/EditableBar.svelte'
   import EditableValue from './ui/EditableValue.svelte'
   import Meter from './ui/Meter.svelte'
 
@@ -51,17 +52,14 @@
   // The lowest popularity that still pays the most: below it the payout is cut.
   const maxFrom = $derived(safe.payout.kind === 'popularity' ? safe.payout.rows[0]!.from : 0)
   const popularity = $derived(current.popularity)
-  let dragging = $state<number | null>(null)
 </script>
 
 {#if popularity !== undefined}
   {#if editing}
-    <EditableValue
+    <EditableBar
       label={est('Popularity', estimated.popularity)}
-      value={dragging ?? popularity}
-      unit="percent"
-      min={0}
-      max={100}
+      value={popularity}
+      segments={BAR_SEGMENTS.count}
       presets={[
         { label: 'Maxed', value: 100, title: 'Full bar, e.g. after switching to a new DJ' },
         ...(safe.popularity?.boosts ?? []).map((boost) => ({
@@ -71,17 +69,7 @@
         })),
       ]}
       onresync={(value) => onresync({ ...current, popularity: value })}
-    >
-      <Meter
-        label="Popularity"
-        value={popularity}
-        max={100}
-        segments={BAR_SEGMENTS.count}
-        bare
-        onpreview={(value) => (dragging = value)}
-        onset={(value) => onresync({ ...current, popularity: value })}
-      />
-    </EditableValue>
+    />
   {:else}
     <Meter label={est('Popularity', estimated.popularity)} value={popularity} max={100} />
   {/if}

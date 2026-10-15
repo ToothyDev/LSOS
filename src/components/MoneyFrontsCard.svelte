@@ -1,6 +1,6 @@
 <script lang="ts">
   // The Money Fronts safe in the Car Wash (issue #11): money, payout, next payout, time until
-  // full and until the Car Wash stops it, and a heat bar per owned front. `editing` adds the resync controls and the mission and
+  // full (or until the Car Wash stops it, if sooner), and a heat bar per owned front. `editing` adds the resync controls and the mission and
   // legal-job buttons. Logic: lib/fronts.ts.
   import { CAR_WASH, FRONTS_CAPACITY, FRONTS_ESTIMATE, HEAT_PER_MISSION } from '../data/fronts'
   import type { Property } from '../data/properties'
@@ -22,6 +22,7 @@
   import { nextPayoutInMs, type SafeState } from '../lib/safes'
   import Button from './ui/Button.svelte'
   import Countdown from './ui/Countdown.svelte'
+  import EditableBar from './ui/EditableBar.svelte'
   import EditableValue from './ui/EditableValue.svelte'
   import Meter from './ui/Meter.svelte'
 
@@ -42,6 +43,8 @@
   // "Full in" assumes heat stays where it is, like popularity on the other safes.
   const full = $derived(fullInMs(current, owned, catalog))
   const stopsIn = $derived(maxHeatInMs(current, owned, CAR_WASH))
+  // Whichever comes first: the safe filling up, or the Car Wash stopping it at 100% heat.
+  const stopsFirst = $derived(full !== null && stopsIn !== null && stopsIn < full)
   const money = (value: number) => formatValue(value, 'money')
   const stopped = $derived(fronts.filter((f) => heatOf(current, f.propertyId) >= MAX_HEAT))
   const carWashStopped = $derived(stopped.some((f) => f.propertyId === CAR_WASH))
@@ -56,24 +59,13 @@
 {#each fronts as front (front.propertyId)}
   {@const heat = heatOf(current, front.propertyId)}
   {#if editing}
-    <EditableValue
+    <EditableBar
       label="{front.label} heat (est.)"
       value={heat}
-      unit="percent"
-      min={0}
-      max={MAX_HEAT}
+      kind="heat"
+      segments={MAX_HEAT / HEAT_PER_MISSION}
       onresync={(value) => onresync(setHeat(current, front.propertyId, value))}
-    >
-      <Meter
-        label="{front.label} heat"
-        value={heat}
-        max={MAX_HEAT}
-        kind="heat"
-        segments={MAX_HEAT / HEAT_PER_MISSION}
-        bare
-        onset={(value) => onresync(setHeat(current, front.propertyId, value))}
-      />
-    </EditableValue>
+    />
     <div class="actions">
       <Button
         title="A laundering mission launched here: +{HEAT_PER_MISSION}% heat, counts toward doubling this front's pay"
@@ -140,7 +132,7 @@
 </div>
 <p class="hint">
   Fronts {money(parts.fronts)} + your other businesses {money(parts.others)}. Biker businesses and
-  the Bunker only count while set up and not paused.
+  the Bunker only count while set up and not shut down.
 </p>
 
 <Countdown label="Next payout in" remainingMs={nextPayoutInMs(current)} />
@@ -154,11 +146,11 @@
 {/if}
 {#if full === null}
   <p class="hint">Never full: this safe gets nothing a day.</p>
+{:else if stopsFirst}
+  <Countdown label="Car Wash max heat in (est.)" remainingMs={stopsIn ?? 0} />
+  <p class="hint">The safe stops before it is full unless you do a legal job at the Car Wash.</p>
 {:else}
   <Countdown label="Full in" remainingMs={full} readyText="Full" />
-{/if}
-{#if stopsIn !== null && stopsIn > 0}
-  <Countdown label="Car Wash 100% heat in (est.)" remainingMs={stopsIn} />
 {/if}
 
 <p class="hint" role="note">{FRONTS_ESTIMATE}</p>
