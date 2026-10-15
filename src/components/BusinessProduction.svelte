@@ -24,6 +24,7 @@
   import Countdown from './ui/Countdown.svelte'
   import Fact from './ui/Fact.svelte'
   import Meter from './ui/Meter.svelte'
+  import Note from './ui/Note.svelte'
 
   interface Props {
     production: Production
@@ -45,8 +46,8 @@
     farEstimated?: boolean
     /** The last production boost, if the business has one (kept after it ends). */
     boost?: Boost
-    /** Called with the new boost, or undefined to take back one started by mistake. */
-    onboost?: (boost: Boost | undefined) => void
+    /** Called with the boost just started; its Undo sits in the card's footer. */
+    onboost?: (boost: Boost) => void
     /** The last Mansion boost, on any business (issue #14). */
     mansionBoost?: MansionBoost
   }
@@ -144,13 +145,7 @@
 {#if production.boost && running?.boostedMinutesPerUnit !== undefined && !shutDown}
   <!-- Play time while it runs; the next one is a real-time wait (daily reset). -->
   {#if boosting}
-    <Fact label="Boost on">
-      {Math.ceil(boost!.unitsLeft)}
-      {production.unitName} left
-      <Button onclick={() => onboost(undefined)} title="Take back a boost started by mistake"
-        >Undo</Button
-      >
-    </Fact>
+    <Fact label="Boost on">{Math.ceil(boost!.unitsLeft)} {production.unitName} left</Fact>
   {:else if now >= nextBoost}
     <Fact label="Boost ready">
       <Button onclick={() => onboost(startBoost(production.boost!, now))}>Boost started</Button>
@@ -169,9 +164,9 @@
 {/if}
 
 {#if shutDown}
-  <p class="note quiet" role="note">
-    <strong>Shut down.</strong> No stock is made and no supplies are used until you start it again.
-  </p>
+  <Note tone="quiet" title="Shut down."
+    >No stock is made and no supplies are used until you start it again.</Note
+  >
 {:else if ahead}
   <!-- Only what happens first: the other one cannot happen before it. Play time. -->
   {#if ahead.fullInMs !== null}
@@ -189,50 +184,27 @@
     />
   {/if}
   {#if rate?.estimate}
-    <p class="note" role="note">
-      <strong>Estimate.</strong> No reliable data for these upgrades. {rate.estimate.how}
-    </p>
+    <Note title="Estimate.">No reliable data for these upgrades. {rate.estimate.how}</Note>
   {/if}
   {#if stacked}
-    <p class="note" role="note">
-      <strong>Estimate.</strong> No source gives the speed with both boosts on: LSOS takes the
-      boosted speed ×{MANSION_BOOST.speed}.
-    </p>
+    <Note title="Estimate."
+      >No source gives the speed with both boosts on: LSOS takes the boosted speed ×{MANSION_BOOST.speed}.</Note
+    >
   {/if}
 {:else}
-  <p class="note" role="note">
-    <strong>Not tracked.</strong>
+  <Note title="Not tracked.">
     {#if rate}
       There is no reliable data on how fast this business uses supplies with these upgrades.
     {:else}
       There is no reliable data for this combination of upgrades.
     {/if}
     Stock and supplies stay where you set them.
-  </p>
+  </Note>
 {/if}
 
 <style>
   .alt {
     color: var(--muted);
     font-size: var(--text-sm);
-  }
-
-  .note {
-    border-left: 3px solid var(--warn);
-    font-size: var(--text-sm);
-    margin: 0;
-    padding-left: var(--space-2);
-  }
-
-  .note.quiet {
-    border-left-color: var(--muted);
-  }
-
-  .note strong {
-    color: var(--warn);
-  }
-
-  .note.quiet strong {
-    color: inherit;
   }
 </style>

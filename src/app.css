@@ -57,6 +57,8 @@
   --scanline-gap: 3px;
   --bar-height: 0.5rem;
   --max-width: 80rem;
+  /* Narrowest card column in a tab's card grid (`ui/CardGrid`). */
+  --card-width: 20rem;
 
   color-scheme: dark;
   font-family: var(--font-body);

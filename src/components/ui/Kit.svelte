@@ -13,7 +13,9 @@
   import Countdown from './Countdown.svelte'
   import EditableValue from './EditableValue.svelte'
   import Fact from './Fact.svelte'
+  import Hint from './Hint.svelte'
   import Meter from './Meter.svelte'
+  import Note from './Note.svelte'
   import NumberField from './NumberField.svelte'
   import Panel from './Panel.svelte'
   import Select from './Select.svelte'
@@ -112,6 +114,14 @@
     </Fact>
   </Panel>
 
+  <Panel title="Hints and notes">
+    <Hint>A hint: muted help text.</Hint>
+    <Hint fine>A fine hint, for footnotes like how an estimate is made.</Hint>
+    <Note title="Estimate.">Warn: something to look at.</Note>
+    <Note tone="quiet" title="Shut down.">Quiet: a plain state.</Note>
+    <Note tone="good" title="Tip:">Good: a suggestion.</Note>
+  </Panel>
+
   <Panel title="Number field">
     <NumberField
       label="Stock (drives the meter)"
@@ -172,7 +182,7 @@
   .grid {
     display: grid;
     gap: var(--space-5);
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--card-width)), 1fr));
   }
 
   h2 {

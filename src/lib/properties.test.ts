@@ -9,6 +9,7 @@ import {
   setOwned,
   setShutDown,
   setUpgrade,
+  upgradeSummary,
   upgradeValue,
   type OwnedProperties,
 } from './properties'
@@ -88,6 +89,17 @@ describe('upgradeValue', () => {
     const owned = { a: { owned: true, upgrades: { equipment: 'yes', tech: 'gone' } } }
     expect(upgradeValue(owned, 'a', toggle)).toBe(false)
     expect(upgradeValue(owned, 'a', choice)).toBe('none')
+  })
+})
+
+describe('upgradeSummary', () => {
+  it('names the bought upgrades and leaves out the first choice', () => {
+    const property = sample('lab')
+    let owned = setOwned({}, 'lab', true)
+    expect(upgradeSummary(owned, property)).toBe('No upgrades')
+    owned = setUpgrade(owned, 'lab', 'equipment', true)
+    owned = setUpgrade(owned, 'lab', 'tech', 'cash')
+    expect(upgradeSummary(owned, property)).toBe('Equipment, Technician: Cash')
   })
 })
 

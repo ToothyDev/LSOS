@@ -19,20 +19,22 @@
   import {
     isShutDown,
     ownedProperties,
-    upgradeValue,
+    upgradeSummary,
     type OwnedProperties,
   } from '../lib/properties'
   import type { GoodsStock } from '../lib/nightclub'
   import type { Bars } from '../lib/resync'
-  import { hashForTab } from '../lib/tabs'
   import type { MansionBoost } from '../lib/timers'
+  import { CardModes } from '../lib/cards.svelte'
   import BusinessProduction from './BusinessProduction.svelte'
   import NightclubWarehouse from './NightclubWarehouse.svelte'
   import PropertySettings from './PropertySettings.svelte'
   import Button from './ui/Button.svelte'
   import CardGrid from './ui/CardGrid.svelte'
+  import Hint from './ui/Hint.svelte'
+  import MarkOwned from './ui/MarkOwned.svelte'
   import Panel from './ui/Panel.svelte'
-  import SettingsButton from './ui/SettingsButton.svelte'
+  import CardFooter from './ui/CardFooter.svelte'
 
   interface Props {
     catalog: readonly Property[]
@@ -78,33 +80,24 @@
   const ownedList = $derived(
     ownedProperties(catalog, owned).filter((property) => property.card !== false),
   )
-  let open = $state<string | null>(null)
   // Cards start collapsed: bars, value and next countdown only (issue #6).
-  let editing = $state<string | null>(null)
-
-  /** Short summary of the bought upgrades, e.g. "Equipment, Technician: Cash". */
-  function summary(property: Property): string {
-    const parts = property.upgrades.flatMap((upgrade) => {
-      const value = upgradeValue(owned, property.id, upgrade)
-      if (upgrade.kind === 'toggle') return value === true ? [upgrade.label] : []
-      if (upgrade.kind === 'count') return [`${upgrade.label}: ${value}`]
-      if (upgrade.summary === false || value === upgrade.options[0]?.id) return []
-      const option = upgrade.options.find((o) => o.id === value)
-      return option ? [`${upgrade.label}: ${option.label}`] : []
-    })
-    return parts.length > 0 ? parts.join(', ') : 'No upgrades'
-  }
+  const modes = new CardModes()
+  // The boost a press replaced, so a press by mistake can be taken back from the footer.
+  let undoBoost = $state<{ id: string; before: Boost | undefined } | null>(null)
 </script>
 
+{#snippet boostUndo()}
+  <Button
+    onclick={() => {
+      onboost(undoBoost!.id, undoBoost!.before)
+      undoBoost = null
+    }}
+    title="Take back a boost started by mistake">Undo boost</Button
+  >
+{/snippet}
+
 {#if ownedList.length === 0}
-  <p class="empty">
-    {#if catalog.length === 0}
-      No businesses are tracked yet.
-    {:else}
-      You do not own any business yet. Mark what you own in
-      <a href={hashForTab('settings')}>Settings</a>.
-    {/if}
-  </p>
+  <MarkOwned>You do not own any business yet.</MarkOwned>
 {:else}
   <CardGrid
     items={ownedList}
@@ -118,10 +111,10 @@
       {@const warehouse = property.id === NIGHTCLUB_ID && goods.length > 0}
       <div class="shell" class:shut={isShutDown(owned, property.id)}>
         <Panel title={property.label} {move} {moving} focus={property.id}>
-          {#if open === property.id}
+          {#if modes.is(property.id, 'settings')}
             <PropertySettings {property} {owned} {onchange} />
           {:else}
-            <p class="hint">{summary(property)}</p>
+            <Hint>{upgradeSummary(owned, property)}</Hint>
           {/if}
           {#if production}
             <BusinessProduction
@@ -131,12 +124,15 @@
               shutDown={isShutDown(owned, property.id)}
               bars={businesses[property.id] ?? emptyBars()}
               {now}
-              editing={editing === property.id}
+              editing={modes.editing(property.id)}
               onresync={(bars) => onresync(property.id, bars)}
               bonus={valueBonus(production, owned, property)}
               farEstimated={farValueEstimated(production, owned)}
               boost={boosts[property.id]}
-              onboost={(boost) => onboost(property.id, boost)}
+              onboost={(boost) => {
+                undoBoost = { id: property.id, before: boosts[property.id] }
+                onboost(property.id, boost)
+              }}
               {mansionBoost}
             />
           {/if}
@@ -147,22 +143,17 @@
               {owned}
               {onchange}
               stock={nightclubStock}
-              editing={editing === property.id}
+              editing={modes.editing(property.id)}
               onresync={onnightclub}
             />
           {/if}
           {#snippet footer()}
-            {#if production || warehouse}
-              <Button
-                aria-expanded={editing === property.id}
-                onclick={() => (editing = editing === property.id ? null : property.id)}
-                >{editing === property.id ? 'Done' : 'Edit'}</Button
-              >
-            {/if}
-            <SettingsButton
+            <CardFooter
+              id={property.id}
               label={property.label}
-              open={open === property.id}
-              onclick={() => (open = open === property.id ? null : property.id)}
+              {modes}
+              editable={!!(production || warehouse)}
+              undo={undoBoost?.id === property.id ? boostUndo : undefined}
             />
           {/snippet}
         </Panel>
@@ -180,22 +171,5 @@
   /* A shut-down business is dimmed like a disabled control: same colours, darker (issue #38). */
   .shell.shut {
     filter: brightness(0.65);
-  }
-
-  p {
-    margin: 0;
-  }
-
-  .empty {
-    color: var(--muted);
-  }
-
-  .empty a {
-    color: var(--accent-text);
-  }
-
-  .hint {
-    color: var(--muted);
-    font-size: var(--text-sm);
   }
 </style>

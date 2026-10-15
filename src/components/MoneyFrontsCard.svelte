@@ -25,7 +25,9 @@
   import Fact from './ui/Fact.svelte'
   import EditableBar from './ui/EditableBar.svelte'
   import EditableValue from './ui/EditableValue.svelte'
+  import Hint from './ui/Hint.svelte'
   import Meter from './ui/Meter.svelte'
+  import Note from './ui/Note.svelte'
 
   interface Props {
     catalog: readonly Property[]
@@ -93,16 +95,14 @@
 {/each}
 
 {#if carWashStopped}
-  <p class="warn" role="note">
-    <strong>Safe stopped.</strong> The Car Wash is at 100% heat: the safe gets nothing until you do a
-    legal job there.
-  </p>
+  <Note title="Safe stopped.">
+    The Car Wash is at 100% heat: the safe gets nothing until you do a legal job there.
+  </Note>
 {:else if stopped.length > 0}
-  <p class="warn" role="note">
-    <strong>Front stopped.</strong>
+  <Note title="Front stopped.">
     {stopped.map((f) => `${f.label} (${money(frontPay(f, owned, catalog))})`).join(', ')}
     {stopped.length === 1 ? 'is' : 'are'} at 100% heat and pay nothing until a legal job there.
-  </p>
+  </Note>
 {/if}
 
 {#if editing}
@@ -128,10 +128,10 @@
 {/if}
 
 <Fact label="Payout">{money(parts.fronts + parts.others)} a day</Fact>
-<p class="hint">
+<Hint fine>
   Fronts {money(parts.fronts)} + your other businesses {money(parts.others)}. A shut-down business
   adds nothing.
-</p>
+</Hint>
 
 <Countdown label="Next payout in" remainingMs={nextPayoutInMs(current)} />
 {#if editing}
@@ -139,44 +139,25 @@
     <Button onclick={() => onresync(syncFronts(current, owned, catalog))}
       >Payout just arrived</Button
     >
-    <p class="hint">Press when the game says money was added to this safe.</p>
+    <Hint fine>Press when the game says money was added to this safe.</Hint>
   </div>
 {/if}
 {#if full === null}
-  <p class="hint">Never full: this safe gets nothing a day.</p>
+  <Hint fine>Never full: this safe gets nothing a day.</Hint>
 {:else if stopsFirst}
   <Countdown label="Car Wash max heat in (est.)" remainingMs={stopsIn ?? 0} />
-  <p class="hint">The safe stops before it is full unless you do a legal job at the Car Wash.</p>
+  <Hint fine>The safe stops before it is full unless you do a legal job at the Car Wash.</Hint>
 {:else}
   <Countdown label="Full in" remainingMs={full} readyText="Full" />
 {/if}
 
-<p class="hint" role="note">{FRONTS_ESTIMATE}</p>
+<Hint fine role="note">{FRONTS_ESTIMATE}</Hint>
 
 <style>
-  p {
-    margin: 0;
-  }
-
   .actions {
     align-items: center;
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-2) var(--space-3);
-  }
-
-  .warn {
-    border-left: 3px solid var(--warn);
-    font-size: var(--text-sm);
-    padding-left: var(--space-2);
-  }
-
-  .warn strong {
-    color: var(--warn);
-  }
-
-  .hint {
-    color: var(--muted);
-    font-size: var(--text-xs);
   }
 </style>

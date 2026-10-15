@@ -24,7 +24,9 @@
   import Digits from './ui/Digits.svelte'
   import EditableValue from './ui/EditableValue.svelte'
   import Fact from './ui/Fact.svelte'
+  import Hint from './ui/Hint.svelte'
   import Meter from './ui/Meter.svelte'
+  import Note from './ui/Note.svelte'
 
   interface Props {
     goods: readonly Goods[]
@@ -86,7 +88,7 @@
     </EditableValue>
   {/each}
 {:else if shown.length === 0}
-  <p class="hint">No technician is making goods. Assign one in this card's settings.</p>
+  <Hint>No technician is making goods. Assign one in this card's settings.</Hint>
 {:else}
   <!-- Two lines per goods type: name and crates · value, then the bar with its play time to
        full. The time column has one header instead of a label on every row. -->
@@ -124,48 +126,43 @@
 <Fact label="Total value">{formatValue(total, 'money')}</Fact>
 
 {#each fullStuck as id (id)}
-  <p class="note" role="note">
-    <strong>{label(id)} is full.</strong> Sell it: its technician makes nothing until then.
-  </p>
+  <Note title="{label(id)} is full.">Sell it: its technician makes nothing until then.</Note>
 {/each}
 
 {#if suggestion}
-  <div class="tip" role="note">
-    <p>
-      <strong>More per hour:</strong>
-      {#each suggestion.moves as move (move.technician)}
-        {#if full.includes(move.from)}
-          <span class="move"
-            >{label(move.from)} is full. Sell it, or move technician {move.technician} to
-            {label(move.to)}.</span
-          >
-        {:else}
-          <span class="move"
-            >Technician {move.technician}: {label(move.to)}
-            <span class="was">(now {label(move.from)})</span></span
-          >
-        {/if}
-      {/each}
-    </p>
-    <div class="apply">
-      <span class="gain">+{formatValue(suggestion.gainPerHour, 'money')} / h</span>
-      <Button onclick={applySuggestion}>Move</Button>
-    </div>
-  </div>
+  <Note tone="good" title="More per hour:">
+    {#each suggestion.moves as move (move.technician)}
+      {#if full.includes(move.from)}
+        <span class="move"
+          >{label(move.from)} is full. Sell it, or move technician {move.technician} to
+          {label(move.to)}.</span
+        >
+      {:else}
+        <span class="move"
+          >Technician {move.technician}: {label(move.to)}
+          <span class="was">(now {label(move.from)})</span></span
+        >
+      {/if}
+    {/each}
+    {#snippet actions()}
+      <div class="apply">
+        <span class="gain">+{formatValue(suggestion.gainPerHour, 'money')} / h</span>
+        <Button onclick={applySuggestion}>Move</Button>
+      </div>
+    {/snippet}
+  </Note>
 {/if}
 
 {#if locked.length > 0}
-  <p class="note" role="note">
-    <strong>Locked.</strong>
+  <Note title="Locked.">
     {locked.map((g) => g.label).join(', ')}: own the business that makes
     {locked.length === 1 ? 'it' : 'them'}, and keep it running, to start production.
-  </p>
+  </Note>
 {/if}
 {#if setup.doubled}
-  <p class="note" role="note">
-    <strong>Two technicians on one category.</strong> The game allows one technician per category, so
-    only one counts.
-  </p>
+  <Note title="Two technicians on one category."
+    >The game allows one technician per category, so only one counts.</Note
+  >
 {/if}
 
 <style>
@@ -233,29 +230,6 @@
     font-size: var(--text-sm);
   }
 
-  .hint {
-    color: var(--muted);
-    font-size: var(--text-sm);
-    margin: 0;
-  }
-
-  .tip {
-    border-left: 3px solid var(--accent);
-    display: flex;
-    flex-direction: column;
-    font-size: var(--text-sm);
-    gap: var(--space-2);
-    padding-left: var(--space-2);
-  }
-
-  .tip p {
-    margin: 0;
-  }
-
-  .tip strong {
-    color: var(--accent-text);
-  }
-
   .move {
     display: block;
   }
@@ -274,16 +248,5 @@
   .gain {
     color: var(--accent-text);
     font-variant-numeric: tabular-nums;
-  }
-
-  .note {
-    border-left: 3px solid var(--warn);
-    font-size: var(--text-sm);
-    margin: 0;
-    padding-left: var(--space-2);
-  }
-
-  .note strong {
-    color: var(--warn);
   }
 </style>

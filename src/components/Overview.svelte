@@ -13,6 +13,7 @@
   import { hashForTab } from '../lib/tabs'
   import Button from './ui/Button.svelte'
   import Digits from './ui/Digits.svelte'
+  import MarkOwned from './ui/MarkOwned.svelte'
   import Meter from './ui/Meter.svelte'
   import Select from './ui/Select.svelte'
 
@@ -184,9 +185,7 @@
       {#if paused}<span class="paused">Paused: play-time countdowns wait for Start</span>{/if}
     </h2>
     {#if coming.length === 0}
-      <p class="quiet">
-        Nothing else is tracked. Mark what you own in <a href={hashForTab('settings')}>Settings</a>.
-      </p>
+      <MarkOwned>Nothing else is tracked.</MarkOwned>
     {:else}
       <ul class="next">
         {#each coming as event (event.id)}
@@ -273,11 +272,6 @@
   .quiet {
     color: var(--muted);
     margin: 0;
-  }
-
-  .quiet a {
-    color: var(--accent-text);
-    text-decoration: underline;
   }
 
   /* Money waiting: one strip of readouts, like the in-game business totals. */

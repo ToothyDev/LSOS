@@ -1,5 +1,6 @@
 <script lang="ts">
   import { PROPERTIES } from '../data/properties'
+  import { editTrial, setEditStyle } from '../lib/cards.svelte'
   import { hiddenLabel } from '../lib/overview'
   import { exportFileName } from '../lib/state'
   import { notificationsSupported, setBrowserAlerts, showOnOverview } from '../lib/overview.svelte'
@@ -122,6 +123,29 @@
     <p class="hint">Alerts come only while LSOS is open in a tab.</p>
   </Panel>
 
+  <!-- Trial (issue #60): removed once one style is picked. -->
+  <Panel title="Card editing (trial)">
+    <p class="hint">Two ways to edit the cards on Businesses and Safes. Try both, then pick one.</p>
+    <label>
+      <input
+        type="radio"
+        name="edit-style"
+        checked={editTrial.style === 'exclusive'}
+        onchange={() => setEditStyle('exclusive')}
+      />
+      Edit button: the controls show after pressing Edit
+    </label>
+    <label>
+      <input
+        type="radio"
+        name="edit-style"
+        checked={editTrial.style === 'always'}
+        onchange={() => setEditStyle('always')}
+      />
+      Always editable: no Edit button, the controls are always there
+    </label>
+  </Panel>
+
   <Panel title="Hidden from Overview">
     <p class="hint">
       Left out of the Overview and the alerts, but still tracked on their own tabs and counted in
@@ -197,7 +221,8 @@
     gap: var(--space-2);
   }
 
-  input[type='checkbox'] {
+  input[type='checkbox'],
+  input[type='radio'] {
     accent-color: var(--accent);
     height: 1.125rem;
     width: 1.125rem;

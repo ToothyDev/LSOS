@@ -63,6 +63,19 @@ export function upgradeValue(
     : (upgrade.options[0]?.id ?? '')
 }
 
+/** Short summary of the bought upgrades, e.g. "Equipment, Technician: Cash". */
+export function upgradeSummary(owned: OwnedProperties, property: Property): string {
+  const parts = property.upgrades.flatMap((upgrade) => {
+    const value = upgradeValue(owned, property.id, upgrade)
+    if (upgrade.kind === 'toggle') return value === true ? [upgrade.label] : []
+    if (upgrade.kind === 'count') return [`${upgrade.label}: ${value}`]
+    if (upgrade.summary === false || value === upgrade.options[0]?.id) return []
+    const option = upgrade.options.find((o) => o.id === value)
+    return option ? [`${upgrade.label}: ${option.label}`] : []
+  })
+  return parts.length > 0 ? parts.join(', ') : 'No upgrades'
+}
+
 /** Marks a property owned or not. Upgrades are kept, so owning it again restores them. */
 export function setOwned(
   owned: OwnedProperties,

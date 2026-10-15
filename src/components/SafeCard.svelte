@@ -22,7 +22,9 @@
   import Fact from './ui/Fact.svelte'
   import EditableBar from './ui/EditableBar.svelte'
   import EditableValue from './ui/EditableValue.svelte'
+  import Hint from './ui/Hint.svelte'
   import Meter from './ui/Meter.svelte'
+  import Note from './ui/Note.svelte'
 
   interface Props {
     safe: Safe
@@ -75,10 +77,10 @@
     <Meter label={est('Popularity', estimated.popularity)} value={popularity} max={100} />
   {/if}
   {#if payout < best}
-    <p class="warn" role="note">
-      <strong>Payout cut.</strong> At {popularity}% popularity the safe gets {money(payout)} a day;
+    <Note title="Payout cut.">
+      At {popularity}% popularity the safe gets {money(payout)} a day;
       {maxFrom}% or more pays {money(best)}.
-    </p>
+    </Note>
   {/if}
 {/if}
 
@@ -112,43 +114,24 @@
     <Button onclick={() => onresync(syncPayout(current, safe, owned, property))}
       >Payout just arrived</Button
     >
-    <p class="hint">Press when the game says money was added to this safe.</p>
+    <Hint fine>Press when the game says money was added to this safe.</Hint>
   </div>
 {/if}
 {#if full === null}
-  <p class="hint">Never full: this safe gets nothing a day.</p>
+  <Hint fine>Never full: this safe gets nothing a day.</Hint>
 {:else}
   <Countdown label={est('Full in', estimated.payout)} remainingMs={full} readyText="Full" />
 {/if}
 
 {#if safe.estimate}
-  <p class="hint" role="note">{safe.estimate}</p>
+  <Hint fine role="note">{safe.estimate}</Hint>
 {/if}
 
 <style>
-  p {
-    margin: 0;
-  }
-
   .sync {
     align-items: center;
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-2) var(--space-3);
-  }
-
-  .warn {
-    border-left: 3px solid var(--warn);
-    font-size: var(--text-sm);
-    padding-left: var(--space-2);
-  }
-
-  .warn strong {
-    color: var(--warn);
-  }
-
-  .hint {
-    color: var(--muted);
-    font-size: var(--text-xs);
   }
 </style>

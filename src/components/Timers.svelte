@@ -6,7 +6,6 @@
   import type { Property } from '../data/properties'
   import { LUCKY_WHEEL, MANSION_BOOST } from '../data/timers'
   import { isOwned, type OwnedProperties } from '../lib/properties'
-  import { hashForTab } from '../lib/tabs'
   import {
     boostableBusinesses,
     mansionBoostOn,
@@ -20,6 +19,8 @@
   import Countdown from './ui/Countdown.svelte'
   import EditableValue from './ui/EditableValue.svelte'
   import Fact from './ui/Fact.svelte'
+  import Hint from './ui/Hint.svelte'
+  import MarkOwned from './ui/MarkOwned.svelte'
   import Panel from './ui/Panel.svelte'
   import Select from './ui/Select.svelte'
 
@@ -118,7 +119,7 @@
             <Button onclick={spin}>Spun</Button>
           </Fact>
         {/if}
-        <p class="hint">One spin per 24 real hours, also while LSOS is closed.</p>
+        <Hint>One spin per 24 real hours, also while LSOS is closed.</Hint>
       </Panel>
     {:else}
       <Panel
@@ -129,10 +130,9 @@
         {moving}
       >
         {#if !mansionOwned}
-          <p class="hint">
-            The production boost from the Mansion's AI assistant. Mark a Mansion as owned in
-            <a href={hashForTab('settings')}>Settings</a> to track it.
-          </p>
+          <MarkOwned property={MANSION_BOOST.propertyId}
+            >The production boost from the Mansion's AI assistant, once you own a Mansion.</MarkOwned
+          >
         {:else}
           {#if boostOn}
             <Fact label="Boosting">{label(last!.propertyId)}</Fact>
@@ -168,31 +168,19 @@
                 <Button disabled={!target} onclick={() => activate(target!)}>Activated</Button>
               </Fact>
             {:else}
-              <p class="hint">
+              <Hint>
                 Boost ready, but no business you own and run can take it{last
                   ? ` (${label(last.propertyId)} was boosted last time)`
                   : ''}.
-              </p>
+              </Hint>
             {/if}
           {/if}
-          <p class="hint">
+          <Hint>
             Production ×{MANSION_BOOST.speed} at one Bunker, Acid Lab or MC business for 24 real hours.
             The next boost is ready 24 real hours after the last one, for a different business.
-          </p>
+          </Hint>
         {/if}
       </Panel>
     {/if}
   {/snippet}
 </CardGrid>
-
-<style>
-  .hint {
-    color: var(--muted);
-    font-size: var(--text-sm);
-    margin: 0;
-  }
-
-  .hint a {
-    color: var(--accent-text);
-  }
-</style>
