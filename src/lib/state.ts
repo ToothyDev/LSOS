@@ -13,7 +13,7 @@ import { parseSafes, type SafesById } from './safes'
 import { parseTimers, type Timers } from './timers'
 
 /** Bump when the stored shape changes, and add a migration from the previous version. */
-export const CURRENT_VERSION = 12
+export const CURRENT_VERSION = 13
 
 /** All user state. Trackers add their own sections here as they are built. */
 export interface AppState {
@@ -26,6 +26,10 @@ export interface AppState {
   businesses: BusinessBarsById
   /** Property ids in the order the user dragged the business cards into (issue #30). */
   businessOrder: string[]
+  /** Card ids in the order the user dragged the safe cards into (issue #51). */
+  safeOrder: string[]
+  /** Card ids in the order the user dragged the timer cards into (issue #51). */
+  timerOrder: string[]
   /** Nightclub warehouse crates by goods id, as of the last play time counted (issue #7). */
   nightclub: GoodsStock
   /** Money in each safe and nightclub popularity, as of the last play time counted (issue #8). */
@@ -60,6 +64,8 @@ export function defaultState(): AppState {
     properties: {},
     businesses: {},
     businessOrder: [],
+    safeOrder: [],
+    timerOrder: [],
     nightclub: {},
     safes: {},
     boosts: {},
@@ -99,6 +105,8 @@ export const MIGRATIONS: Readonly<Record<number, Migration>> = {
   10: (data) => ({ ...data, timers: {} }),
   // Version 12 adds the alert settings (issue #15); alerts are off until opted in.
   11: (data) => ({ ...data, alerts: defaultAlerts() }),
+  // Version 13 adds the order of the safe and timer cards (issue #51); default order until moved.
+  12: (data) => ({ ...data, safeOrder: [], timerOrder: [] }),
 }
 
 export type ParseResult =
@@ -175,6 +183,10 @@ function toState(data: StoredData): AppState | string {
   if (typeof businesses === 'string') return businesses
   const businessOrder = parseOrder(data.businessOrder)
   if (typeof businessOrder === 'string') return businessOrder
+  const safeOrder = parseOrder(data.safeOrder)
+  if (typeof safeOrder === 'string') return safeOrder
+  const timerOrder = parseOrder(data.timerOrder)
+  if (typeof timerOrder === 'string') return timerOrder
   const nightclub = parseGoodsStock(data.nightclub)
   if (typeof nightclub === 'string') return nightclub
   const safes = parseSafes(data.safes)
@@ -191,6 +203,8 @@ function toState(data: StoredData): AppState | string {
     properties,
     businesses,
     businessOrder,
+    safeOrder,
+    timerOrder,
     nightclub,
     safes,
     boosts,

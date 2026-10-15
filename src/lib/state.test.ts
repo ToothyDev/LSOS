@@ -11,6 +11,8 @@ import {
 
 // Version 12 defaults: alerts off, 10 minutes ahead, also while focused.
 const ALERTS = { browser: false, popup: false, leadMs: 600_000, unfocusedOnly: false }
+// Version 13 defaults: safe and timer cards in their default order.
+const ORDERS = { safeOrder: [], timerOrder: [] }
 
 describe('parseState', () => {
   it('round-trips the default state', () => {
@@ -28,11 +30,13 @@ describe('parseState', () => {
     expect(result).toEqual({
       ok: true,
       state: {
-        version: 12,
+        version: 13,
         clock: { trackOnOpen: false },
         properties: {},
         businesses: {},
         businessOrder: [],
+        safeOrder: [],
+        timerOrder: [],
         nightclub: {},
         safes: {},
         boosts: {},
@@ -48,11 +52,13 @@ describe('parseState', () => {
     expect(result).toEqual({
       ok: true,
       state: {
-        version: 12,
+        version: 13,
         clock: { trackOnOpen: true },
         properties: {},
         businesses: {},
         businessOrder: [],
+        safeOrder: [],
+        timerOrder: [],
         nightclub: {},
         safes: {},
         boosts: {},
@@ -71,11 +77,13 @@ describe('parseState', () => {
     expect(result).toEqual({
       ok: true,
       state: {
-        version: 12,
+        version: 13,
         clock: { trackOnOpen: false },
         properties,
         businesses: {},
         businessOrder: [],
+        safeOrder: [],
+        timerOrder: [],
         nightclub: {},
         safes: {},
         boosts: {},
@@ -95,11 +103,13 @@ describe('parseState', () => {
     expect(result).toEqual({
       ok: true,
       state: {
-        version: 12,
+        version: 13,
         clock: { trackOnOpen: true },
         properties,
         businesses,
         businessOrder: [],
+        safeOrder: [],
+        timerOrder: [],
         nightclub: {},
         safes: {},
         boosts: {},
@@ -123,7 +133,8 @@ describe('parseState', () => {
       ok: true,
       state: {
         ...sample,
-        version: 12,
+        version: 13,
+        ...ORDERS,
         nightclub: {},
         safes: {},
         boosts: {},
@@ -147,7 +158,8 @@ describe('parseState', () => {
       ok: true,
       state: {
         ...sample,
-        version: 12,
+        version: 13,
+        ...ORDERS,
         safes: {},
         boosts: {},
         timers: {},
@@ -169,7 +181,7 @@ describe('parseState', () => {
     }
     expect(parseState(JSON.stringify(sample))).toEqual({
       ok: true,
-      state: { ...sample, version: 12, boosts: {}, timers: {}, alerts: ALERTS },
+      state: { ...sample, version: 13, ...ORDERS, boosts: {}, timers: {}, alerts: ALERTS },
       fromVersion: 7,
     })
   })
@@ -187,7 +199,7 @@ describe('parseState', () => {
     }
     expect(parseState(JSON.stringify(sample))).toEqual({
       ok: true,
-      state: { ...sample, version: 12, timers: {}, alerts: ALERTS },
+      state: { ...sample, version: 13, ...ORDERS, timers: {}, alerts: ALERTS },
       fromVersion: 8,
     })
   })
@@ -205,7 +217,7 @@ describe('parseState', () => {
     }
     expect(parseState(JSON.stringify(sample))).toEqual({
       ok: true,
-      state: { ...sample, version: 12, timers: {}, alerts: ALERTS },
+      state: { ...sample, version: 13, ...ORDERS, timers: {}, alerts: ALERTS },
       fromVersion: 9,
     })
   })
@@ -223,7 +235,7 @@ describe('parseState', () => {
     }
     expect(parseState(JSON.stringify(sample))).toEqual({
       ok: true,
-      state: { ...sample, version: 12, timers: {}, alerts: ALERTS },
+      state: { ...sample, version: 13, ...ORDERS, timers: {}, alerts: ALERTS },
       fromVersion: 10,
     })
   })
@@ -242,9 +254,35 @@ describe('parseState', () => {
     }
     expect(parseState(JSON.stringify(sample))).toEqual({
       ok: true,
-      state: { ...sample, version: 12, alerts: ALERTS },
+      state: { ...sample, version: 13, ...ORDERS, alerts: ALERTS },
       fromVersion: 11,
     })
+  })
+
+  it('migrates a version 12 sample, with safe and timer cards in their default order', () => {
+    const sample = {
+      version: 12,
+      clock: { trackOnOpen: false },
+      properties: { agency: { owned: true, upgrades: {} } },
+      businesses: {},
+      businessOrder: ['bunker'],
+      nightclub: {},
+      safes: { agency: { money: 10_000, sinceMs: 0 } },
+      boosts: {},
+      timers: { luckyWheelSpunAt: 5_000 },
+      alerts: ALERTS,
+    }
+    expect(parseState(JSON.stringify(sample))).toEqual({
+      ok: true,
+      state: { ...sample, version: 13, ...ORDERS },
+      fromVersion: 12,
+    })
+  })
+
+  it('keeps the safe and timer card order', () => {
+    const order = { safeOrder: ['car-wash', 'agency'], timerOrder: ['mansion', 'lucky-wheel'] }
+    const text = JSON.stringify({ ...defaultState(), ...order })
+    expect(parseState(text)).toMatchObject({ ok: true, state: order })
   })
 
   it('keeps the alert settings', () => {
