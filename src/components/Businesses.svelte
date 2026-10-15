@@ -21,7 +21,12 @@
     type BoostsById,
     type BusinessBarsById,
   } from '../lib/production'
-  import { ownedProperties, upgradeValue, type OwnedProperties } from '../lib/properties'
+  import {
+    isShutDown,
+    ownedProperties,
+    upgradeValue,
+    type OwnedProperties,
+  } from '../lib/properties'
   import type { GoodsStock } from '../lib/nightclub'
   import type { Bars } from '../lib/resync'
   import { hashForTab } from '../lib/tabs'
@@ -238,6 +243,7 @@
           class="lift"
           class:lifted={moving === property.id}
           class:settling={settling === property.id}
+          class:shut={isShutDown(owned, property.id)}
           style:translate={moving === property.id ? `${lift.x}px ${lift.y}px` : undefined}
         >
           <Panel title={property.label} move={handle(property.id)} moving={moving === property.id}>
@@ -251,6 +257,7 @@
                 {production}
                 rate={matchingRate(production, owned, property)}
                 running={rateFor(production, owned, property)}
+                shutDown={isShutDown(owned, property.id)}
                 bars={businesses[property.id] ?? emptyBars()}
                 {now}
                 editing={editing === property.id}
@@ -312,6 +319,11 @@
     border-radius: var(--radius);
     outline: 1px dashed var(--track-edge);
     outline-offset: -1px;
+  }
+
+  /* A shut-down business is dimmed like a disabled control: same colours, darker (issue #38). */
+  .lift.shut {
+    filter: brightness(0.65);
   }
 
   .lift.lifted {

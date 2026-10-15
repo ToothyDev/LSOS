@@ -15,7 +15,7 @@ import {
   setHeat,
   syncFronts,
 } from './fronts'
-import type { OwnedProperties, UpgradeValue } from './properties'
+import { setShutDown, type OwnedProperties, type UpgradeValue } from './properties'
 import { DAY_MS, type SafeState } from './safes'
 
 const MIN = 60_000
@@ -72,6 +72,11 @@ describe('payoutParts', () => {
     expect(payoutParts(emptyFronts(), owned, PROPERTIES)).toEqual({ fronts: 750, others: 3_000 })
     const large = owning(['car-wash', 'special-cargo'])
     expect(payoutParts(emptyFronts(), large, PROPERTIES).others).toBe(1_500)
+  })
+
+  it('leaves out a shut-down business (issue #38)', () => {
+    const owned = setShutDown(owning(['car-wash', 'bunker', 'mc-weed']), 'bunker', true)
+    expect(payoutParts(emptyFronts(), owned, PROPERTIES)).toEqual({ fronts: 750, others: 1_000 })
   })
 
   it('drops a front at 100% heat, and everything when the car wash is at 100%', () => {

@@ -2,9 +2,12 @@ import { describe, expect, it } from 'vitest'
 import type { Property, Upgrade } from '../data/properties'
 import {
   isOwned,
+  isRunning,
+  isShutDown,
   ownedProperties,
   parseOwnedProperties,
   setOwned,
+  setShutDown,
   setUpgrade,
   upgradeValue,
   type OwnedProperties,
@@ -111,5 +114,42 @@ describe('parseOwnedProperties', () => {
     ['a bad upgrade', { a: { owned: true, upgrades: { tech: null } } }, 'upgrade "tech"'],
   ])('rejects %s', (_, data, message) => {
     expect(parseOwnedProperties(data)).toContain(message)
+  })
+})
+
+describe('shutting down', () => {
+  it('runs an owned property by default', () => {
+    const owned = setOwned({}, 'a', true)
+    expect(isShutDown(owned, 'a')).toBe(false)
+    expect(isRunning(owned, 'a')).toBe(true)
+    expect(isRunning(owned, 'b')).toBe(false)
+  })
+
+  it('keeps a shut-down property owned and its upgrades', () => {
+    const owned = setShutDown(
+      setUpgrade(setOwned({}, 'a', true), 'a', 'equipment', true),
+      'a',
+      true,
+    )
+    expect(isOwned(owned, 'a')).toBe(true)
+    expect(isRunning(owned, 'a')).toBe(false)
+    expect(upgradeValue(owned, 'a', toggle)).toBe(true)
+    expect(isRunning(setShutDown(owned, 'a', false), 'a')).toBe(true)
+  })
+
+  it('keeps the flag when ownership changes', () => {
+    const owned = setOwned(setShutDown(setOwned({}, 'a', true), 'a', true), 'a', false)
+    expect(isShutDown(setOwned(owned, 'a', true), 'a')).toBe(true)
+  })
+
+  it('reads a saved flag and rejects a bad one', () => {
+    const saved = { a: { owned: true, upgrades: {}, shutDown: true } }
+    expect(parseOwnedProperties(saved)).toEqual(saved)
+    expect(parseOwnedProperties({ a: { owned: true, upgrades: {} } })).toEqual({
+      a: { owned: true, upgrades: {} },
+    })
+    expect(parseOwnedProperties({ a: { owned: true, upgrades: {}, shutDown: 'yes' } })).toBe(
+      'The saved shut-down setting of property "a" is not true or false.',
+    )
   })
 })

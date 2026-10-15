@@ -160,7 +160,7 @@
   <p class="note" role="note">
     <strong>Locked.</strong>
     {locked.map((g) => g.label).join(', ')}: own the business that makes
-    {locked.length === 1 ? 'it' : 'them'} to start production.
+    {locked.length === 1 ? 'it' : 'them'}, and keep it running, to start production.
   </p>
 {/if}
 {#if setup.doubled}

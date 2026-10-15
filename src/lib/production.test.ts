@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { PRODUCTION, type Production } from '../data/production'
 import { PROPERTIES } from '../data/properties'
 import {
+  clearShutDownStock,
   estimatedParts,
   farValueEstimated,
   forecast,
@@ -19,7 +20,7 @@ import {
   type Boost,
   type KnownRate,
 } from './production'
-import type { OwnedProperties } from './properties'
+import { setShutDown, type OwnedProperties } from './properties'
 import type { Bars } from './resync'
 
 const MIN = 60_000
@@ -244,6 +245,13 @@ describe('produceAll', () => {
     expect(next).toEqual({ ...businesses, bunker: { stock: 1, supplies: 95 } })
   })
 
+  it('keeps a shut-down business as it is (issue #38)', () => {
+    const businesses = { bunker: { stock: 0, supplies: 100 } }
+    const shut = setShutDown(owned, 'bunker', true)
+    const next = produceAll(businesses, PROPERTIES, PRODUCTION, shut, 7 * MIN, 0, 100)
+    expect(next.businesses).toBe(businesses)
+  })
+
   it('returns the same object when nothing changed', () => {
     const businesses = { bunker: { stock: 50, supplies: 0 } }
     const next = produceAll(businesses, PROPERTIES, PRODUCTION, owned, 7 * MIN, 0, 100)
@@ -267,6 +275,25 @@ describe('produceAll', () => {
     const businesses = { bunker: { stock: 0, supplies: 10, suppliesDueAt: 1000 * MIN } }
     const next = produceAll(businesses, PROPERTIES, PRODUCTION, owned, 7 * MIN, 999 * MIN, 100)
     expect(next.businesses.bunker).toEqual({ stock: 1, supplies: 5, suppliesDueAt: 1000 * MIN })
+  })
+})
+
+describe('clearShutDownStock', () => {
+  const running = owning('bunker')
+  const shut = setShutDown(running, 'bunker', true)
+
+  it('empties the stock and keeps the supplies when a business is shut down', () => {
+    const businesses = { bunker: { stock: 40, supplies: 60 }, 'mc-weed': { stock: 10 } }
+    expect(clearShutDownStock(businesses, running, shut)).toEqual({
+      bunker: { stock: 0, supplies: 60 },
+      'mc-weed': { stock: 10 },
+    })
+  })
+
+  it('changes nothing when it was already shut down or starts again', () => {
+    const businesses = { bunker: { stock: 40, supplies: 60 } }
+    expect(clearShutDownStock(businesses, shut, shut)).toBe(businesses)
+    expect(clearShutDownStock(businesses, shut, running)).toBe(businesses)
   })
 })
 

@@ -15,15 +15,24 @@
 </script>
 
 <Panel title="Properties">
-  {#each catalog as property (property.id)}
-    <PropertySettings {property} {owned} {onchange} />
-  {:else}
-    <p>No properties yet. They appear here as their trackers are built.</p>
-  {/each}
+  <div class="list">
+    {#each catalog as property (property.id)}
+      <PropertySettings {property} {owned} {onchange} />
+    {:else}
+      <p>No properties yet. They appear here as their trackers are built.</p>
+    {/each}
+  </div>
   <p class="hint">Trackers show only what you own. Upgrades change how fast they count.</p>
 </Panel>
 
 <style>
+  .list {
+    align-items: start;
+    display: grid;
+    gap: var(--space-3) var(--space-6);
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+  }
+
   p {
     margin: 0;
   }

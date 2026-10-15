@@ -1,11 +1,13 @@
 <script lang="ts">
-  // Owned yes/no and the upgrades of one property (decision 011).
+  // Owned yes/no, shut down (issue #38) and the upgrades of one property (decision 011).
   import type { Property } from '../data/properties'
   import Button from './ui/Button.svelte'
   import NumberField from './ui/NumberField.svelte'
   import {
     isOwned,
+    isShutDown,
     setOwned,
+    setShutDown,
     setUpgrade,
     upgradeValue,
     type OwnedProperties,
@@ -20,19 +22,32 @@
   let { property, owned, onchange }: Props = $props()
   const id = $props.id()
   const isPropertyOwned = $derived(isOwned(owned, property.id))
+  const isPropertyRunning = $derived(!isShutDown(owned, property.id))
 </script>
 
 <div class="property">
   <div class="owned">
     <span id="{id}-name" class="name">{property.label}</span>
-    <Button
-      variant={isPropertyOwned ? 'primary' : 'ghost'}
-      aria-labelledby="{id}-name"
-      aria-pressed={isPropertyOwned}
-      onclick={() => onchange(setOwned(owned, property.id, !isPropertyOwned))}
-    >
-      {isPropertyOwned ? 'Owned' : 'Not owned'}
-    </Button>
+    <div class="toggles">
+      {#if isPropertyOwned && property.canShutDown}
+        <Button
+          variant={isPropertyRunning ? 'primary' : 'ghost'}
+          aria-label="{property.label} running"
+          aria-pressed={isPropertyRunning}
+          onclick={() => onchange(setShutDown(owned, property.id, isPropertyRunning))}
+        >
+          {isPropertyRunning ? 'Running' : 'Shut down'}
+        </Button>
+      {/if}
+      <Button
+        variant={isPropertyOwned ? 'primary' : 'ghost'}
+        aria-labelledby="{id}-name"
+        aria-pressed={isPropertyOwned}
+        onclick={() => onchange(setOwned(owned, property.id, !isPropertyOwned))}
+      >
+        {isPropertyOwned ? 'Owned' : 'Not owned'}
+      </Button>
+    </div>
   </div>
 
   {#if isPropertyOwned && property.upgrades.length > 0}
@@ -98,6 +113,15 @@
     flex-wrap: wrap;
     gap: var(--space-2);
     justify-content: space-between;
+  }
+
+  /* Right-aligned, also when a long name pushes them onto their own line. */
+  .toggles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    justify-content: flex-end;
+    margin-left: auto;
   }
 
   .name {

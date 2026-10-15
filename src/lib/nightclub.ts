@@ -2,7 +2,7 @@
 // Pure logic: play time comes in as an argument (decision 003).
 import { MAX_TECHNICIANS, NIGHTCLUB_ID, type Goods } from '../data/nightclub'
 import type { Property } from '../data/properties'
-import { isOwned, upgradeValue, type OwnedProperties } from './properties'
+import { isOwned, isRunning, upgradeValue, type OwnedProperties } from './properties'
 
 const MINUTE_MS = 60_000
 
@@ -52,9 +52,9 @@ export function msPerCrate(goods: Goods, equipment: boolean): number {
   return (equipment ? goods.minutesPerCrate.equipment : goods.minutesPerCrate.base) * MINUTE_MS
 }
 
-/** Whether the user owns a business that unlocks these goods. */
+/** Whether a business that unlocks these goods is owned and not shut down (issue #38). */
 export function isUnlocked(goods: Goods, owned: OwnedProperties): boolean {
-  return goods.requires.some((id) => isOwned(owned, id))
+  return goods.requires.some((id) => isRunning(owned, id))
 }
 
 /** Whether these goods are being made: a technician is on them and they are unlocked. */

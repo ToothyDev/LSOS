@@ -2,7 +2,7 @@
 // Pure logic: play time and wall-clock time come in as arguments (decision 003).
 import type { Production, ProductionBoost, ProductionRate } from '../data/production'
 import type { Property } from '../data/properties'
-import { isOwned, upgradeValue, type OwnedProperties } from './properties'
+import { isOwned, isRunning, isShutDown, upgradeValue, type OwnedProperties } from './properties'
 import { settleBars, type Bars } from './resync'
 
 /** A rate with everything needed to run production on its own. */
@@ -262,7 +262,8 @@ function step(
 }
 
 /**
- * Counts a stretch of play time for every owned business with a known rate. The stretch is
+ * Counts a stretch of play time for every running business with a known rate: a shut-down one
+ * keeps its bars as they are (issue #38). The stretch is
  * taken to end at `now` (wall clock), which is exact for normal ticks: supplies bought that
  * arrived during it count from their arrival, and a boost runs from its start to its end.
  * Returns `businesses` and `boosts` themselves if nothing changed, so an idle tick does not
@@ -281,7 +282,7 @@ export function produceAll(
   let next = { businesses, boosts }
   for (const production of productions) {
     const property = catalog.find((p) => p.id === production.propertyId)
-    if (!property || !isOwned(owned, property.id)) continue
+    if (!property || !isRunning(owned, property.id)) continue
     const rate = rateFor(production, owned, property)
     if (!rate) continue
     const id = property.id
@@ -302,6 +303,24 @@ export function produceAll(
     bars = settleBars(bars, now, fillsTo)
     if (bars !== businesses[id]) next = { ...next, businesses: { ...next.businesses, [id]: bars } }
     if (boost !== boosts[id] && boost) next = { ...next, boosts: { ...next.boosts, [id]: boost } }
+  }
+  return next
+}
+
+/**
+ * Empties the stock of every business that `after` shuts down and `before` did not: the game
+ * clears the stock but keeps the supplies (issue #38). Returns `businesses` itself if none.
+ */
+export function clearShutDownStock(
+  businesses: BusinessBarsById,
+  before: OwnedProperties,
+  after: OwnedProperties,
+): BusinessBarsById {
+  let next = businesses
+  for (const [id, bars] of Object.entries(businesses)) {
+    if (bars.stock > 0 && isShutDown(after, id) && !isShutDown(before, id)) {
+      next = { ...next, [id]: { ...bars, stock: 0 } }
+    }
   }
   return next
 }

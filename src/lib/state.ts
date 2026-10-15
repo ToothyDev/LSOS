@@ -12,14 +12,14 @@ import { parseOwnedProperties, type OwnedProperties } from './properties'
 import { parseSafes, type SafesById } from './safes'
 
 /** Bump when the stored shape changes, and add a migration from the previous version. */
-export const CURRENT_VERSION = 9
+export const CURRENT_VERSION = 10
 
 /** All user state. Trackers add their own sections here as they are built. */
 export interface AppState {
   version: typeof CURRENT_VERSION
   /** Clock settings (decision 008). Play time itself lasts one session and is not saved. */
   clock: ClockSettings
-  /** Owned properties and their upgrades (decision 011). */
+  /** Owned properties, their upgrades and whether they are shut down (decision 011). */
   properties: OwnedProperties
   /** Stock and supplies of each business, as of the last play time counted (issue #6). */
   businesses: BusinessBarsById
@@ -70,6 +70,9 @@ export const MIGRATIONS: Readonly<Record<number, Migration>> = {
   // Version 9 adds heat per Money Front to the car wash safe (issue #11); nothing to change, but
   // an older LSOS would drop the heat, so it must not read this data.
   8: (data) => ({ ...data }),
+  // Version 10 adds a shut-down flag per owned business (issue #38); nothing is shut down yet,
+  // but an older LSOS would drop the flag, so it must not read this data.
+  9: (data) => ({ ...data }),
 }
 
 export type ParseResult =
