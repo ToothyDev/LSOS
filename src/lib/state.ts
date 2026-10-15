@@ -12,7 +12,7 @@ import { parseOwnedProperties, type OwnedProperties } from './properties'
 import { parseSafes, type SafesById } from './safes'
 
 /** Bump when the stored shape changes, and add a migration from the previous version. */
-export const CURRENT_VERSION = 8
+export const CURRENT_VERSION = 9
 
 /** All user state. Trackers add their own sections here as they are built. */
 export interface AppState {
@@ -67,6 +67,9 @@ export const MIGRATIONS: Readonly<Record<number, Migration>> = {
   6: (data) => ({ ...data, safes: {} }),
   // Version 8 adds production boosts (issue #9); none started yet.
   7: (data) => ({ ...data, boosts: {} }),
+  // Version 9 adds heat per Money Front to the car wash safe (issue #11); nothing to change, but
+  // an older LSOS would drop the heat, so it must not read this data.
+  8: (data) => ({ ...data }),
 }
 
 export type ParseResult =

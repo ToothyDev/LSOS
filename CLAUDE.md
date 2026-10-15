@@ -17,7 +17,7 @@ Svelte 5 + TypeScript + Vite. Public repository.
 | Saved user state, migrations, export/import    | `src/lib/state.ts`, `src/lib/store.svelte.ts`     |
 | UI components (thin)                           | `src/components/`                                 |
 | Base UI kit (panel, meter, button...), preview | `src/components/ui/`, `#/kit` in dev (dec. 009)   |
-| Resync values; business bars (Sold, Raided)    | `ui/EditableValue`, `ui/BusinessBars` (dec. 010)  |
+| Resync values, editable bars (dec. 010, 018)   | `ui/EditableValue`, `EditableBar`, `BusinessBars` |
 | Game data with sources                         | `src/data/` (decision 004)                        |
 | Owned properties and upgrades                  | `data/properties.ts`, `lib/properties.ts` (011)   |
 | Business production (stock, supplies, value)   | `data/production.ts`, `lib/production.ts` (012)   |
@@ -25,6 +25,7 @@ Svelte 5 + TypeScript + Vite. Public repository.
 | Business card order (drag, keys)               | `lib/order.ts`, `ui/Panel` `move` (decision 014)  |
 | Safes and nightclub popularity                 | `data/safes.ts`, `lib/safes.ts` (decision 016)    |
 | Acid Lab, production boost                     | `data/production.ts`, `lib/production.ts` (017)   |
+| Money Fronts safe and heat                     | `data/fronts.ts`, `lib/fronts.ts` (018)           |
 | Theme tokens                                   | `src/app.css` (decision 009)                      |
 | CI, templates                                  | `.github/`                                        |
 | Skills: `handoff`, `finish-pr`; agent: `scout` | `.claude/`                                        |
