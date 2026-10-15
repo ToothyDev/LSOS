@@ -17,7 +17,7 @@ Svelte 5 + TypeScript + Vite. Public repository.
 | Saved user state, migrations, export/import    | `src/lib/state.ts`, `src/lib/store.svelte.ts`     |
 | UI components (thin)                           | `src/components/`                                 |
 | Base UI kit (panel, meter, button...), preview | `src/components/ui/`, `#/kit` in dev (dec. 009)   |
-| Resync values; business bars (Sold, Raided)    | `ui/EditableValue`, `ui/BusinessBars` (dec. 010)  |
+| Resync values, editable bars (dec. 010, 018)   | `ui/EditableValue`, `EditableBar`, `BusinessBars` |
 | Game data with sources                         | `src/data/` (decision 004)                        |
 | Owned properties and upgrades                  | `data/properties.ts`, `lib/properties.ts` (011)   |
 | Business production (stock, supplies, value)   | `data/production.ts`, `lib/production.ts` (012)   |
