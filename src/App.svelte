@@ -139,7 +139,7 @@
       {:else if active === 'weekly'}
         <Weekly week={WEEK} owned={store.state.properties} now={clocks.now} />
       {:else if active === 'settings'}
-        <Settings />
+        <Settings select={focusFromHash(hash)} />
       {:else}
         <p class="placeholder">Not built yet.</p>
       {/if}
