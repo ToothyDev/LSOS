@@ -15,6 +15,8 @@ const ALERTS = { browser: false, popup: false, leadMs: 600_000, unfocusedOnly: f
 const ORDERS = { safeOrder: [], timerOrder: [] }
 // Version 14 defaults: nothing hidden from the Overview.
 const HIDDEN = { overviewHidden: [] }
+// Version 15 defaults: motion as the device sets it, scan lines on.
+const A11Y = { accessibility: { motion: 'system', scanlines: true } }
 
 describe('parseState', () => {
   it('round-trips the default state', () => {
@@ -32,8 +34,9 @@ describe('parseState', () => {
     expect(result).toEqual({
       ok: true,
       state: {
-        version: 14,
+        version: 15,
         ...HIDDEN,
+        ...A11Y,
         clock: { trackOnOpen: false },
         properties: {},
         businesses: {},
@@ -55,8 +58,9 @@ describe('parseState', () => {
     expect(result).toEqual({
       ok: true,
       state: {
-        version: 14,
+        version: 15,
         ...HIDDEN,
+        ...A11Y,
         clock: { trackOnOpen: true },
         properties: {},
         businesses: {},
@@ -81,8 +85,9 @@ describe('parseState', () => {
     expect(result).toEqual({
       ok: true,
       state: {
-        version: 14,
+        version: 15,
         ...HIDDEN,
+        ...A11Y,
         clock: { trackOnOpen: false },
         properties,
         businesses: {},
@@ -108,8 +113,9 @@ describe('parseState', () => {
     expect(result).toEqual({
       ok: true,
       state: {
-        version: 14,
+        version: 15,
         ...HIDDEN,
+        ...A11Y,
         clock: { trackOnOpen: true },
         properties,
         businesses,
@@ -139,8 +145,9 @@ describe('parseState', () => {
       ok: true,
       state: {
         ...sample,
-        version: 14,
+        version: 15,
         ...HIDDEN,
+        ...A11Y,
         ...ORDERS,
         nightclub: {},
         safes: {},
@@ -165,8 +172,9 @@ describe('parseState', () => {
       ok: true,
       state: {
         ...sample,
-        version: 14,
+        version: 15,
         ...HIDDEN,
+        ...A11Y,
         ...ORDERS,
         safes: {},
         boosts: {},
@@ -191,9 +199,10 @@ describe('parseState', () => {
       ok: true,
       state: {
         ...sample,
-        version: 14,
+        version: 15,
         ...ORDERS,
         ...HIDDEN,
+        ...A11Y,
         boosts: {},
         timers: {},
         alerts: ALERTS,
@@ -215,7 +224,7 @@ describe('parseState', () => {
     }
     expect(parseState(JSON.stringify(sample))).toEqual({
       ok: true,
-      state: { ...sample, version: 14, ...ORDERS, ...HIDDEN, timers: {}, alerts: ALERTS },
+      state: { ...sample, version: 15, ...ORDERS, ...HIDDEN, ...A11Y, timers: {}, alerts: ALERTS },
       fromVersion: 8,
     })
   })
@@ -233,7 +242,7 @@ describe('parseState', () => {
     }
     expect(parseState(JSON.stringify(sample))).toEqual({
       ok: true,
-      state: { ...sample, version: 14, ...ORDERS, ...HIDDEN, timers: {}, alerts: ALERTS },
+      state: { ...sample, version: 15, ...ORDERS, ...HIDDEN, ...A11Y, timers: {}, alerts: ALERTS },
       fromVersion: 9,
     })
   })
@@ -251,7 +260,7 @@ describe('parseState', () => {
     }
     expect(parseState(JSON.stringify(sample))).toEqual({
       ok: true,
-      state: { ...sample, version: 14, ...ORDERS, ...HIDDEN, timers: {}, alerts: ALERTS },
+      state: { ...sample, version: 15, ...ORDERS, ...HIDDEN, ...A11Y, timers: {}, alerts: ALERTS },
       fromVersion: 10,
     })
   })
@@ -270,7 +279,7 @@ describe('parseState', () => {
     }
     expect(parseState(JSON.stringify(sample))).toEqual({
       ok: true,
-      state: { ...sample, version: 14, ...ORDERS, ...HIDDEN, alerts: ALERTS },
+      state: { ...sample, version: 15, ...ORDERS, ...HIDDEN, ...A11Y, alerts: ALERTS },
       fromVersion: 11,
     })
   })
@@ -290,7 +299,7 @@ describe('parseState', () => {
     }
     expect(parseState(JSON.stringify(sample))).toEqual({
       ok: true,
-      state: { ...sample, version: 14, ...ORDERS, ...HIDDEN },
+      state: { ...sample, version: 15, ...ORDERS, ...HIDDEN, ...A11Y },
       fromVersion: 12,
     })
   })
@@ -312,9 +321,46 @@ describe('parseState', () => {
     }
     expect(parseState(JSON.stringify(sample))).toEqual({
       ok: true,
-      state: { ...sample, version: 14, ...HIDDEN },
+      state: { ...sample, version: 15, ...HIDDEN, ...A11Y },
       fromVersion: 13,
     })
+  })
+
+  it('migrates a version 14 sample, with motion as the device sets it and scan lines on', () => {
+    const sample = {
+      version: 14,
+      clock: { trackOnOpen: true },
+      properties: { 'car-wash': { owned: true, upgrades: {} } },
+      businesses: {},
+      businessOrder: [],
+      safeOrder: [],
+      timerOrder: ['lucky-wheel'],
+      nightclub: {},
+      safes: {},
+      boosts: {},
+      timers: {},
+      alerts: ALERTS,
+      overviewHidden: ['car-wash'],
+    }
+    expect(parseState(JSON.stringify(sample))).toEqual({
+      ok: true,
+      state: { ...sample, version: 15, ...A11Y },
+      fromVersion: 14,
+    })
+  })
+
+  it('keeps the accessibility settings', () => {
+    const accessibility = { motion: 'reduce', scanlines: false }
+    const text = JSON.stringify({ ...defaultState(), accessibility })
+    expect(parseState(text)).toMatchObject({ ok: true, state: { accessibility } })
+  })
+
+  it('rejects unreadable accessibility settings', () => {
+    const text = JSON.stringify({
+      ...defaultState(),
+      accessibility: { motion: 'slow', scanlines: true },
+    })
+    expect(parseState(text)).toMatchObject({ ok: false, reason: 'invalid' })
   })
 
   it('keeps the cards hidden from the Overview, once each', () => {

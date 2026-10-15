@@ -250,16 +250,18 @@
     touch-action: pan-y;
   }
 
+  /* A 2px dark ring keeps the handle apart from the fill and the empty track alike (at least 5:1
+     on both; issue #55). */
   .handle {
     background: var(--fg);
-    border: 1px solid var(--bg);
     border-radius: var(--radius);
-    height: 1.25rem;
+    box-shadow: 0 0 0 2px var(--bg);
+    height: 1.375rem;
     pointer-events: none;
     position: absolute;
     top: 50%;
     transform: translate(-50%, -50%);
-    width: 0.5rem;
+    width: 0.625rem;
   }
 
   /* Every card's bars can be dragged (issue #60): the handle shows only over the card, or while

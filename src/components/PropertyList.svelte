@@ -163,6 +163,7 @@
     border-left: 3px solid transparent;
     border-top: 1px solid var(--line);
     display: flex;
+    flex-wrap: wrap;
     gap: var(--space-2);
     padding: var(--space-2);
   }
@@ -183,7 +184,8 @@
     cursor: pointer;
     align-items: center;
     display: flex;
-    flex: 1;
+    /* Narrow rows (phones): the buttons go under the name rather than squeeze it (issue #55). */
+    flex: 1 1 10rem;
     font: inherit;
     gap: var(--space-2);
     min-width: 0;
@@ -212,6 +214,7 @@
 
   .name {
     font-family: var(--font-display);
+    overflow-wrap: anywhere;
     letter-spacing: var(--tracking);
     text-transform: uppercase;
   }

@@ -22,7 +22,8 @@
   --accent-text: #62d394;
   --accent-deep: #1e4a35;
   --accent-hover: #286346;
-  --supplies: #3f6db8;
+  /* Bar fills keep at least 3:1 on --track and the panels (WCAG non-text contrast, issue #55). */
+  --supplies: #4b7fd1;
   --supplies-text: #8fb2ee;
   --track: #2b343e;
   /* Edge of an empty bar segment: 3.4:1 on --panel, so the segments read before they fill. */
@@ -92,6 +93,11 @@ body::after {
   z-index: 100;
 }
 
+/* Scan lines off in the Accessibility settings (decision 030). */
+:root[data-no-scanlines] body::after {
+  display: none;
+}
+
 h1,
 h2,
 h3 {
@@ -137,15 +143,16 @@ input[type='checkbox'] {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .flash {
-    animation: none;
-    outline: 2px solid var(--focus);
-  }
+/* Reduced motion (decision 030): set on <html> from the device or the Accessibility setting. */
+:root[data-reduce-motion] .flash {
+  animation: none;
+  outline: 2px solid var(--focus);
+}
 
-  *,
-  *::before,
-  *::after {
-    transition: none !important;
-  }
+:root[data-reduce-motion] *,
+:root[data-reduce-motion] *::before,
+:root[data-reduce-motion] *::after {
+  animation: none !important;
+  scroll-behavior: auto !important;
+  transition: none !important;
 }

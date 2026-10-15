@@ -1,4 +1,9 @@
 // The persisted root state, its versions and migrations (decision 006).
+import {
+  defaultAccessibility,
+  parseAccessibility,
+  type AccessibilitySettings,
+} from './accessibility'
 import { defaultClockSettings, type ClockSettings } from './clock'
 import { parseGoodsStock, type GoodsStock } from './nightclub'
 import { parseOrder } from './order'
@@ -13,7 +18,7 @@ import { parseSafes, type SafesById } from './safes'
 import { parseTimers, type Timers } from './timers'
 
 /** Bump when the stored shape changes, and add a migration from the previous version. */
-export const CURRENT_VERSION = 14
+export const CURRENT_VERSION = 15
 
 /** All user state. Trackers add their own sections here as they are built. */
 export interface AppState {
@@ -45,6 +50,8 @@ export interface AppState {
    * (issue #62); they stay tracked on their own tabs.
    */
   overviewHidden: string[]
+  /** Reduced motion and the scan-line overlay (issue #55). */
+  accessibility: AccessibilitySettings
 }
 
 export interface AlertSettings {
@@ -77,6 +84,7 @@ export function defaultState(): AppState {
     timers: {},
     alerts: defaultAlerts(),
     overviewHidden: [],
+    accessibility: defaultAccessibility(),
   }
 }
 
@@ -115,6 +123,9 @@ export const MIGRATIONS: Readonly<Record<number, Migration>> = {
   12: (data) => ({ ...data, safeOrder: [], timerOrder: [] }),
   // Version 14 adds the cards hidden from the Overview (issue #62); none hidden yet.
   13: (data) => ({ ...data, overviewHidden: [] }),
+  // Version 15 adds the accessibility settings (issue #55): motion as the device sets it, scan
+  // lines on, as before.
+  14: (data) => ({ ...data, accessibility: defaultAccessibility() }),
 }
 
 export type ParseResult =
@@ -207,6 +218,8 @@ function toState(data: StoredData): AppState | string {
   if (typeof alerts === 'string') return alerts
   const overviewHidden = toHidden(data.overviewHidden)
   if (typeof overviewHidden === 'string') return overviewHidden
+  const accessibility = parseAccessibility(data.accessibility)
+  if (typeof accessibility === 'string') return accessibility
   return {
     version: CURRENT_VERSION,
     clock,
@@ -221,6 +234,7 @@ function toState(data: StoredData): AppState | string {
     timers,
     alerts,
     overviewHidden,
+    accessibility,
   }
 }
 

@@ -556,9 +556,28 @@
     font-size: var(--text-sm);
   }
 
+  /* Phones (issue #55): names wrap instead of being cut to a few letters; on Ready now the
+     action goes above the name to give it the card's width. */
   @media (max-width: 40rem) {
+    .jump {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .action {
+      min-width: 0;
+    }
+
+    .card .what,
+    .row .source,
+    .row .what {
+      overflow-wrap: anywhere;
+      white-space: normal;
+    }
+
     .row {
-      grid-template-columns: 5rem minmax(0, 1fr) 5.5rem;
+      grid-template-columns: 5rem minmax(0, 1fr) auto;
     }
 
     .row .level {

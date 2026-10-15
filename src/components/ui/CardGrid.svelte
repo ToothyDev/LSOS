@@ -6,6 +6,7 @@
   import type { HTMLAttributes } from 'svelte/elements'
   import { flip } from 'svelte/animate'
   import { cubicOut } from 'svelte/easing'
+  import { motionReduced } from '../../lib/accessibility.svelte'
   import { applyOrder, cardAt, moveId, saveOrder, swapAt, type CardBox } from '../../lib/order'
 
   interface Props {
@@ -125,6 +126,7 @@
     save(preview)
     stopMoving()
     // Glide from where it was let go into its slot (a style transition, not game time).
+    if (motionReduced()) return
     settling = key
     setTimeout(() => {
       if (settling === key) settling = null
@@ -133,7 +135,7 @@
 
   /** Slides cards to their new places; the lifted card follows the pointer instead. */
   function slide(node: HTMLElement, rects: { from: DOMRect; to: DOMRect }) {
-    if (node.dataset.card === moving) return { duration: 0 }
+    if (node.dataset.card === moving || motionReduced()) return { duration: 0 }
     return flip(node, rects, { duration: 250, easing: cubicOut })
   }
 

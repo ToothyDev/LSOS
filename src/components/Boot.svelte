@@ -1,11 +1,13 @@
 <script lang="ts">
+  import { motionReduced } from '../lib/accessibility.svelte'
+
   // Short boot sequence shown once when LSOS opens. Decorative only: the app is already rendered
   // underneath, a click or key press skips it, and it is left out for reduced motion.
   const LINES = ['Establishing secure connection', 'Loading local data', 'Access granted']
   const STEP_MS = 160
   const HOLD_MS = 250
 
-  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const reducedMotion = motionReduced()
 
   let shown = $state(0)
   let leaving = $state(false)
