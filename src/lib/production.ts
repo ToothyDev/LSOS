@@ -2,6 +2,7 @@
 // Pure logic: play time and wall-clock time come in as arguments (decision 003).
 import type { Production, ProductionBoost, ProductionRate } from '../data/production'
 import type { Property } from '../data/properties'
+import type { NextEvent } from './events'
 import { isOwned, isRunning, isShutDown, upgradeValue, type OwnedProperties } from './properties'
 import { settleBars, type Bars } from './resync'
 import { mansionBoostOn, type MansionBoost, type MansionBoostData } from './timers'
@@ -139,6 +140,29 @@ export function forecast(
   const boosted = plainForecast(bars, production, fast)
   if ((boosted.fullInMs ?? boosted.suppliesOutInMs ?? 0) <= boostMs) return boosted
   return later(plainForecast(produce(bars, production, fast, boostMs), production, rate), boostMs)
+}
+
+/**
+ * What comes first from wall-clock time `now`, with the production boost and the Mansion boost
+ * (until `mansion.endsAt`) as they run then.
+ */
+export function forecastAt(
+  bars: Bars,
+  production: Production,
+  rate: KnownRate,
+  now: number,
+  { boost, mansion }: { boost?: Boost; mansion?: { endsAt: number; speed: number } } = {},
+): Forecast {
+  const boosting = boostRunning(boost, production.boost, now)
+  return forecast(
+    bars,
+    production,
+    rate,
+    boosting ? boost!.unitsLeft : 0,
+    mansion && now < mansion.endsAt
+      ? { msLeft: mansion.endsAt - now, speed: mansion.speed }
+      : undefined,
+  )
 }
 
 /** `forecast` as seen `ms` earlier. */
@@ -359,6 +383,103 @@ export function produceAll(
     if (boost !== boosts[id] && boost) next = { ...next, boosts: { ...next.boosts, [id]: boost } }
   }
   return next
+}
+
+/**
+ * What comes next for each running business with a known rate (issue #15): stock full, or
+ * supplies out (or arriving, if bought), and a production boost that is ready to start again.
+ */
+export function productionEvents(
+  businesses: BusinessBarsById,
+  catalog: readonly Property[],
+  productions: readonly Production[],
+  owned: OwnedProperties,
+  now: number,
+  fillsTo: number,
+  boosts: BoostsById,
+  mansion: { boost: MansionBoost | undefined; data: MansionBoostData },
+): NextEvent[] {
+  const events: NextEvent[] = []
+  for (const production of productions) {
+    const property = catalog.find((p) => p.id === production.propertyId)
+    if (!property || !isRunning(owned, property.id)) continue
+    const rate = rateFor(production, owned, property)
+    if (!rate) continue
+    const id = property.id
+    const bars = settleBars(businesses[id] ?? emptyBars(), now, fillsTo)
+    const boost = boosts[id]
+    const sped = mansionBoostOn(mansion.boost, mansion.data, id, now)
+    const ahead = forecastAt(bars, production, rate, now, {
+      boost,
+      mansion: sped
+        ? { endsAt: mansion.boost!.startedAt + mansion.data.durationMs, speed: mansion.data.speed }
+        : undefined,
+    })
+    const parts = estimatedParts(rate)
+    // Both boosts at once: no source gives the speed (BusinessProduction says so).
+    const estimated = parts.production || (sped && boostRunning(boost, production.boost, now))
+    const source = property.label
+    const tab = 'businesses'
+    if (ahead.fullInMs !== null) {
+      const value = stockValue(bars, production, rate, valueBonus(production, owned, property))
+      events.push({
+        id: `stock:${id}`,
+        source,
+        what: 'Stock full',
+        action: 'Sell',
+        inMs: ahead.fullInMs,
+        clock: 'play',
+        tone: 'good',
+        level: { value: bars.stock, max: 100, kind: 'stock' },
+        value: value.far ?? value.nearby,
+        estimated: estimated || parts.value || farValueEstimated(production, owned),
+        tab,
+      })
+    } else if (bars.suppliesDueAt !== undefined) {
+      events.push({
+        id: `delivery:${id}`,
+        source,
+        what: 'Supplies arrive',
+        inMs: Math.max(0, bars.suppliesDueAt - now),
+        clock: 'real',
+        tone: 'good',
+        level: { value: bars.supplies ?? 0, max: 100, kind: 'supplies' },
+        estimated: false,
+        tab,
+      })
+    } else {
+      events.push({
+        id: `supplies:${id}`,
+        source,
+        what: 'Supplies out',
+        action: 'Resupply',
+        inMs: ahead.suppliesOutInMs ?? 0,
+        clock: 'play',
+        tone: 'bad',
+        level: { value: bars.supplies ?? 0, max: 100, kind: 'supplies' },
+        estimated,
+        tab,
+      })
+    }
+    if (
+      production.boost &&
+      rate.boostedMinutesPerUnit !== undefined &&
+      !boostRunning(boost, production.boost, now)
+    ) {
+      events.push({
+        id: `boost:${id}`,
+        source,
+        what: 'Boost ready',
+        action: 'Start boost',
+        inMs: Math.max(0, nextBoostAt(boost, production.boost) - now),
+        clock: 'real',
+        tone: 'good',
+        estimated: false,
+        tab,
+      })
+    }
+  }
+  return events
 }
 
 /**

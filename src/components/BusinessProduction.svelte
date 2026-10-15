@@ -9,7 +9,7 @@
   import {
     boostRunning,
     estimatedParts,
-    forecast,
+    forecastAt,
     nextBoostAt,
     startBoost,
     stockUnits,
@@ -82,13 +82,10 @@
   const mansionOn = $derived(mansionEndsAt !== undefined && now < mansionEndsAt)
   const ahead = $derived(
     running && !shutDown
-      ? forecast(
-          current,
-          production,
-          running,
-          boosting ? boost!.unitsLeft : 0,
-          mansionOn ? { msLeft: mansionEndsAt! - now, speed: MANSION_BOOST.speed } : undefined,
-        )
+      ? forecastAt(current, production, running, now, {
+          boost,
+          mansion: mansionOn ? { endsAt: mansionEndsAt!, speed: MANSION_BOOST.speed } : undefined,
+        })
       : null,
   )
   const percent = (value: number) => formatValue(value, 'percent')

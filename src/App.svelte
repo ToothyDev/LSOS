@@ -1,5 +1,6 @@
 <script lang="ts">
   import Boot from './components/Boot.svelte'
+  import Overview from './components/Overview.svelte'
   import Businesses from './components/Businesses.svelte'
   import ClockBar from './components/ClockBar.svelte'
   import Safes from './components/Safes.svelte'
@@ -12,6 +13,7 @@
   import { PROPERTIES } from './data/properties'
   import { SAFES } from './data/safes'
   import { clocks } from './lib/clock.svelte'
+  import { overview } from './lib/overview.svelte'
   import './lib/production.svelte'
   import './lib/safes.svelte'
   import { setProperties, store } from './lib/store.svelte'
@@ -48,6 +50,12 @@
         {#await kitModule then { default: Kit }}
           <Kit />
         {/await}
+      {:else if active === 'overview'}
+        <Overview
+          events={overview.events}
+          holdings={overview.holdings}
+          paused={clocks.play.paused}
+        />
       {:else if active === 'businesses'}
         <Businesses
           catalog={PROPERTIES}

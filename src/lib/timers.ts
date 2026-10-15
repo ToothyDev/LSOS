@@ -1,6 +1,7 @@
 // Real-time timers (issues #13, #14): the Lucky Wheel cooldown and the Mansion production boost.
 // Pure logic: wall-clock time comes in as an argument (decision 003).
-import type { MANSION_BOOST } from '../data/timers'
+import type { LUCKY_WHEEL, MANSION_BOOST } from '../data/timers'
+import type { NextEvent } from './events'
 import type { Property } from '../data/properties'
 import { isOwned, isRunning, type OwnedProperties } from './properties'
 
@@ -65,6 +66,51 @@ export function boostableBusinesses(
       isRunning(owned, p.id) &&
       p.id !== last?.propertyId,
   )
+}
+
+/**
+ * When the Lucky Wheel can be spun, and when the Mansion boost can be started again if a Mansion
+ * and a business it can boost are owned (issue #15). Both on real time.
+ */
+export function timerEvents(
+  timers: Timers,
+  catalog: readonly Property[],
+  owned: OwnedProperties,
+  now: number,
+  wheel: typeof LUCKY_WHEEL,
+  mansion: MansionBoostData,
+): NextEvent[] {
+  const events: NextEvent[] = [
+    {
+      id: 'lucky-wheel',
+      source: 'Lucky Wheel',
+      what: 'Spin ready',
+      action: 'Spin',
+      inMs: Math.max(0, readyAt(timers.luckyWheelSpunAt, wheel.cooldownMs) - now),
+      clock: 'real',
+      tone: 'good',
+      estimated: false,
+      tab: 'timers',
+    },
+  ]
+  const last = timers.mansionBoost
+  if (
+    isOwned(owned, mansion.propertyId) &&
+    boostableBusinesses(catalog, owned, mansion, last).length > 0
+  ) {
+    events.push({
+      id: 'mansion-boost',
+      source: catalog.find((p) => p.id === mansion.propertyId)?.label ?? 'Mansion',
+      what: 'Boost ready',
+      action: 'Start boost',
+      inMs: Math.max(0, readyAt(last?.startedAt, mansion.cooldownMs) - now),
+      clock: 'real',
+      tone: 'good',
+      estimated: false,
+      tab: 'timers',
+    })
+  }
+  return events
 }
 
 /** Checks saved timers. Returns an error message if the shape is wrong. */

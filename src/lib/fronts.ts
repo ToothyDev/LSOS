@@ -15,6 +15,7 @@ import {
   type Front,
 } from '../data/fronts'
 import type { Property } from '../data/properties'
+import type { NextEvent } from './events'
 import { isOwned, isRunning, setUpgrade, upgradeValue, type OwnedProperties } from './properties'
 import { DAY_MS, nextPayoutInMs, type SafeState } from './safes'
 
@@ -200,4 +201,49 @@ export function legalJob(state: SafeState, frontId: string): SafeState {
 
 export function setHeat(state: SafeState, frontId: string, heat: number): SafeState {
   return { ...state, heat: { ...state.heat, [frontId]: heat } }
+}
+
+/**
+ * When the Money Fronts safe is full, and when the Car Wash reaches 100% heat and stops paying
+ * into it (issue #15), as the safe card shows them.
+ */
+export function frontsEvents(
+  state: SafeState,
+  owned: OwnedProperties,
+  catalog: readonly Property[],
+): NextEvent[] {
+  if (ownedFronts(owned).length === 0) return []
+  const events: NextEvent[] = []
+  const full = fullInMs(state, owned, catalog)
+  if (full !== null) {
+    events.push({
+      id: `safe:${CAR_WASH}`,
+      source: 'Money Fronts',
+      what: 'Safe full',
+      action: 'Collect',
+      inMs: full,
+      clock: 'play',
+      tone: 'good',
+      level: { value: state.money, max: FRONTS_CAPACITY, kind: 'stock' },
+      value: state.money,
+      estimated: false,
+      tab: 'safes',
+    })
+  }
+  const heat = maxHeatInMs(state, owned, CAR_WASH)
+  if (heat !== null) {
+    events.push({
+      id: `heat:${CAR_WASH}`,
+      source: FRONTS.find((f) => f.propertyId === CAR_WASH)!.label,
+      what: 'Max heat',
+      action: 'Legal job',
+      inMs: heat,
+      clock: 'play',
+      tone: 'bad',
+      level: { value: heatOf(state, CAR_WASH), max: MAX_HEAT, kind: 'heat' },
+      estimated: true,
+      tab: 'safes',
+    })
+  }
+  return events
 }

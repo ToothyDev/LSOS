@@ -1,6 +1,7 @@
 <script lang="ts">
   import { PROPERTIES } from '../data/properties'
   import { exportFileName } from '../lib/state'
+  import { notificationsSupported, setNotify } from '../lib/overview.svelte'
   import { exportText, importText, setProperties, store } from '../lib/store.svelte'
   import PropertyList from './PropertyList.svelte'
   import Button from './ui/Button.svelte'
@@ -8,6 +9,13 @@
 
   let fileInput: HTMLInputElement
   let message: { text: string; error: boolean } | null = $state(null)
+  let alertError: string | null = $state(null)
+
+  async function toggleNotify(event: Event) {
+    const box = event.currentTarget as HTMLInputElement
+    alertError = await setNotify(box.checked)
+    box.checked = store.state.alerts.notify
+  }
 
   function exportBackup() {
     const blob = new Blob([exportText()], { type: 'application/json' })
@@ -48,6 +56,27 @@
       session, since that is when the game starts counting. On: loading screens count as play time
       too, unless you open LSOS only once you are in.
     </p>
+  </Panel>
+
+  <Panel title="Alerts">
+    <label>
+      <input
+        type="checkbox"
+        checked={store.state.alerts.notify}
+        disabled={!notificationsSupported()}
+        onchange={toggleNotify}
+      />
+      Notify me when something on the Overview is ready
+    </label>
+    <p class="hint">
+      A browser notification when stock is full, supplies run out, a safe is full or a timer is
+      ready, while LSOS is open in a tab and you are in another window, such as the game.
+    </p>
+    {#if alertError}
+      <p class="error" role="status">{alertError}</p>
+    {:else if !notificationsSupported()}
+      <p class="hint">This browser cannot show notifications.</p>
+    {/if}
   </Panel>
 
   <Panel title="Backup">

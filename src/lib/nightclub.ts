@@ -2,6 +2,7 @@
 // Pure logic: play time comes in as an argument (decision 003).
 import { MAX_TECHNICIANS, NIGHTCLUB_ID, type Goods } from '../data/nightclub'
 import type { Property } from '../data/properties'
+import type { NextEvent } from './events'
 import { isOwned, isRunning, upgradeValue, type OwnedProperties } from './properties'
 
 const MINUTE_MS = 60_000
@@ -132,6 +133,39 @@ export function produceGoods(
     next = { ...next, [goods.id]: after }
   }
   return next
+}
+
+/**
+ * When each goods type a technician is making is full (issue #15): the technician then makes
+ * nothing until it is sold.
+ */
+export function goodsEvents(
+  stock: GoodsStock,
+  catalog: readonly Goods[],
+  properties: readonly Property[],
+  owned: OwnedProperties,
+): NextEvent[] {
+  const nightclub = properties.find((p) => p.id === NIGHTCLUB_ID)
+  if (!nightclub || !isOwned(owned, nightclub.id)) return []
+  const setup = warehouseSetup(owned, nightclub)
+  return catalog
+    .filter((goods) => isProducing(goods, setup, owned))
+    .map((goods) => {
+      const crates = stock[goods.id] ?? 0
+      return {
+        id: `goods:${goods.id}`,
+        source: nightclub.label,
+        what: `${goods.label} full`,
+        action: 'Sell',
+        inMs: fullInMs(goods, crates, setup),
+        clock: 'play',
+        tone: 'good',
+        level: { value: crates, max: capacity(goods, setup.floors), kind: 'stock' },
+        value: goodsValue(goods, crates),
+        estimated: false,
+        tab: 'businesses',
+      }
+    })
 }
 
 /**

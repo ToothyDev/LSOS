@@ -13,7 +13,7 @@ import { parseSafes, type SafesById } from './safes'
 import { parseTimers, type Timers } from './timers'
 
 /** Bump when the stored shape changes, and add a migration from the previous version. */
-export const CURRENT_VERSION = 11
+export const CURRENT_VERSION = 12
 
 /** All user state. Trackers add their own sections here as they are built. */
 export interface AppState {
@@ -34,6 +34,12 @@ export interface AppState {
   boosts: BoostsById
   /** Real-time timers: the Lucky Wheel and the Mansion boost (issues #13, #14). */
   timers: Timers
+  /** Browser notifications when an Overview item becomes due (issue #15); off until opted in. */
+  alerts: AlertSettings
+}
+
+export interface AlertSettings {
+  notify: boolean
 }
 
 export function defaultState(): AppState {
@@ -47,6 +53,7 @@ export function defaultState(): AppState {
     safes: {},
     boosts: {},
     timers: {},
+    alerts: { notify: false },
   }
 }
 
@@ -79,6 +86,8 @@ export const MIGRATIONS: Readonly<Record<number, Migration>> = {
   9: (data) => ({ ...data }),
   // Version 11 adds the real-time timers (issues #13, #14); none started yet.
   10: (data) => ({ ...data, timers: {} }),
+  // Version 12 adds the alert setting (issue #15); notifications are off until opted in.
+  11: (data) => ({ ...data, alerts: { notify: false } }),
 }
 
 export type ParseResult =
@@ -163,6 +172,8 @@ function toState(data: StoredData): AppState | string {
   if (typeof boosts === 'string') return boosts
   const timers = parseTimers(data.timers)
   if (typeof timers === 'string') return timers
+  const alerts = toAlerts(data.alerts)
+  if (typeof alerts === 'string') return alerts
   return {
     version: CURRENT_VERSION,
     clock,
@@ -173,6 +184,7 @@ function toState(data: StoredData): AppState | string {
     safes,
     boosts,
     timers,
+    alerts,
   }
 }
 
@@ -181,6 +193,13 @@ function toClock(data: unknown): ClockSettings | string {
   const { trackOnOpen } = data
   if (typeof trackOnOpen !== 'boolean') return 'The saved tracking setting is not true or false.'
   return { trackOnOpen }
+}
+
+function toAlerts(data: unknown): AlertSettings | string {
+  if (!isRecord(data)) return 'The alerts section is missing.'
+  if (typeof data.notify !== 'boolean')
+    return 'The saved notification setting is not true or false.'
+  return { notify: data.notify }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
