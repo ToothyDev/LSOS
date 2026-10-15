@@ -34,12 +34,23 @@ export interface AppState {
   boosts: BoostsById
   /** Real-time timers: the Lucky Wheel and the Mansion boost (issues #13, #14). */
   timers: Timers
-  /** Browser notifications when an Overview item becomes due (issue #15); off until opted in. */
+  /** Alerts when an Overview item comes due (issue #15); off until opted in. */
   alerts: AlertSettings
 }
 
 export interface AlertSettings {
-  notify: boolean
+  /** Browser (system) notifications; the browser asks for permission first. */
+  browser: boolean
+  /** Pop-ups inside LSOS, on any tab. */
+  popup: boolean
+  /** How long before an item is due to alert; 0 alerts when it is due. */
+  leadMs: number
+  /** Alert only while LSOS is not the focused window, e.g. while in the game. */
+  unfocusedOnly: boolean
+}
+
+export function defaultAlerts(): AlertSettings {
+  return { browser: false, popup: false, leadMs: 10 * 60_000, unfocusedOnly: false }
 }
 
 export function defaultState(): AppState {
@@ -53,7 +64,7 @@ export function defaultState(): AppState {
     safes: {},
     boosts: {},
     timers: {},
-    alerts: { notify: false },
+    alerts: defaultAlerts(),
   }
 }
 
@@ -86,8 +97,8 @@ export const MIGRATIONS: Readonly<Record<number, Migration>> = {
   9: (data) => ({ ...data }),
   // Version 11 adds the real-time timers (issues #13, #14); none started yet.
   10: (data) => ({ ...data, timers: {} }),
-  // Version 12 adds the alert setting (issue #15); notifications are off until opted in.
-  11: (data) => ({ ...data, alerts: { notify: false } }),
+  // Version 12 adds the alert settings (issue #15); alerts are off until opted in.
+  11: (data) => ({ ...data, alerts: defaultAlerts() }),
 }
 
 export type ParseResult =
@@ -197,9 +208,18 @@ function toClock(data: unknown): ClockSettings | string {
 
 function toAlerts(data: unknown): AlertSettings | string {
   if (!isRecord(data)) return 'The alerts section is missing.'
-  if (typeof data.notify !== 'boolean')
-    return 'The saved notification setting is not true or false.'
-  return { notify: data.notify }
+  const { browser, popup, leadMs, unfocusedOnly } = data
+  if (
+    typeof browser !== 'boolean' ||
+    typeof popup !== 'boolean' ||
+    typeof unfocusedOnly !== 'boolean' ||
+    typeof leadMs !== 'number' ||
+    !Number.isFinite(leadMs) ||
+    leadMs < 0
+  ) {
+    return 'The saved alert settings are not readable.'
+  }
+  return { browser, popup, leadMs, unfocusedOnly }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

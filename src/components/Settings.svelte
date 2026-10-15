@@ -1,21 +1,30 @@
 <script lang="ts">
   import { PROPERTIES } from '../data/properties'
   import { exportFileName } from '../lib/state'
-  import { notificationsSupported, setNotify } from '../lib/overview.svelte'
+  import { notificationsSupported, setBrowserAlerts } from '../lib/overview.svelte'
   import { exportText, importText, setProperties, store } from '../lib/store.svelte'
   import PropertyList from './PropertyList.svelte'
   import Button from './ui/Button.svelte'
   import Panel from './ui/Panel.svelte'
+  import Select from './ui/Select.svelte'
 
   let fileInput: HTMLInputElement
   let message: { text: string; error: boolean } | null = $state(null)
   let alertError: string | null = $state(null)
 
-  async function toggleNotify(event: Event) {
+  async function toggleBrowser(event: Event) {
     const box = event.currentTarget as HTMLInputElement
-    alertError = await setNotify(box.checked)
-    box.checked = store.state.alerts.notify
+    alertError = await setBrowserAlerts(box.checked)
+    box.checked = store.state.alerts.browser
   }
+
+  // How long before an item is due to alert (issue #15).
+  const LEADS = [0, 1, 5, 10, 15, 30].map((minutes) => ({
+    id: String(minutes * 60_000),
+    label: minutes === 0 ? 'When it happens' : `${minutes} min before`,
+  }))
+  const alerts = $derived(store.state.alerts)
+  const off = $derived(!alerts.browser && !alerts.popup)
 
   function exportBackup() {
     const blob = new Blob([exportText()], { type: 'application/json' })
@@ -59,24 +68,51 @@
   </Panel>
 
   <Panel title="Alerts">
+    <p class="hint">
+      When stock is full, supplies run out, a safe is full or a timer is ready: anything on the
+      Overview.
+    </p>
     <label>
       <input
         type="checkbox"
-        checked={store.state.alerts.notify}
-        disabled={!notificationsSupported()}
-        onchange={toggleNotify}
+        checked={alerts.popup}
+        onchange={(e) => (store.state.alerts = { ...alerts, popup: e.currentTarget.checked })}
       />
-      Notify me when something on the Overview is ready
+      Pop-ups in LSOS
     </label>
-    <p class="hint">
-      A browser notification when stock is full, supplies run out, a safe is full or a timer is
-      ready, while LSOS is open in a tab and you are in another window, such as the game.
-    </p>
+    <label>
+      <input
+        type="checkbox"
+        checked={alerts.browser}
+        disabled={!notificationsSupported()}
+        onchange={toggleBrowser}
+      />
+      Browser notifications, also over other windows
+    </label>
     {#if alertError}
       <p class="error" role="status">{alertError}</p>
     {:else if !notificationsSupported()}
       <p class="hint">This browser cannot show notifications.</p>
     {/if}
+    <div class="row" class:muted={off}>
+      <label for="alert-lead">Alert</label>
+      <Select
+        id="alert-lead"
+        value={String(alerts.leadMs)}
+        options={LEADS}
+        onchange={(id) => (store.state.alerts = { ...alerts, leadMs: Number(id) })}
+      />
+    </div>
+    <label class:muted={off}>
+      <input
+        type="checkbox"
+        checked={alerts.unfocusedOnly}
+        onchange={(e) =>
+          (store.state.alerts = { ...alerts, unfocusedOnly: e.currentTarget.checked })}
+      />
+      Only while LSOS is not the focused window, e.g. while you play
+    </label>
+    <p class="hint">Alerts come only while LSOS is open in a tab.</p>
   </Panel>
 
   <Panel title="Backup">
@@ -142,6 +178,17 @@
   .hint {
     color: var(--muted);
     font-size: var(--text-sm);
+  }
+
+  .row {
+    align-items: center;
+    display: grid;
+    gap: var(--space-3);
+    grid-template-columns: auto 1fr;
+  }
+
+  .muted {
+    opacity: 0.6;
   }
 
   .error {

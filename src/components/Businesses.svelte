@@ -10,7 +10,6 @@
   import { NIGHTCLUB_ID, type Goods } from '../data/nightclub'
   import type { Production } from '../data/production'
   import type { Property } from '../data/properties'
-  import { MANSION_BOOST } from '../data/timers'
   import { applyOrder, cardAt, moveId, saveOrder, swapAt, type CardBox } from '../lib/order'
   import {
     emptyBars,
@@ -31,7 +30,7 @@
   import type { GoodsStock } from '../lib/nightclub'
   import type { Bars } from '../lib/resync'
   import { hashForTab } from '../lib/tabs'
-  import { mansionBoostOn, type MansionBoost } from '../lib/timers'
+  import type { MansionBoost } from '../lib/timers'
   import BusinessProduction from './BusinessProduction.svelte'
   import NightclubWarehouse from './NightclubWarehouse.svelte'
   import PropertySettings from './PropertySettings.svelte'
@@ -251,7 +250,12 @@
           class:shut={isShutDown(owned, property.id)}
           style:translate={moving === property.id ? `${lift.x}px ${lift.y}px` : undefined}
         >
-          <Panel title={property.label} move={handle(property.id)} moving={moving === property.id}>
+          <Panel
+            title={property.label}
+            move={handle(property.id)}
+            moving={moving === property.id}
+            focus={property.id}
+          >
             {#if open === property.id}
               <PropertySettings {property} {owned} {onchange} />
             {:else}
@@ -271,9 +275,7 @@
                 farEstimated={farValueEstimated(production, owned)}
                 boost={boosts[property.id]}
                 onboost={(boost) => onboost(property.id, boost)}
-                mansionEndsAt={mansionBoostOn(mansionBoost, MANSION_BOOST, property.id, now)
-                  ? mansionBoost!.startedAt + MANSION_BOOST.durationMs
-                  : undefined}
+                {mansionBoost}
               />
             {/if}
             {#if warehouse}

@@ -18,6 +18,7 @@
     type KnownRate,
   } from '../lib/production'
   import { formatValue, settleBars, type Bars } from '../lib/resync'
+  import { mansionBoostOn, type MansionBoost } from '../lib/timers'
   import BusinessBars from './ui/BusinessBars.svelte'
   import Button from './ui/Button.svelte'
   import Countdown from './ui/Countdown.svelte'
@@ -46,8 +47,8 @@
     boost?: Boost
     /** Called with the new boost, or undefined to take back one started by mistake. */
     onboost?: (boost: Boost | undefined) => void
-    /** When the Mansion boost on this business ends (wall clock), while it is on (issue #14). */
-    mansionEndsAt?: number
+    /** The last Mansion boost, on any business (issue #14). */
+    mansionBoost?: MansionBoost
   }
 
   let {
@@ -63,7 +64,7 @@
     farEstimated = false,
     boost,
     onboost = () => {},
-    mansionEndsAt,
+    mansionBoost,
   }: Props = $props()
 
   const current = $derived(settleBars(bars, now, SUPPLY_PURCHASE.fillsTo))
@@ -79,12 +80,17 @@
   )
   const boosting = $derived(boostRunning(boost, production.boost, now))
   const nextBoost = $derived(production.boost ? nextBoostAt(boost, production.boost) : 0)
-  const mansionOn = $derived(mansionEndsAt !== undefined && now < mansionEndsAt)
+  const mansionOn = $derived(
+    mansionBoostOn(mansionBoost, MANSION_BOOST, production.propertyId, now),
+  )
+  const mansionEndsAt = $derived((mansionBoost?.startedAt ?? 0) + MANSION_BOOST.durationMs)
+  // Counts supplies on their way from their arrival (issue #15).
   const ahead = $derived(
     running && !shutDown
-      ? forecastAt(current, production, running, now, {
+      ? forecastAt(current, production, running, production.propertyId, now, {
           boost,
-          mansion: mansionOn ? { endsAt: mansionEndsAt!, speed: MANSION_BOOST.speed } : undefined,
+          mansion: { boost: mansionBoost, data: MANSION_BOOST },
+          fillsTo: SUPPLY_PURCHASE.fillsTo,
         })
       : null,
   )
@@ -158,7 +164,7 @@
 {#if mansionOn && !shutDown}
   <Countdown
     label="Mansion boost ×{MANSION_BOOST.speed} ends in"
-    remainingMs={mansionEndsAt! - now}
+    remainingMs={mansionEndsAt - now}
   />
 {/if}
 

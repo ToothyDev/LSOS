@@ -5,8 +5,8 @@ import { PRODUCTION } from '../data/production'
 import { PROPERTIES } from '../data/properties'
 import { SAFES } from '../data/safes'
 import { LUCKY_WHEEL, MANSION_BOOST } from '../data/timers'
-import { dueIds, newlyDue, sortEvents, type NextEvent } from './events'
-import { allEvents, holdings, type TrackerData } from './overview'
+import { nearIds, newlyNear, sortEvents, type NextEvent } from './events'
+import { allEvents, clubPopularity, holdings, quickAction, type TrackerData } from './overview'
 import type { OwnedProperties } from './properties'
 import { DAY_MS } from './safes'
 import { defaultState, type AppState } from './state'
@@ -65,10 +65,11 @@ describe('allEvents', () => {
       value: 945_000,
       estimated: false,
       tab: 'businesses',
+      focus: 'bunker',
     })
   })
 
-  it('gives supplies out when that comes first, and arriving once bought', () => {
+  it('gives supplies out when that comes first', () => {
     const owned = owning({ bunker: { equipment: true, staff: true } })
     const s = state({ properties: owned, businesses: { bunker: { stock: 50, supplies: 100 } } })
     expect(find(allEvents(s, DATA, NOW), 'supplies:bunker')).toMatchObject({
@@ -76,15 +77,36 @@ describe('allEvents', () => {
       tone: 'bad',
       action: 'Resupply',
     })
-    const bought = state({
-      properties: owned,
-      businesses: { bunker: { stock: 50, supplies: 0, suppliesDueAt: NOW + 4 * MIN } },
+  })
+
+  describe('with supplies on their way', () => {
+    const owned = owning({ bunker: { equipment: true, staff: true } })
+    const at = (stock: number, supplies: number) =>
+      allEvents(
+        state({
+          properties: owned,
+          businesses: { bunker: { stock, supplies, suppliesDueAt: NOW + 4 * MIN } },
+        }),
+        DATA,
+        NOW,
+      )
+
+    it('counts them from their arrival', () => {
+      // Empty: nothing is made for 4 minutes, then full supplies last 140 minutes.
+      expect(find(at(50, 0), 'supplies:bunker')?.inMs).toBe(144 * MIN)
+      // Supplies for 2 more units: they keep running until the delivery tops them up.
+      expect(find(at(50, 10), 'supplies:bunker')?.inMs).toBeCloseTo(144 * MIN)
     })
-    const events = allEvents(bought, DATA, NOW)
-    expect(find(events, 'supplies:bunker')).toBeUndefined()
-    expect(find(events, 'delivery:bunker')).toMatchObject({ inMs: 4 * MIN, clock: 'real' })
-    // Once arrived, the supplies count again.
-    expect(find(allEvents(bought, DATA, NOW + 4 * MIN), 'supplies:bunker')?.inMs).toBe(140 * MIN)
+
+    it('gives stock full if it fills before or after they arrive', () => {
+      expect(find(at(99, 100), 'stock:bunker')?.inMs).toBeCloseTo(7 * MIN)
+      // No supplies: the last unit starts once they arrive.
+      expect(find(at(99, 0), 'stock:bunker')?.inMs).toBeCloseTo(11 * MIN)
+    })
+
+    it('shows no countdown of its own', () => {
+      expect(at(50, 0).map((e) => e.id)).toEqual(['lucky-wheel', 'supplies:bunker'])
+    })
   })
 
   it('counts the Mansion boost and offers it again after its cooldown', () => {
@@ -165,6 +187,7 @@ describe('sortEvents', () => {
     tone,
     estimated: false,
     tab: 'overview',
+    focus: id,
   })
 
   it('puts due bad news first, then due good news, then the soonest', () => {
@@ -172,10 +195,13 @@ describe('sortEvents', () => {
     expect(sortEvents(events).map((e) => e.id)).toEqual(['out', 'ready', 'soon', 'later'])
   })
 
-  it('finds what became due since the last look', () => {
-    const before = dueIds([event('a', 0), event('b', 3)])
-    const now = [event('a', 0), event('b', 0), event('c', 2)]
-    expect(newlyDue(before, now).map((e) => e.id)).toEqual(['b'])
+  it('finds what came within the alert time since the last look', () => {
+    const before = nearIds([event('a', 0), event('b', 3 * MIN), event('c', 20 * MIN)], 0)
+    const now = [event('a', 0), event('b', 0), event('c', 9 * MIN), event('d', 11 * MIN)]
+    expect(newlyNear(before, now, 0).map((e) => e.id)).toEqual(['b'])
+    // Alerting 10 minutes ahead: c is that close now.
+    expect(newlyNear(nearIds(now, 10 * MIN), now, 10 * MIN)).toEqual([])
+    expect(newlyNear(before, now, 10 * MIN).map((e) => e.id)).toEqual(['b', 'c'])
   })
 })
 
@@ -200,5 +226,55 @@ describe('holdings', () => {
       safes: 45_000,
       estimated: false,
     })
+  })
+})
+
+describe('quickAction', () => {
+  it('spins the Lucky Wheel, with an undo', () => {
+    const s = state({ timers: { luckyWheelSpunAt: 1 } })
+    expect(quickAction(s, DATA, 'lucky-wheel', NOW)).toEqual({
+      change: { timers: { luckyWheelSpunAt: NOW } },
+      undo: { timers: { luckyWheelSpunAt: 1 } },
+      done: 'Lucky Wheel spun',
+    })
+  })
+
+  it('starts the Mansion boost on a business it can take', () => {
+    const owned = owning({ mansion: {}, bunker: {}, 'mc-weed': {} })
+    const last = { propertyId: 'bunker', startedAt: NOW - 25 * HOUR }
+    const s = state({ properties: owned, timers: { mansionBoost: last } })
+    const event = find(allEvents(s, DATA, NOW), 'mansion-boost')
+    expect(event?.quick?.choices).toEqual([{ id: 'mc-weed', label: 'Weed Farm' }])
+    expect(quickAction(s, DATA, 'mansion-boost', NOW, 'mc-weed')?.change).toEqual({
+      timers: { mansionBoost: { propertyId: 'mc-weed', startedAt: NOW } },
+    })
+    // Not the same business twice in a row, and not without a pick.
+    expect(quickAction(s, DATA, 'mansion-boost', NOW, 'bunker')).toBeNull()
+    expect(quickAction(s, DATA, 'mansion-boost', NOW)).toBeNull()
+  })
+
+  it('starts a production boost', () => {
+    const s = state({ properties: owning({ 'acid-lab': { equipment: true } }) })
+    expect(quickAction(s, DATA, 'boost:acid-lab', NOW)).toEqual({
+      change: { boosts: { 'acid-lab': { startedAt: NOW, unitsLeft: 80 } } },
+      undo: { boosts: {} },
+      done: 'Acid Lab boost started',
+    })
+  })
+
+  it('has nothing for other events', () => {
+    expect(quickAction(defaultState(), DATA, 'stock:bunker', NOW)).toBeNull()
+    expect(quickAction(defaultState(), DATA, 'boost:bunker', NOW)).toBeNull()
+  })
+})
+
+describe('clubPopularity', () => {
+  it('gives popularity and the payout it makes, with a nightclub owned', () => {
+    expect(clubPopularity(defaultState(), DATA)).toBeNull()
+    const s = state({
+      properties: owning({ nightclub: {} }),
+      safes: { nightclub: { money: 0, sinceMs: 0, popularity: 85 } },
+    })
+    expect(clubPopularity(s, DATA)).toEqual({ value: 85, payout: 25_000, best: 50_000 })
   })
 })

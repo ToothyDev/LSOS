@@ -164,6 +164,7 @@ export function goodsEvents(
         value: goodsValue(goods, crates),
         estimated: false,
         tab: 'businesses',
+        focus: nightclub.id,
       }
     })
 }

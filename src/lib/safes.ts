@@ -212,6 +212,7 @@ export function safeEvents(
         value: state.money,
         estimated: estimatedParts(safe, owned, property).payout,
         tab: 'safes',
+        focus: property.id,
       },
     ]
   })

@@ -9,6 +9,9 @@ import {
   type Migration,
 } from './state'
 
+// Version 12 defaults: alerts off, 10 minutes ahead, also while focused.
+const ALERTS = { browser: false, popup: false, leadMs: 600_000, unfocusedOnly: false }
+
 describe('parseState', () => {
   it('round-trips the default state', () => {
     const result = parseState(serializeState(defaultState()))
@@ -34,7 +37,7 @@ describe('parseState', () => {
         safes: {},
         boosts: {},
         timers: {},
-        alerts: { notify: false },
+        alerts: ALERTS,
       },
       fromVersion: 1,
     })
@@ -54,7 +57,7 @@ describe('parseState', () => {
         safes: {},
         boosts: {},
         timers: {},
-        alerts: { notify: false },
+        alerts: ALERTS,
       },
       fromVersion: 2,
     })
@@ -77,7 +80,7 @@ describe('parseState', () => {
         safes: {},
         boosts: {},
         timers: {},
-        alerts: { notify: false },
+        alerts: ALERTS,
       },
       fromVersion: 3,
     })
@@ -101,7 +104,7 @@ describe('parseState', () => {
         safes: {},
         boosts: {},
         timers: {},
-        alerts: { notify: false },
+        alerts: ALERTS,
       },
       fromVersion: 4,
     })
@@ -125,7 +128,7 @@ describe('parseState', () => {
         safes: {},
         boosts: {},
         timers: {},
-        alerts: { notify: false },
+        alerts: ALERTS,
       },
       fromVersion: 5,
     })
@@ -148,7 +151,7 @@ describe('parseState', () => {
         safes: {},
         boosts: {},
         timers: {},
-        alerts: { notify: false },
+        alerts: ALERTS,
       },
       fromVersion: 6,
     })
@@ -166,7 +169,7 @@ describe('parseState', () => {
     }
     expect(parseState(JSON.stringify(sample))).toEqual({
       ok: true,
-      state: { ...sample, version: 12, boosts: {}, timers: {}, alerts: { notify: false } },
+      state: { ...sample, version: 12, boosts: {}, timers: {}, alerts: ALERTS },
       fromVersion: 7,
     })
   })
@@ -184,7 +187,7 @@ describe('parseState', () => {
     }
     expect(parseState(JSON.stringify(sample))).toEqual({
       ok: true,
-      state: { ...sample, version: 12, timers: {}, alerts: { notify: false } },
+      state: { ...sample, version: 12, timers: {}, alerts: ALERTS },
       fromVersion: 8,
     })
   })
@@ -202,7 +205,7 @@ describe('parseState', () => {
     }
     expect(parseState(JSON.stringify(sample))).toEqual({
       ok: true,
-      state: { ...sample, version: 12, timers: {}, alerts: { notify: false } },
+      state: { ...sample, version: 12, timers: {}, alerts: ALERTS },
       fromVersion: 9,
     })
   })
@@ -220,12 +223,12 @@ describe('parseState', () => {
     }
     expect(parseState(JSON.stringify(sample))).toEqual({
       ok: true,
-      state: { ...sample, version: 12, timers: {}, alerts: { notify: false } },
+      state: { ...sample, version: 12, timers: {}, alerts: ALERTS },
       fromVersion: 10,
     })
   })
 
-  it('migrates a version 11 sample, with notifications off', () => {
+  it('migrates a version 11 sample, with alerts off', () => {
     const sample = {
       version: 11,
       clock: { trackOnOpen: false },
@@ -239,18 +242,19 @@ describe('parseState', () => {
     }
     expect(parseState(JSON.stringify(sample))).toEqual({
       ok: true,
-      state: { ...sample, version: 12, alerts: { notify: false } },
+      state: { ...sample, version: 12, alerts: ALERTS },
       fromVersion: 11,
     })
   })
 
-  it('keeps the notification setting', () => {
-    const text = JSON.stringify({ ...defaultState(), alerts: { notify: true } })
-    expect(parseState(text)).toMatchObject({ ok: true, state: { alerts: { notify: true } } })
+  it('keeps the alert settings', () => {
+    const alerts = { browser: true, popup: true, leadMs: 0, unfocusedOnly: true }
+    const text = JSON.stringify({ ...defaultState(), alerts })
+    expect(parseState(text)).toMatchObject({ ok: true, state: { alerts } })
   })
 
-  it('rejects an unreadable notification setting', () => {
-    const text = JSON.stringify({ ...defaultState(), alerts: { notify: 'yes' } })
+  it('rejects unreadable alert settings', () => {
+    const text = JSON.stringify({ ...defaultState(), alerts: { ...ALERTS, leadMs: -1 } })
     expect(parseState(text)).toMatchObject({ ok: false, reason: 'invalid' })
   })
 

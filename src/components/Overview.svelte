@@ -1,24 +1,58 @@
 <script lang="ts">
   // The Overview (issue #15): made to stay open on a second screen and be read at a glance.
-  // Money waiting on top, then what to do now, then everything coming up, soonest first. Each
-  // item links to the tab where it is handled. Logic: lib/overview.ts, lib/events.ts.
+  // Money waiting and nightclub popularity on top, then what to do now, then everything coming
+  // up, soonest first. Each item links to its card, which scrolls into view and glows. Timers
+  // that need nothing else (a spin, a boost) are marked done right here, with an undo.
+  // Logic: lib/overview.ts, lib/events.ts.
   import { formatDuration } from '../lib/clock'
   import { isDue, type NextEvent } from '../lib/events'
-  import type { Holdings } from '../lib/overview'
+  import type { Holdings, Popularity, QuickResult } from '../lib/overview'
   import { formatValue } from '../lib/resync'
   import { hashForTab } from '../lib/tabs'
+  import Button from './ui/Button.svelte'
   import Digits from './ui/Digits.svelte'
   import Meter from './ui/Meter.svelte'
+  import Select from './ui/Select.svelte'
 
   interface Props {
     /** Sorted, due ones first (`sortEvents`). */
     events: readonly NextEvent[]
     holdings: Holdings
+    /** Nightclub popularity, if a nightclub is owned. */
+    popularity: Popularity | null
     /** Play time is paused: play-time countdowns stand still. */
     paused: boolean
+    /** Marks an event done (its `quick`); returns what undoes it, if done. */
+    onquick: (event: NextEvent, choice?: string) => QuickResult | null
+    onundo: (eventId: string, undo: QuickResult['undo']) => void
   }
 
-  let { events, holdings, paused }: Props = $props()
+  let { events, holdings, popularity, paused, onquick, onundo }: Props = $props()
+
+  // The last quick action, offered for undo for a while (a UI timer, not game time).
+  const UNDO_MS = 15_000
+  let undo = $state<{ id: string; text: string; change: QuickResult['undo'] } | null>(null)
+  let undoTimer: ReturnType<typeof setTimeout> | undefined
+  // The business picked for each event with choices (the Mansion boost).
+  let picked = $state<Record<string, string>>({})
+
+  function press(event: NextEvent) {
+    const choices = event.quick?.choices
+    const choice = choices && (picked[event.id] ?? choices[0]?.id)
+    const result = onquick(event, choice)
+    if (!result) return
+    undo = { id: event.id, text: result.done, change: result.undo }
+    clearTimeout(undoTimer)
+    undoTimer = setTimeout(() => (undo = null), UNDO_MS)
+  }
+
+  function takeBack() {
+    if (undo) onundo(undo.id, undo.change)
+    undo = null
+  }
+
+  const link = (e: NextEvent) => hashForTab(e.tab, e.focus)
+  const cut = $derived(popularity !== null && popularity.payout < popularity.best)
 
   const due = $derived(events.filter(isDue))
   const coming = $derived(events.filter((e) => !isDue(e)))
@@ -51,17 +85,40 @@
       <span class="label">Waiting in total{holdings.estimated ? ' (est.)' : ''}</span>
       <span class="big">{money(total)}</span>
     </div>
+    {#if popularity}
+      <!-- Easy to forget in game: the payout drops with it. -->
+      <a
+        class="tile popularity"
+        class:cut
+        href={hashForTab('safes', 'nightclub')}
+        title={cut
+          ? `The nightclub safe gets ${money(popularity.payout)} a day; full popularity pays ${money(popularity.best)}`
+          : `The nightclub safe gets the most it can: ${money(popularity.best)} a day`}
+      >
+        <span class="label">Club popularity (est.)</span>
+        <span class="big">{Math.round(popularity.value)}%</span>
+        <Meter label="Nightclub popularity" value={popularity.value} max={100} bare />
+      </a>
+    {/if}
   </section>
 
   <section aria-labelledby="ready-heading">
-    <h2 id="ready-heading">Ready now</h2>
+    <h2 id="ready-heading">
+      Ready now
+      {#if undo}
+        <span class="undo" role="status">
+          {undo.text}.
+          <Button onclick={takeBack}>Undo</Button>
+        </span>
+      {/if}
+    </h2>
     {#if due.length === 0}
       <p class="quiet">Nothing to do right now.</p>
     {:else}
       <ul class="due">
         {#each due as event (event.id)}
-          <li>
-            <a class="card {event.tone}" href={hashForTab(event.tab)}>
+          <li class="card {event.tone}">
+            <a class="jump" href={link(event)}>
               <span class="action">{event.action ?? 'Done'}</span>
               <span class="name">
                 <span class="source">{event.source}</span>
@@ -69,6 +126,26 @@
               </span>
               {#if event.value}<span class="value">{money(event.value)}</span>{/if}
             </a>
+            {#if event.quick}
+              <span class="quick">
+                {#if event.quick.choices}
+                  <span class="pick">
+                    <Select
+                      id="pick-{event.id}"
+                      value={picked[event.id] ?? event.quick.choices[0]?.id}
+                      options={event.quick.choices}
+                      onchange={(id) => (picked = { ...picked, [event.id]: id })}
+                    />
+                  </span>
+                {/if}
+                <Button
+                  variant="primary"
+                  onclick={() => press(event)}
+                  aria-label="{event.source}: {event.quick.label}"
+                  title="Press once you have done it in game">{event.quick.label}</Button
+                >
+              </span>
+            {/if}
           </li>
         {/each}
       </ul>
@@ -91,7 +168,7 @@
             <a
               class="row {event.tone}"
               class:frozen={paused && event.clock === 'play'}
-              href={hashForTab(event.tab)}
+              href={link(event)}
               title={event.clock === 'real'
                 ? 'Real time: runs also while LSOS is closed'
                 : 'Play time: runs while LSOS is tracking'}
@@ -240,9 +317,9 @@
     border-left-width: 6px;
     border-radius: var(--radius);
     display: flex;
-    gap: var(--space-3);
+    gap: var(--space-2);
     height: 100%;
-    padding: var(--space-2) var(--space-3);
+    padding-right: var(--space-2);
   }
 
   .card.bad {
@@ -251,6 +328,69 @@
 
   .card:hover {
     background: var(--panel-raised);
+  }
+
+  .jump {
+    align-items: center;
+    align-self: stretch;
+    display: flex;
+    flex: 1;
+    gap: var(--space-3);
+    min-width: 0;
+    padding: var(--space-2) var(--space-1) var(--space-2) var(--space-3);
+  }
+
+  .quick {
+    align-items: center;
+    display: flex;
+    flex: none;
+    gap: var(--space-2);
+  }
+
+  /* A pick (the Mansion boost's business) needs room next to the name: two columns, or below. */
+  .card:has(.pick) {
+    flex-wrap: wrap;
+  }
+
+  @media (min-width: 60rem) {
+    .card:has(.pick) {
+      grid-column: span 2;
+    }
+  }
+
+  .card:has(.pick) .jump {
+    min-width: 14rem;
+  }
+
+  .pick {
+    width: 12rem;
+  }
+
+  .undo {
+    align-items: center;
+    color: var(--fg);
+    display: inline-flex;
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    gap: var(--space-2);
+    letter-spacing: normal;
+    text-transform: none;
+  }
+
+  .popularity {
+    gap: 2px;
+  }
+
+  .popularity:hover {
+    border-color: var(--accent);
+  }
+
+  .popularity.cut {
+    border-color: var(--warn);
+  }
+
+  .popularity.cut .big {
+    color: var(--warn);
   }
 
   .action {

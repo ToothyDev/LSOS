@@ -91,13 +91,13 @@ export function timerEvents(
       tone: 'good',
       estimated: false,
       tab: 'timers',
+      focus: 'lucky-wheel',
+      quick: { label: 'Spun' },
     },
   ]
   const last = timers.mansionBoost
-  if (
-    isOwned(owned, mansion.propertyId) &&
-    boostableBusinesses(catalog, owned, mansion, last).length > 0
-  ) {
+  const choices = boostableBusinesses(catalog, owned, mansion, last)
+  if (isOwned(owned, mansion.propertyId) && choices.length > 0) {
     events.push({
       id: 'mansion-boost',
       source: catalog.find((p) => p.id === mansion.propertyId)?.label ?? 'Mansion',
@@ -108,6 +108,8 @@ export function timerEvents(
       tone: 'good',
       estimated: false,
       tab: 'timers',
+      focus: 'mansion',
+      quick: { label: 'Started', choices: choices.map((p) => ({ id: p.id, label: p.label })) },
     })
   }
   return events

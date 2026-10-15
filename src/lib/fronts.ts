@@ -228,6 +228,7 @@ export function frontsEvents(
       value: state.money,
       estimated: false,
       tab: 'safes',
+      focus: CAR_WASH,
     })
   }
   const heat = maxHeatInMs(state, owned, CAR_WASH)
@@ -243,6 +244,7 @@ export function frontsEvents(
       level: { value: heatOf(state, CAR_WASH), max: MAX_HEAT, kind: 'heat' },
       estimated: true,
       tab: 'safes',
+      focus: CAR_WASH,
     })
   }
   return events
