@@ -3,6 +3,7 @@ import { PRODUCTION, type Production } from '../data/production'
 import { PROPERTIES } from '../data/properties'
 import {
   estimatedParts,
+  farValueEstimated,
   forecast,
   matchingRate,
   parseBusinessBars,
@@ -189,6 +190,45 @@ describe('stock value', () => {
     expect(stockUnits({ stock: 39.99999999 }, cocaine)).toBe(4)
     expect(stockUnits({ stock: 45 }, cocaine)).toBe(4)
     expect(stockValue({ stock: 45 }, cocaine, full)).toEqual({ nearby: 140_000, far: 210_000 })
+  })
+})
+
+describe('money front value bonus', () => {
+  const cash = PRODUCTION.find((p) => p.propertyId === 'mc-cash')!
+  const weed = PRODUCTION.find((p) => p.propertyId === 'mc-weed')!
+  const both = { equipment: true, staff: true }
+  const full = { stock: 100 }
+
+  function valueOf(production: Production, owned: OwnedProperties) {
+    const factory = property(production.propertyId)
+    const rate = rateFor(production, owned, factory)!
+    return stockValue(full, production, rate, valueBonus(production, owned, factory))
+  }
+
+  it('adds 35% to the nearby value when the front is owned', () => {
+    const factory = owning('mc-cash', both)
+    expect(valueOf(cash, factory)).toEqual({ nearby: 245_000, far: 367_500 })
+    expect(farValueEstimated(cash, factory)).toBe(false)
+    // $6,125 × 1.35 = $8,268.75, paid as whole dollars per stack.
+    const withWash = { ...factory, 'car-wash': { owned: true, upgrades: {} } }
+    expect(valueBonus(cash, withWash, property('mc-cash'))).toBe(0.35)
+    expect(valueOf(cash, withWash).nearby).toBe(40 * 8_268)
+  })
+
+  it('adds the far bonus on the base value, not on top of the front bonus', () => {
+    const owned = {
+      ...owning('mc-weed', both),
+      'smoke-on-the-water': { owned: true, upgrades: {} },
+    }
+    // 80 × $3,543 nearby, plus 50% of 80 × $2,625.
+    expect(valueOf(weed, owned)).toEqual({ nearby: 283_440, far: 283_440 + 105_000 })
+    expect(farValueEstimated(weed, owned)).toBe(true)
+  })
+
+  it('ignores a front that belongs to another business', () => {
+    const owned = { ...owning('mc-weed', both), 'car-wash': { owned: true, upgrades: {} } }
+    expect(valueBonus(weed, owned, property('mc-weed'))).toBe(0)
+    expect(farValueEstimated(weed, owned)).toBe(false)
   })
 })
 

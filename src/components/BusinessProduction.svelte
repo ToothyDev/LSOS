@@ -35,6 +35,8 @@
     onresync: (bars: Bars) => void
     /** What bought upgrades add to the value, e.g. 0.05 for a named product. */
     bonus?: number
+    /** The far value adds an owned-property bonus to the far bonus by estimate (decision 019). */
+    farEstimated?: boolean
     /** The last production boost, if the business has one (kept after it ends). */
     boost?: Boost
     /** Called with the new boost, or undefined to take back one started by mistake. */
@@ -50,6 +52,7 @@
     editing,
     onresync,
     bonus = 0,
+    farEstimated = false,
     boost,
     onboost = () => {},
   }: Props = $props()
@@ -57,6 +60,14 @@
   const current = $derived(settleBars(bars, now, SUPPLY_PURCHASE.fillsTo))
   const units = $derived(stockUnits(current, production))
   const value = $derived(rate ? stockValue(current, production, rate, bonus) : null)
+  const farTitle = $derived(
+    value &&
+      `Sold ${production.farSale?.label}; ${formatValue(value.nearby, 'money')} sold nearby` +
+        (farEstimated
+          ? `. Estimate: the ${production.ownedBonus?.label} bonus and the far-sale bonus are ` +
+            'added, the lower of the two ways they could combine'
+          : ''),
+  )
   const boosting = $derived(boostRunning(boost, production.boost, now))
   const nextBoost = $derived(production.boost ? nextBoostAt(boost, production.boost) : 0)
   const ahead = $derived(
@@ -94,11 +105,8 @@
     <span class="label">{est('Value', estimated.value || estimated.production)}</span>
     {#if value.far !== null}
       <!-- Far sales pay more, so that is the headline; nearby is the alternative. -->
-      <span
-        class="value"
-        title="Sold {production.farSale?.label}; {formatValue(value.nearby, 'money')} sold nearby"
-      >
-        {formatValue(value.far, 'money')} far
+      <span class="value" title={farTitle}>
+        {formatValue(value.far, 'money')} far{farEstimated ? ' (est.)' : ''}
         <span class="alt">· {formatValue(value.nearby, 'money')} nearby</span>
       </span>
     {:else}
