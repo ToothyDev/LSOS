@@ -1,12 +1,13 @@
 <script lang="ts">
   // Every property LSOS supports, to mark what the user owns (decision 011), and the upgrades of
   // the one picked in the list (issue #60). Rows keep their height whatever is owned, so marking
-  // properties moves nothing; the upgrades open in their own panel beside the list, or under
-  // the picked row where there is no room beside it.
+  // properties moves nothing. The gear on a row opens its upgrades in a panel beside the list,
+  // level with the row, or under the row where there is no room beside it.
   import type { Property } from '../data/properties'
   import { isOwned, upgradeSummary, type OwnedProperties } from '../lib/properties'
   import PropertyToggles from './PropertyToggles.svelte'
   import PropertyUpgrades from './PropertyUpgrades.svelte'
+  import GearIcon from './ui/GearIcon.svelte'
   import Hint from './ui/Hint.svelte'
   import Panel from './ui/Panel.svelte'
 
@@ -27,6 +28,34 @@
   })
   const current = $derived(catalog.find((p) => p.id === picked) ?? catalog[0])
 
+  // The detail panel sits level with the picked row: centred on it, kept within the list.
+  let grid = $state<HTMLElement>()
+  let detail = $state<HTMLElement>()
+  let offset = $state(0)
+  let arrow = $state(0)
+
+  function place() {
+    const list = grid?.firstElementChild as HTMLElement | null
+    const row = grid?.querySelector<HTMLElement>(
+      `.row[data-focus="${CSS.escape(current?.id ?? '')}"]`,
+    )
+    if (!grid || !list || !row || !detail) return
+    const middle =
+      row.getBoundingClientRect().top - grid.getBoundingClientRect().top + row.offsetHeight / 2
+    const room = Math.max(0, list.offsetHeight - detail.offsetHeight)
+    offset = Math.min(room, Math.max(0, middle - detail.offsetHeight / 2))
+    arrow = middle - offset
+  }
+
+  $effect(() => {
+    void current
+    place()
+    const observer = new ResizeObserver(place)
+    if (grid) observer.observe(grid)
+    if (detail) observer.observe(detail)
+    return () => observer.disconnect()
+  })
+
   function summary(property: Property): string {
     if (!isOwned(owned, property.id)) return 'Not owned'
     if (property.upgrades.length === 0) return 'Nothing to set'
@@ -35,7 +64,7 @@
 </script>
 
 <div class="wrap">
-  <div class="properties">
+  <div class="properties" bind:this={grid}>
     <Panel title="Properties">
       <Hint>Trackers show only what you own. Pick one to set its upgrades.</Hint>
       <ul class="list">
@@ -54,8 +83,14 @@
               aria-controls="{id}-detail"
               onclick={() => (picked = property.id)}
             >
-              <span id="{id}-{property.id}" class="name">{property.label}</span>
-              <span class="summary">{summary(property)}</span>
+              <!-- In front of the name, so the gears line up; kept empty without upgrades. -->
+              <span class="gear" title={property.upgrades.length > 0 ? 'Upgrades' : undefined}>
+                {#if property.upgrades.length > 0}<GearIcon />{/if}
+              </span>
+              <span class="text">
+                <span id="{id}-{property.id}" class="name">{property.label}</span>
+                <span class="summary">{summary(property)}</span>
+              </span>
             </button>
             <PropertyToggles
               {property}
@@ -77,7 +112,13 @@
     </Panel>
 
     {#if current}
-      <div class="detail" id="{id}-detail">
+      <div
+        class="detail"
+        id="{id}-detail"
+        bind:this={detail}
+        style:--offset="{offset}px"
+        style:--arrow="{arrow}px"
+      >
         <Panel title={current.label}>{@render upgrades(current)}</Panel>
       </div>
     {/if}
@@ -123,7 +164,11 @@
     border-top: 1px solid var(--line);
     display: flex;
     gap: var(--space-2);
-    padding: var(--space-2) 0 var(--space-2) var(--space-2);
+    padding: var(--space-2);
+  }
+
+  .row:hover {
+    background: var(--surface);
   }
 
   .row.picked {
@@ -136,13 +181,33 @@
     border: 0;
     color: inherit;
     cursor: pointer;
+    align-items: center;
     display: flex;
     flex: 1;
-    flex-direction: column;
     font: inherit;
+    gap: var(--space-2);
     min-width: 0;
     padding: 0;
     text-align: left;
+  }
+
+  .text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  /* Says the row opens something; lit on the open one. */
+  .gear {
+    color: var(--muted);
+    flex: none;
+    width: 16px;
+  }
+
+  .pick:hover .gear,
+  .picked .gear {
+    color: var(--accent-text);
   }
 
   .name {
@@ -180,8 +245,20 @@
     }
 
     .detail {
-      position: sticky;
-      top: var(--space-4);
+      position: relative;
+      transform: translateY(var(--offset));
+      transition: transform 0.15s ease-out;
+    }
+
+    /* Points at the picked row. */
+    .detail::before {
+      border-bottom: 0.5rem solid transparent;
+      border-right: 0.5rem solid var(--accent);
+      border-top: 0.5rem solid transparent;
+      content: '';
+      left: -0.5rem;
+      position: absolute;
+      top: calc(var(--arrow) - 0.5rem);
     }
 
     .inline {

@@ -12,6 +12,8 @@
     kind?: 'stock' | 'supplies' | 'heat'
     segments?: number
     presets?: { label: string; value: number; title?: string }[]
+    /** Muted text after the label, e.g. "40 / 100 units". */
+    detail?: string
     undoable?: boolean
     /** Called with a typed value or a preset. */
     onresync: (value: number) => void
@@ -27,6 +29,7 @@
     kind,
     segments,
     presets,
+    detail,
     undoable,
     onresync,
     onset = onresync,
@@ -43,6 +46,7 @@
   min={0}
   max={100}
   {presets}
+  {detail}
   {undoable}
   {onresync}
 >

@@ -1,12 +1,12 @@
 <script lang="ts">
   import { PROPERTIES } from '../data/properties'
-  import { editTrial, setEditStyle } from '../lib/cards.svelte'
   import { hiddenLabel } from '../lib/overview'
   import { exportFileName } from '../lib/state'
   import { notificationsSupported, setBrowserAlerts, showOnOverview } from '../lib/overview.svelte'
   import { exportText, importText, setProperties, store } from '../lib/store.svelte'
   import PropertyList from './PropertyList.svelte'
   import Button from './ui/Button.svelte'
+  import Hint from './ui/Hint.svelte'
   import Panel from './ui/Panel.svelte'
   import Select from './ui/Select.svelte'
 
@@ -76,18 +76,18 @@
         <input type="checkbox" bind:checked={store.state.clock.trackOnOpen} />
         Start tracking play time when LSOS opens
       </label>
-      <p class="hint">
+      <Hint>
         Off (recommended): LSOS opens paused. Press Start once you have loaded into a GTA Online
         session, since that is when the game starts counting. On: loading screens count as play time
         too, unless you open LSOS only once you are in.
-      </p>
+      </Hint>
     </Panel>
 
     <Panel title="Alerts">
-      <p class="hint">
+      <Hint>
         When stock is full, supplies run out, a safe is full or a timer is ready: anything on the
         Overview.
-      </p>
+      </Hint>
       <label>
         <input
           type="checkbox"
@@ -108,7 +108,7 @@
       {#if alertError}
         <p class="error" role="status">{alertError}</p>
       {:else if !notificationsSupported()}
-        <p class="hint">This browser cannot show notifications.</p>
+        <Hint>This browser cannot show notifications.</Hint>
       {/if}
       <div class="row" class:muted={off}>
         <label for="alert-lead">Alert</label>
@@ -128,39 +128,14 @@
         />
         Only while LSOS is not the focused window, e.g. while you play
       </label>
-      <p class="hint">Alerts come only while LSOS is open in a tab.</p>
-    </Panel>
-
-    <!-- Trial (issue #60): removed once one style is picked. -->
-    <Panel title="Card editing (trial)">
-      <p class="hint">
-        Two ways to edit the cards on Businesses and Safes. Try both, then pick one.
-      </p>
-      <label>
-        <input
-          type="radio"
-          name="edit-style"
-          checked={editTrial.style === 'exclusive'}
-          onchange={() => setEditStyle('exclusive')}
-        />
-        Edit button: the controls show after pressing Edit
-      </label>
-      <label>
-        <input
-          type="radio"
-          name="edit-style"
-          checked={editTrial.style === 'always'}
-          onchange={() => setEditStyle('always')}
-        />
-        Always editable: no Edit button, the controls are always there
-      </label>
+      <Hint>Alerts come only while LSOS is open in a tab.</Hint>
     </Panel>
 
     <Panel title="Hidden from Overview">
-      <p class="hint">
+      <Hint>
         Left out of the Overview and the alerts, but still tracked on their own tabs and counted in
         the money waiting. Hide one with Hide on its Overview item.
-      </p>
+      </Hint>
       {#if hidden.length === 0}
         <p>Nothing is hidden.</p>
       {:else}
@@ -257,16 +232,10 @@
     gap: var(--space-2);
   }
 
-  input[type='checkbox'],
-  input[type='radio'] {
+  input[type='checkbox'] {
     accent-color: var(--accent);
     height: 1.125rem;
     width: 1.125rem;
-  }
-
-  .hint {
-    color: var(--muted);
-    font-size: var(--text-sm);
   }
 
   .row {

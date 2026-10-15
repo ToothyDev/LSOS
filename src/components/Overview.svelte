@@ -11,9 +11,11 @@
   import { hiddenLabel, type Holdings, type Popularity, type QuickResult } from '../lib/overview'
   import { formatValue } from '../lib/resync'
   import { hashForTab } from '../lib/tabs'
+  import { TimedUndo } from '../lib/cards.svelte'
   import Button from './ui/Button.svelte'
   import Digits from './ui/Digits.svelte'
   import MarkOwned from './ui/MarkOwned.svelte'
+  import UndoStatus from './ui/UndoStatus.svelte'
   import Meter from './ui/Meter.svelte'
   import Select from './ui/Select.svelte'
 
@@ -36,10 +38,8 @@
 
   let { events, holdings, popularity, paused, onquick, onundo, onhide, onshow }: Props = $props()
 
-  // The last quick action or hide, offered for undo for a while (a UI timer, not game time).
-  const UNDO_MS = 15_000
-  let undo = $state<{ text: string; run: () => void } | null>(null)
-  let undoTimer: ReturnType<typeof setTimeout> | undefined
+  // The last quick action or hide, offered for undo for a while.
+  const undo = new TimedUndo()
   // The business picked for each event with choices (the Mansion boost).
   let picked = $state<Record<string, string>>({})
 
@@ -48,23 +48,12 @@
     const choice = choices && (picked[event.id] ?? choices[0]?.id)
     const result = onquick(event, choice)
     if (!result) return
-    offerUndo(result.done, () => onundo(event.id, result.undo))
+    undo.offer('overview', result.done, () => onundo(event.id, result.undo))
   }
 
   function hide(event: NextEvent) {
     onhide(event.focus)
-    offerUndo(`Hid ${card(event)} from the Overview`, () => onshow(event.focus))
-  }
-
-  function offerUndo(text: string, run: () => void) {
-    undo = { text, run }
-    clearTimeout(undoTimer)
-    undoTimer = setTimeout(() => (undo = null), UNDO_MS)
-  }
-
-  function takeBack() {
-    undo?.run()
-    undo = null
+    undo.offer('overview', `Hid ${card(event)} from the Overview`, () => onshow(event.focus))
   }
 
   const link = (e: NextEvent) => hashForTab(e.tab, e.focus)
@@ -123,12 +112,7 @@
   <section aria-labelledby="ready-heading">
     <h2 id="ready-heading">
       Ready now
-      {#if undo}
-        <span class="undo" role="status">
-          {undo.text}.
-          <Button onclick={takeBack}>Undo</Button>
-        </span>
-      {/if}
+      <UndoStatus {undo} />
     </h2>
     {#if due.length === 0}
       <p class="quiet">Nothing to do right now.</p>
@@ -406,17 +390,6 @@
   /* Ready now has room for a second line: long names wrap instead of being cut. */
   .card .source {
     white-space: normal;
-  }
-
-  .undo {
-    align-items: center;
-    color: var(--fg);
-    display: inline-flex;
-    font-family: var(--font-body);
-    font-size: var(--text-sm);
-    gap: var(--space-2);
-    letter-spacing: normal;
-    text-transform: none;
   }
 
   .popularity {

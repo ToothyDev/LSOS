@@ -1,51 +1,28 @@
-// Which card on a tab has its edit controls or its settings open (issue #60): one card and one
-// mode at a time, so Edit and the gear never stack on the same card.
-//
-// Trial (issue #60): two ways to edit a card are on offer until one is picked. `exclusive` keeps
-// the Edit button; `always` drops it and shows the edit controls on every card. Remove the
-// switch and the losing style once picked.
+// An Undo offered for a while right after a quick press, where the press was (issue #60): a
+// boost started, a spin marked, an Overview action. A UI timer, not game time (decision 003
+// covers tracker logic only).
 
-export type EditStyle = 'exclusive' | 'always'
+export const UNDO_MS = 15_000
 
-const STYLE_KEY = 'lsos-trial-edit-style'
+export class TimedUndo {
+  /** The press that can be taken back now: where it was (`key`), what it did, how to undo. */
+  current = $state<{ key: string; text: string; run: () => void } | null>(null)
+  #timer: ReturnType<typeof setTimeout> | undefined
 
-function savedStyle(): EditStyle {
-  try {
-    return localStorage.getItem(STYLE_KEY) === 'always' ? 'always' : 'exclusive'
-  } catch {
-    return 'exclusive'
-  }
-}
-
-export const editTrial = $state({ style: savedStyle() })
-
-export function setEditStyle(style: EditStyle) {
-  editTrial.style = style
-  try {
-    localStorage.setItem(STYLE_KEY, style)
-  } catch {
-    // Not saved; the choice lasts until reload.
-  }
-}
-
-export type CardMode = 'edit' | 'settings'
-
-export class CardModes {
-  #open = $state<{ id: string; mode: CardMode } | null>(null)
-
-  /** Whether the card shows this mode. */
-  is(id: string, mode: CardMode): boolean {
-    return this.#open?.id === id && this.#open.mode === mode
+  offer(key: string, text: string, run: () => void) {
+    this.current = { key, text, run }
+    clearTimeout(this.#timer)
+    this.#timer = setTimeout(() => (this.current = null), UNDO_MS)
   }
 
-  /** Whether the card shows its edit controls: always on in the `always` style, except while
-   * its settings are open. */
-  editing(id: string): boolean {
-    return editTrial.style === 'always' ? !this.is(id, 'settings') : this.is(id, 'edit')
+  /** The offer at this place, if any. */
+  at(key: string) {
+    return this.current?.key === key ? this.current : null
   }
 
-  /** Opens the mode on the card, closing any other; on again closes it. */
-  toggle(id: string, mode: CardMode) {
-    this.#open = this.is(id, mode) ? null : { id, mode }
+  take() {
+    this.current?.run()
+    this.current = null
+    clearTimeout(this.#timer)
   }
 }

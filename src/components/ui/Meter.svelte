@@ -254,4 +254,19 @@
     transform: translate(-50%, -50%);
     width: 0.5rem;
   }
+
+  /* Every card's bars can be dragged (issue #60): the handle shows only over the card, or while
+     the bar has focus, so a tab of cards reads as plain bars. Touch screens always show it. */
+  @media (hover: hover) {
+    .handle {
+      opacity: 0;
+      transition: opacity 0.12s;
+    }
+
+    :global(.panel:hover) .handle,
+    .slider:focus-visible .handle,
+    .slider:active .handle {
+      opacity: 1;
+    }
+  }
 </style>

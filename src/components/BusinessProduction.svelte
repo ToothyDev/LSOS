@@ -1,7 +1,7 @@
 <script lang="ts">
-  // Stock, supplies, value and what comes next for one business (issue #6). Collapsed it shows
-  // only that; `editing` adds the resync controls. A business with a production boost shows it
-  // and lets the user start it (issue #9), and the Mansion boost while it is on (issue #14).
+  // Stock, supplies, value and what comes next for one business (issue #6), always editable
+  // (issue #60). A business with a production boost shows it and lets the user start it
+  // (issue #9), and the Mansion boost while it is on (issue #14).
   // Logic: lib/production.ts.
   import { SUPPLY_PURCHASE } from '../data/business-events'
   import type { Production, ProductionRate } from '../data/production'
@@ -19,12 +19,13 @@
   } from '../lib/production'
   import { formatValue, settleBars, type Bars } from '../lib/resync'
   import { mansionBoostOn, type MansionBoost } from '../lib/timers'
+  import { TimedUndo } from '../lib/cards.svelte'
   import BusinessBars from './ui/BusinessBars.svelte'
   import Button from './ui/Button.svelte'
   import Countdown from './ui/Countdown.svelte'
   import Fact from './ui/Fact.svelte'
-  import Meter from './ui/Meter.svelte'
   import Note from './ui/Note.svelte'
+  import UndoStatus from './ui/UndoStatus.svelte'
 
   interface Props {
     production: Production
@@ -37,8 +38,6 @@
     bars: Bars
     /** Wall-clock time, for supply deliveries. */
     now: number
-    /** Show the controls to correct the bars and record sales, raids and supplies. */
-    editing: boolean
     onresync: (bars: Bars) => void
     /** What bought upgrades add to the value, e.g. 0.05 for a named product. */
     bonus?: number
@@ -46,8 +45,8 @@
     farEstimated?: boolean
     /** The last production boost, if the business has one (kept after it ends). */
     boost?: Boost
-    /** Called with the boost just started; its Undo sits in the card's footer. */
-    onboost?: (boost: Boost) => void
+    /** Called with the boost just started, or the one before it to take a press back. */
+    onboost?: (boost: Boost | undefined) => void
     /** The last Mansion boost, on any business (issue #14). */
     mansionBoost?: MansionBoost
   }
@@ -59,7 +58,6 @@
     shutDown = false,
     bars,
     now,
-    editing,
     onresync,
     bonus = 0,
     farEstimated = false,
@@ -95,7 +93,6 @@
         })
       : null,
   )
-  const percent = (value: number) => formatValue(value, 'percent')
   // Numbers resting on estimated rates say so (decision 013). The value also counts units made
   // at an estimated rate.
   // No source gives the speed of both boosts at once: LSOS multiplies them (est.).
@@ -105,27 +102,24 @@
     return { ...parts, production: parts.production || stacked }
   })
   const est = (label: string, isEstimate: boolean) => (isEstimate ? `${label} (est.)` : label)
+
+  // A press by mistake can be taken back for a while, right here (issue #60).
+  const undo = new TimedUndo()
+  function startBoostNow() {
+    const before = boost
+    onboost(startBoost(production.boost!, now))
+    undo.offer('boost', 'Boost started', () => onboost(before))
+  }
 </script>
 
-{#if editing}
-  <BusinessBars {bars} {now} {onresync} raids={production.raids !== false} />
-{:else}
-  <Meter
-    label={est('Stock', estimated.production)}
-    value={current.stock}
-    max={100}
-    valueText="{units} / {production.maxUnits} {production.unitName} · {percent(current.stock)}"
-  />
-  <Meter
-    label={est('Supplies', estimated.production)}
-    value={current.supplies ?? 0}
-    max={100}
-    kind="supplies"
-  />
-  {#if current.suppliesDueAt !== undefined}
-    <Countdown label="Supplies arrive in" remainingMs={current.suppliesDueAt - now} />
-  {/if}
-{/if}
+<BusinessBars
+  {bars}
+  {now}
+  {onresync}
+  stockLabel={est('Stock', estimated.production)}
+  suppliesLabel={est('Supplies', estimated.production)}
+  stockDetail="{units} / {production.maxUnits} {production.unitName}"
+/>
 
 {#if value}
   <!-- Far sales pay more, so that is the headline; nearby is the alternative. -->
@@ -146,9 +140,10 @@
   <!-- Play time while it runs; the next one is a real-time wait (daily reset). -->
   {#if boosting}
     <Fact label="Boost on">{Math.ceil(boost!.unitsLeft)} {production.unitName} left</Fact>
+    <UndoStatus {undo} />
   {:else if now >= nextBoost}
     <Fact label="Boost ready">
-      <Button onclick={() => onboost(startBoost(production.boost!, now))}>Boost started</Button>
+      <Button onclick={startBoostNow}>Boost started</Button>
     </Fact>
   {/if}
   {#if !boosting && now < nextBoost}

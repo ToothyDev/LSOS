@@ -25,16 +25,14 @@
   import type { GoodsStock } from '../lib/nightclub'
   import type { Bars } from '../lib/resync'
   import type { MansionBoost } from '../lib/timers'
-  import { CardModes } from '../lib/cards.svelte'
   import BusinessProduction from './BusinessProduction.svelte'
   import NightclubWarehouse from './NightclubWarehouse.svelte'
   import PropertySettings from './PropertySettings.svelte'
-  import Button from './ui/Button.svelte'
   import CardGrid from './ui/CardGrid.svelte'
   import Hint from './ui/Hint.svelte'
   import MarkOwned from './ui/MarkOwned.svelte'
   import Panel from './ui/Panel.svelte'
-  import CardFooter from './ui/CardFooter.svelte'
+  import SettingsButton from './ui/SettingsButton.svelte'
 
   interface Props {
     catalog: readonly Property[]
@@ -80,21 +78,9 @@
   const ownedList = $derived(
     ownedProperties(catalog, owned).filter((property) => property.card !== false),
   )
-  // Cards start collapsed: bars, value and next countdown only (issue #6).
-  const modes = new CardModes()
-  // The boost a press replaced, so a press by mistake can be taken back from the footer.
-  let undoBoost = $state<{ id: string; before: Boost | undefined } | null>(null)
+  // The card whose settings are open, one at a time.
+  let open = $state<string | null>(null)
 </script>
-
-{#snippet boostUndo()}
-  <Button
-    onclick={() => {
-      onboost(undoBoost!.id, undoBoost!.before)
-      undoBoost = null
-    }}
-    title="Take back a boost started by mistake">Undo boost</Button
-  >
-{/snippet}
 
 {#if ownedList.length === 0}
   <MarkOwned>You do not own any business yet.</MarkOwned>
@@ -111,7 +97,14 @@
       {@const warehouse = property.id === NIGHTCLUB_ID && goods.length > 0}
       <div class="shell" class:shut={isShutDown(owned, property.id)}>
         <Panel title={property.label} {move} {moving} focus={property.id}>
-          {#if modes.is(property.id, 'settings')}
+          {#snippet actions()}
+            <SettingsButton
+              label={property.label}
+              open={open === property.id}
+              onclick={() => (open = open === property.id ? null : property.id)}
+            />
+          {/snippet}
+          {#if open === property.id}
             <PropertySettings {property} {owned} {onchange} />
           {:else}
             <Hint>{upgradeSummary(owned, property)}</Hint>
@@ -124,15 +117,11 @@
               shutDown={isShutDown(owned, property.id)}
               bars={businesses[property.id] ?? emptyBars()}
               {now}
-              editing={modes.editing(property.id)}
               onresync={(bars) => onresync(property.id, bars)}
               bonus={valueBonus(production, owned, property)}
               farEstimated={farValueEstimated(production, owned)}
               boost={boosts[property.id]}
-              onboost={(boost) => {
-                undoBoost = { id: property.id, before: boosts[property.id] }
-                onboost(property.id, boost)
-              }}
+              onboost={(boost) => onboost(property.id, boost)}
               {mansionBoost}
             />
           {/if}
@@ -143,19 +132,9 @@
               {owned}
               {onchange}
               stock={nightclubStock}
-              editing={modes.editing(property.id)}
               onresync={onnightclub}
             />
           {/if}
-          {#snippet footer()}
-            <CardFooter
-              id={property.id}
-              label={property.label}
-              {modes}
-              editable={!!(production || warehouse)}
-              undo={undoBoost?.id === property.id ? boostUndo : undefined}
-            />
-          {/snippet}
         </Panel>
       </div>
     {/snippet}

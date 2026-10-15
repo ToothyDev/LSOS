@@ -48,8 +48,6 @@ export interface Production {
   valueBonus?: { upgrade: string; bonus: number }
   /** Owning another property raises the sale value, e.g. a Money Front (decision 019). */
   ownedBonus?: OwnedBonus
-  /** False if the business cannot be raided. */
-  raids?: false
   /** A production boost the player can start in the business. */
   boost?: ProductionBoost
   /** A choice of what the staff work on, e.g. manufacturing or research. */
@@ -264,7 +262,6 @@ export const PRODUCTION: readonly Production[] = [
     unitName: 'units',
     maxUnits: 160,
     valueBonus: { upgrade: 'named', bonus: 0.05 },
-    raids: false,
     boost: {
       units: 80,
       maxRealMs: 24 * 60 * 60_000,

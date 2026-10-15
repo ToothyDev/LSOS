@@ -1,7 +1,7 @@
 <script lang="ts">
   // Nightclub warehouse goods: one row per category with stock, value and when it is full, the
   // next one to fill highlighted, and the most profitable technician setup for what the user
-  // owns (issue #7). `editing` swaps the rows for resync fields. Logic: lib/nightclub.ts.
+  // owns (issue #7). Crates can be typed in on each row (issue #60). Logic: lib/nightclub.ts.
   import type { Goods } from '../data/nightclub'
   import type { Property } from '../data/properties'
   import {
@@ -34,12 +34,10 @@
     owned: OwnedProperties
     onchange: (owned: OwnedProperties) => void
     stock: GoodsStock
-    /** Show the fields to correct each category's crates. */
-    editing: boolean
     onresync: (goodsId: string, crates: number) => void
   }
 
-  let { goods, nightclub, owned, onchange, stock, editing, onresync }: Props = $props()
+  let { goods, nightclub, owned, onchange, stock, onresync }: Props = $props()
 
   const setup = $derived(warehouseSetup(owned, nightclub))
   const crates = (id: string) => stock[id] ?? 0
@@ -69,56 +67,41 @@
   }
 </script>
 
-{#if editing}
-  {#each goods as g (g.id)}
-    {@const cap = capacity(g, setup.floors)}
-    <EditableValue
-      label={g.label}
-      value={crates(g.id)}
-      unit="crates"
-      min={0}
-      max={cap}
-      presets={[
-        { label: 'Sold', value: 0 },
-        { label: 'Full', value: cap },
-      ]}
-      onresync={(value) => onresync(g.id, value)}
-    >
-      <Meter label={g.label} value={crates(g.id)} max={cap} bare />
-    </EditableValue>
-  {/each}
-{:else if shown.length === 0}
+{#if shown.length === 0}
   <Hint>No technician is making goods. Assign one in this card's settings.</Hint>
 {:else}
-  <!-- Two lines per goods type: name and crates · value, then the bar with its play time to
-       full. The time column has one header instead of a label on every row. -->
+  <!-- Two lines per goods type: name, value and crates (click to type them), then the bar with
+       its play time to full. The time column has one header instead of a label on every row. -->
   <div class="head" aria-hidden="true"><span>Goods</span><span>Full in</span></div>
   {#each shown as g (g.id)}
     {@const cap = capacity(g, setup.floors)}
     {@const ms = fullInMs(g, crates(g.id), setup)}
     {@const producing = isProducing(g, setup, owned)}
     <div class="row" class:next={next === g.id}>
-      <div class="top">
-        <span class="name">{g.label}</span>
-        <span class="amount"
-          >{wholeCrates(crates(g.id))} / {cap} · {formatValue(
-            goodsValue(g, crates(g.id)),
-            'money',
-          )}</span
-        >
-      </div>
-      <div class="bottom">
-        <Meter label={g.label} value={crates(g.id)} max={cap} bare />
-        {#if !producing}
-          <span class="time idle">Idle</span>
-        {:else if ms <= 0}
-          <span class="time full">Full</span>
-        {:else}
-          <span class="time" aria-label="Full in {formatDuration(ms)}"
-            ><Digits text={formatDuration(ms)} /></span
-          >
-        {/if}
-      </div>
+      <EditableValue
+        label={g.label}
+        detail="{formatValue(goodsValue(g, crates(g.id)), 'money')} · max {cap}"
+        value={crates(g.id)}
+        unit="crates"
+        min={0}
+        max={cap}
+        presets={[{ label: 'Sold', value: 0 }]}
+        inlinePresets
+        onresync={(value) => onresync(g.id, value)}
+      >
+        <div class="bottom">
+          <Meter label={g.label} value={crates(g.id)} max={cap} bare />
+          {#if !producing}
+            <span class="time idle">Idle</span>
+          {:else if ms <= 0}
+            <span class="time full">Full</span>
+          {:else}
+            <span class="time" aria-label="Full in {formatDuration(ms)}"
+              ><Digits text={formatDuration(ms)} /></span
+            >
+          {/if}
+        </div>
+      </EditableValue>
     </div>
   {/each}
 {/if}
@@ -166,20 +149,15 @@
 {/if}
 
 <style>
-  .head,
-  .top {
+  .head {
+    color: var(--muted);
     display: flex;
     font-family: var(--font-display);
-    font-size: var(--text-sm);
+    font-size: var(--text-xs);
     gap: var(--space-2);
     justify-content: space-between;
     letter-spacing: var(--tracking);
     text-transform: uppercase;
-  }
-
-  .head {
-    color: var(--muted);
-    font-size: var(--text-xs);
     padding-left: calc(var(--space-2) + 3px);
   }
 
@@ -193,17 +171,6 @@
 
   .row.next {
     border-left-color: var(--accent);
-  }
-
-  .name {
-    color: var(--muted);
-  }
-
-  .amount {
-    color: var(--accent-text);
-    font-variant-numeric: tabular-nums;
-    text-align: right;
-    white-space: nowrap;
   }
 
   .bottom {

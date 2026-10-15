@@ -8,14 +8,13 @@
   import { isOwned, type OwnedProperties } from '../lib/properties'
   import { emptyFronts } from '../lib/fronts'
   import { emptySafe, type SafesById, type SafeState } from '../lib/safes'
-  import { CardModes } from '../lib/cards.svelte'
   import PropertySettings from './PropertySettings.svelte'
   import MoneyFrontsCard from './MoneyFrontsCard.svelte'
   import SafeCard from './SafeCard.svelte'
   import CardGrid from './ui/CardGrid.svelte'
   import MarkOwned from './ui/MarkOwned.svelte'
   import Panel from './ui/Panel.svelte'
-  import CardFooter from './ui/CardFooter.svelte'
+  import SettingsButton from './ui/SettingsButton.svelte'
 
   interface Props {
     safes: readonly Safe[]
@@ -56,8 +55,13 @@
     ...(fronts ? [{ id: CAR_WASH, label: 'Money Fronts' }] : []),
     ...shown.map(({ property }) => ({ id: property.id, label: property.label })),
   ])
-  const modes = new CardModes()
+  // The card whose settings are open, one at a time.
+  let open = $state<string | null>(null)
 </script>
+
+{#snippet gear(id: string, label: string)}
+  <SettingsButton {label} open={open === id} onclick={() => (open = open === id ? null : id)} />
+{/snippet}
 
 {#if shown.length === 0 && !fronts}
   <MarkOwned>
@@ -71,7 +75,8 @@
       {@const entry = shown.find(({ property }) => property.id === id)}
       {#if id === CAR_WASH}
         <Panel title="Money Fronts" focus={CAR_WASH} {move} {moving}>
-          {#if modes.is(CAR_WASH, 'settings')}
+          {#snippet actions()}{@render gear(CAR_WASH, 'Money Fronts')}{/snippet}
+          {#if open === CAR_WASH}
             {#each frontProperties as property (property.id)}
               <PropertySettings {property} {owned} {onchange} />
             {/each}
@@ -81,17 +86,14 @@
             {owned}
             {onchange}
             safeState={stored[CAR_WASH] ?? emptyFronts()}
-            editing={modes.editing(CAR_WASH)}
             onresync={(state) => onresync(CAR_WASH, state)}
           />
-          {#snippet footer()}
-            <CardFooter id={CAR_WASH} label="Money Fronts" {modes} editable />
-          {/snippet}
         </Panel>
       {:else if entry}
         {@const { safe, property } = entry}
         <Panel title={property.label} focus={property.id} {move} {moving}>
-          {#if modes.is(property.id, 'settings')}
+          {#snippet actions()}{@render gear(property.id, property.label)}{/snippet}
+          {#if open === property.id}
             <PropertySettings {property} {owned} {onchange} />
           {/if}
           <SafeCard
@@ -99,12 +101,8 @@
             {property}
             {owned}
             safeState={stored[property.id] ?? emptySafe(safe)}
-            editing={modes.editing(property.id)}
             onresync={(state) => onresync(property.id, state)}
           />
-          {#snippet footer()}
-            <CardFooter id={property.id} label={property.label} {modes} editable />
-          {/snippet}
         </Panel>
       {/if}
     {/snippet}
