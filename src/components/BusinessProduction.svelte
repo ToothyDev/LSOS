@@ -219,4 +219,8 @@
   .note strong {
     color: var(--warn);
   }
+
+  .note.quiet strong {
+    color: inherit;
+  }
 </style>

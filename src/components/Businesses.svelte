@@ -321,10 +321,9 @@
     outline-offset: -1px;
   }
 
-  /* A shut-down business is greyed out but stays readable (issue #38). */
+  /* A shut-down business is dimmed like a disabled control: same colours, darker (issue #38). */
   .lift.shut {
-    filter: grayscale(1);
-    opacity: 0.75;
+    filter: brightness(0.65);
   }
 
   .lift.lifted {

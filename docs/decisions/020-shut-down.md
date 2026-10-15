@@ -16,8 +16,8 @@
   `clearShutDownStock` in `lib/production.ts`, applied by `setProperties` in the store whenever a
   business goes from running to shut down. Starting it again changes nothing.
 - **Shut down means "not running" everywhere** (`isRunning` in `lib/properties.ts`):
-  - production (decision 012) makes no stock and uses no supplies; the card is greyed out but
-    readable, keeps its bars and value, has a grey "Shut down" note (not the yellow warning),
+  - production (decision 012) makes no stock and uses no supplies; the card is dimmed (darker,
+    colours kept) but readable, keeps its bars and value, has a grey "Shut down" note (not the yellow warning),
     and hides the countdowns and the boost;
   - nightclub goods (decision 015) whose only unlocking business is shut down count as locked,
     so the Locked note and the best-setup suggestion follow;
