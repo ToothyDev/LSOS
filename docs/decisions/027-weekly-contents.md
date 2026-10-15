@@ -14,6 +14,10 @@
   - **Discounts**: vehicles, properties and Gun Van weapons, each with its percentage (free = 100).
   - **Gifts and one-off bonuses**: free items, and rewards for doing something this week
     (e.g. "complete X, get GTA$500,000 within 72 hours"), with any deadline.
+  - **Still running**: seasonal activities carried over from earlier weeks without a bonus
+    this week (e.g. Ghosts Exposed, Phantom Car), names only. Shown below the week's events,
+    more out of the way (e.g. a collapsed or muted "Also running" list), and never in the
+    Breaking News bar.
   - **Week**: start and end as exact UTC instants, plus the source link.
 - **Left out:**
   - **GTA+**: no member-only multipliers, discounts or monthly benefits. Where an entry has a

@@ -1,6 +1,6 @@
 # 16: Weekly events: data file, Weekly tab and Breaking News bar
 
-**Status:** scope and source decided (decision 027); no code yet.
+**Status:** scope, source and still-running list decided (decision 027); no code yet.
 
 ## Goal
 
@@ -28,8 +28,8 @@ Only docs: decision 027 and this handoff. The maintainer's answers:
 - GTA+: "honestly no, screw GTA+". Leave all of it out.
 - Daily map-bound items (Gun Van location, daily time trials): out; "not sure i wanna make a
   whole map widget for it".
-- "Events" (the still-running seasonal activities): "depends on what you mean exactly". Open,
-  see below.
+- Still-running seasonal activities (Ghosts Exposed, Phantom Car, ...): "add them but slightly
+  more out of the way than the actual weekly events".
 - Reset time: "pick what fits best" (picked: explicit instants, written as Thursday 2:00 AM US
   Pacific; decision 027).
 
@@ -61,7 +61,7 @@ the schema can mirror:
    malformed file; staleness from `start`/`end` and an injected `now`.
 2. A first `public/weekly.json` for 2026-10-15 to 2026-10-22 from the sample page.
 3. Weekly tab: grouped sections in the page's order (multipliers, challenge, gifts, rotations,
-   discounts).
+   discounts), then a less prominent "Also running" list (collapsed or muted) at the bottom.
 4. Breaking News bar on every tab: multipliers and gifts, owned matches first; stale notice
    when `now >= end`.
 5. Contributor section on writing a week by hand (in the PR or `docs/`).
@@ -69,6 +69,4 @@ the schema can mirror:
 
 ## Open questions
 
-- "Events": show the still-running seasonal activities (Ghosts Exposed, Phantom Car, ...) as a
-  plain "also running" list without bonuses, or leave them out? Ask the maintainer.
 - Exact reset time is not officially sourced; check once against a real reset.
