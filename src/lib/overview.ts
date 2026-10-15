@@ -60,6 +60,23 @@ export function allEvents(state: AppState, data: TrackerData, now: number): Next
   ])
 }
 
+/**
+ * The events the Overview shows and alerts on: those of cards the user hid are left out (issue
+ * #62). `hidden` holds event `focus` ids, e.g. `car-wash`.
+ */
+export function visibleEvents(
+  events: readonly NextEvent[],
+  hidden: readonly string[],
+): NextEvent[] {
+  return events.filter((e) => !hidden.includes(e.focus))
+}
+
+/** The name of a card hidden from the Overview (an event `focus`), for the list to show it again. */
+export function hiddenLabel(focus: string, catalog: readonly Property[]): string {
+  if (focus === 'lucky-wheel') return 'Lucky Wheel'
+  return catalog.find((p) => p.id === focus)?.label ?? focus
+}
+
 /** Money waiting to be collected or sold, by where it is. */
 export interface Holdings {
   /** Business stock at its sale value: far where a far sale pays more, as the cards show it. */

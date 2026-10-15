@@ -15,6 +15,7 @@ import {
   clubPopularity,
   holdings,
   quickAction,
+  visibleEvents,
   type QuickResult,
   type TrackerData,
 } from './overview'
@@ -32,7 +33,10 @@ const DATA: TrackerData = {
 }
 
 class Overview {
-  events = $derived(allEvents(store.state, DATA, clocks.now))
+  /** Every tracker's events, the hidden cards' too. */
+  all = $derived(allEvents(store.state, DATA, clocks.now))
+  /** What the Overview shows and alerts on: the hidden cards left out (issue #62). */
+  events = $derived(visibleEvents(this.all, store.state.overviewHidden))
   holdings = $derived(holdings(store.state, DATA, clocks.now))
   popularity = $derived(clubPopularity(store.state, DATA))
   /** Ids of the events with a pop-up open, oldest first. */
@@ -56,6 +60,17 @@ export function undoQuick(id: string, undo: QuickResult['undo']): void {
 
 function apply(change: QuickResult['change']): void {
   Object.assign(store.state, change)
+}
+
+/** Leaves a card's items (event `focus`) out of the Overview and the alerts (issue #62). */
+export function hideFromOverview(focus: string): void {
+  const hidden = store.state.overviewHidden
+  if (!hidden.includes(focus)) store.state.overviewHidden = [...hidden, focus]
+}
+
+/** Shows a hidden card's items on the Overview again. */
+export function showOnOverview(focus: string): void {
+  store.state.overviewHidden = store.state.overviewHidden.filter((f) => f !== focus)
 }
 
 export function dismissPopup(id: string): void {
@@ -98,7 +113,8 @@ $effect.root(() => {
   $effect(() => {
     const events = overview.events
     const { browser, popup, leadMs, unfocusedOnly } = store.state.alerts
-    const near = nearIds(events, leadMs)
+    // Hidden items count as seen, so showing them again brings no alert for what is already near.
+    const near = nearIds(overview.all, leadMs)
     if (seen && seenLead === leadMs && !(unfocusedOnly && document.hasFocus())) {
       const fresh = newlyNear(seen, events, leadMs)
       if (browser && notificationsSupported() && Notification.permission === 'granted') {
@@ -110,9 +126,10 @@ $effect.root(() => {
     }
     seen = near
     seenLead = leadMs
-    // A pop-up closes on its own once its item is handled (sold, collected, spun).
+    // A pop-up closes on its own once its item is handled (sold, collected, spun) or hidden.
     untrack(() => {
-      const open = overview.popups.filter((id) => near.has(id))
+      const shown = nearIds(events, leadMs)
+      const open = overview.popups.filter((id) => shown.has(id))
       if (open.length !== overview.popups.length) overview.popups = open
     })
   })

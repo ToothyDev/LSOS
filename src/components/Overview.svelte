@@ -2,11 +2,13 @@
   // The Overview (issue #15): made to stay open on a second screen and be read at a glance.
   // Money waiting and nightclub popularity on top, then what to do now, then everything coming
   // up, soonest first. Each item links to its card, which scrolls into view and glows. Timers
-  // that need nothing else (a spin, a boost) are marked done right here, with an undo.
+  // that need nothing else (a spin, a boost) are marked done right here, with an undo. A card
+  // the user does not care about can be hidden from here (issue #62); Settings shows it again.
   // Logic: lib/overview.ts, lib/events.ts.
   import { formatDuration } from '../lib/clock'
   import { isDue, type NextEvent } from '../lib/events'
-  import type { Holdings, Popularity, QuickResult } from '../lib/overview'
+  import { PROPERTIES } from '../data/properties'
+  import { hiddenLabel, type Holdings, type Popularity, type QuickResult } from '../lib/overview'
   import { formatValue } from '../lib/resync'
   import { hashForTab } from '../lib/tabs'
   import Button from './ui/Button.svelte'
@@ -25,13 +27,17 @@
     /** Marks an event done (its `quick`); returns what undoes it, if done. */
     onquick: (event: NextEvent, choice?: string) => QuickResult | null
     onundo: (eventId: string, undo: QuickResult['undo']) => void
+    /** Leaves a card's items (event `focus`) out of the Overview and the alerts. */
+    onhide: (focus: string) => void
+    /** Shows a hidden card's items again. */
+    onshow: (focus: string) => void
   }
 
-  let { events, holdings, popularity, paused, onquick, onundo }: Props = $props()
+  let { events, holdings, popularity, paused, onquick, onundo, onhide, onshow }: Props = $props()
 
-  // The last quick action, offered for undo for a while (a UI timer, not game time).
+  // The last quick action or hide, offered for undo for a while (a UI timer, not game time).
   const UNDO_MS = 15_000
-  let undo = $state<{ id: string; text: string; change: QuickResult['undo'] } | null>(null)
+  let undo = $state<{ text: string; run: () => void } | null>(null)
   let undoTimer: ReturnType<typeof setTimeout> | undefined
   // The business picked for each event with choices (the Mansion boost).
   let picked = $state<Record<string, string>>({})
@@ -41,17 +47,28 @@
     const choice = choices && (picked[event.id] ?? choices[0]?.id)
     const result = onquick(event, choice)
     if (!result) return
-    undo = { id: event.id, text: result.done, change: result.undo }
+    offerUndo(result.done, () => onundo(event.id, result.undo))
+  }
+
+  function hide(event: NextEvent) {
+    onhide(event.focus)
+    offerUndo(`Hid ${card(event)} from the Overview`, () => onshow(event.focus))
+  }
+
+  function offerUndo(text: string, run: () => void) {
+    undo = { text, run }
     clearTimeout(undoTimer)
     undoTimer = setTimeout(() => (undo = null), UNDO_MS)
   }
 
   function takeBack() {
-    if (undo) onundo(undo.id, undo.change)
+    undo?.run()
     undo = null
   }
 
   const link = (e: NextEvent) => hashForTab(e.tab, e.focus)
+  // Hide works on the whole card, e.g. the Money Fronts items hide with the Hands On Car Wash.
+  const card = (e: NextEvent) => hiddenLabel(e.focus, PROPERTIES)
   const cut = $derived(popularity !== null && popularity.payout < popularity.best)
 
   const due = $derived(events.filter(isDue))
@@ -146,6 +163,13 @@
                 >
               </span>
             {/if}
+            <button
+              type="button"
+              class="hide"
+              aria-label="Hide {card(event)} from the Overview"
+              title="Hide {card(event)} here and in alerts. Show it again in Settings."
+              onclick={() => hide(event)}>Hide</button
+            >
           </li>
         {/each}
       </ul>
@@ -164,7 +188,7 @@
     {:else}
       <ul class="next">
         {#each coming as event (event.id)}
-          <li>
+          <li class="item">
             <a
               class="row {event.tone}"
               class:frozen={paused && event.clock === 'play'}
@@ -195,6 +219,13 @@
               </span>
               <span class="value">{event.value ? money(event.value) : ''}</span>
             </a>
+            <button
+              type="button"
+              class="hide"
+              aria-label="Hide {card(event)} from the Overview"
+              title="Hide {card(event)} here and in alerts. Show it again in Settings."
+              onclick={() => hide(event)}>Hide</button
+            >
           </li>
         {/each}
       </ul>
@@ -307,7 +338,7 @@
   .due {
     display: grid;
     gap: var(--space-2);
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 1fr));
   }
 
   .card {
@@ -455,10 +486,17 @@
     break-inside: avoid;
   }
 
-  .row {
+  .item {
     align-items: center;
     border-bottom: 1px solid var(--line);
+    display: flex;
+  }
+
+  .row {
+    align-items: center;
     display: grid;
+    flex: 1;
+    min-width: 0;
     gap: var(--space-3);
     grid-template-columns: 5.5rem minmax(0, 1fr) 4.5rem 6.5rem;
     padding: var(--space-1) var(--space-2);
@@ -466,6 +504,27 @@
 
   .row:hover {
     background: var(--panel-raised);
+  }
+
+  /* Hide (issue #62): small and quiet, so it is not pressed instead of the item. */
+  .hide {
+    background: none;
+    border: 1px solid transparent;
+    border-radius: var(--radius);
+    color: var(--muted);
+    cursor: pointer;
+    flex: none;
+    font-family: var(--font-display);
+    font-size: var(--text-xs);
+    letter-spacing: var(--tracking);
+    padding: var(--space-1) var(--space-2);
+    text-transform: uppercase;
+  }
+
+  .hide:hover,
+  .hide:focus-visible {
+    border-color: var(--line);
+    color: var(--fg);
   }
 
   .row .name {
@@ -514,6 +573,14 @@
   }
 
   @media (max-width: 40rem) {
+    .action {
+      min-width: 4.5rem;
+    }
+
+    .hide {
+      padding: var(--space-1);
+    }
+
     .row {
       grid-template-columns: 5rem minmax(0, 1fr) 5.5rem;
     }

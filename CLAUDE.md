@@ -32,6 +32,7 @@ Svelte 5 + TypeScript + Vite. Public repository.
 | Real-time timers: Lucky Wheel, Mansion boost   | `data/timers.ts`, `lib/timers.ts` (022)            |
 | Weekly events and the Weekly tab               | `data/weekly.ts`, `lib/weekly.ts` (decision 027)   |
 | Overview tab, next events, notifications       | `lib/events.ts`, `lib/overview.ts` (dec. 023)      |
+| Hiding cards from the Overview and alerts      | `visibleEvents` in `lib/overview.ts` (dec. 028)    |
 | Theme tokens                                   | `src/app.css` (decision 009)                       |
 | Link previews (Open Graph), preview image      | `index.html`, `scripts/og-image.html`              |
 | CI, templates                                  | `.github/`                                         |

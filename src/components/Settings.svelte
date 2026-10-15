@@ -1,7 +1,8 @@
 <script lang="ts">
   import { PROPERTIES } from '../data/properties'
+  import { hiddenLabel } from '../lib/overview'
   import { exportFileName } from '../lib/state'
-  import { notificationsSupported, setBrowserAlerts } from '../lib/overview.svelte'
+  import { notificationsSupported, setBrowserAlerts, showOnOverview } from '../lib/overview.svelte'
   import { exportText, importText, setProperties, store } from '../lib/store.svelte'
   import PropertyList from './PropertyList.svelte'
   import Button from './ui/Button.svelte'
@@ -25,6 +26,12 @@
   }))
   const alerts = $derived(store.state.alerts)
   const off = $derived(!alerts.browser && !alerts.popup)
+  // Cards hidden from the Overview and the alerts (issue #62), by name.
+  const hidden = $derived(
+    store.state.overviewHidden
+      .map((focus) => ({ focus, label: hiddenLabel(focus, PROPERTIES) }))
+      .sort((a, b) => a.label.localeCompare(b.label)),
+  )
 
   function exportBackup() {
     const blob = new Blob([exportText()], { type: 'application/json' })
@@ -115,6 +122,27 @@
     <p class="hint">Alerts come only while LSOS is open in a tab.</p>
   </Panel>
 
+  <Panel title="Hidden from Overview">
+    <p class="hint">
+      Left out of the Overview and the alerts, but still tracked on their own tabs and counted in
+      the money waiting. Hide one with Hide on its Overview item.
+    </p>
+    {#if hidden.length === 0}
+      <p>Nothing is hidden.</p>
+    {:else}
+      <ul class="hidden">
+        {#each hidden as item (item.focus)}
+          <li>
+            <span>{item.label}</span>
+            <Button onclick={() => showOnOverview(item.focus)} aria-label="Show {item.label}"
+              >Show</Button
+            >
+          </li>
+        {/each}
+      </ul>
+    {/if}
+  </Panel>
+
   <Panel title="Backup">
     <p>
       Your data lives only in this browser. Export it to keep a copy or to move to another device.
@@ -193,5 +221,21 @@
 
   .error {
     color: var(--danger);
+  }
+
+  .hidden {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .hidden li {
+    align-items: center;
+    display: flex;
+    gap: var(--space-3);
+    justify-content: space-between;
   }
 </style>

@@ -13,7 +13,7 @@ import { parseSafes, type SafesById } from './safes'
 import { parseTimers, type Timers } from './timers'
 
 /** Bump when the stored shape changes, and add a migration from the previous version. */
-export const CURRENT_VERSION = 13
+export const CURRENT_VERSION = 14
 
 /** All user state. Trackers add their own sections here as they are built. */
 export interface AppState {
@@ -40,6 +40,11 @@ export interface AppState {
   timers: Timers
   /** Alerts when an Overview item comes due (issue #15); off until opted in. */
   alerts: AlertSettings
+  /**
+   * Cards (event `focus`, e.g. `car-wash`) whose items the Overview and the alerts leave out
+   * (issue #62); they stay tracked on their own tabs.
+   */
+  overviewHidden: string[]
 }
 
 export interface AlertSettings {
@@ -71,6 +76,7 @@ export function defaultState(): AppState {
     boosts: {},
     timers: {},
     alerts: defaultAlerts(),
+    overviewHidden: [],
   }
 }
 
@@ -107,6 +113,8 @@ export const MIGRATIONS: Readonly<Record<number, Migration>> = {
   11: (data) => ({ ...data, alerts: defaultAlerts() }),
   // Version 13 adds the order of the safe and timer cards (issue #51); default order until moved.
   12: (data) => ({ ...data, safeOrder: [], timerOrder: [] }),
+  // Version 14 adds the cards hidden from the Overview (issue #62); none hidden yet.
+  13: (data) => ({ ...data, overviewHidden: [] }),
 }
 
 export type ParseResult =
@@ -197,6 +205,8 @@ function toState(data: StoredData): AppState | string {
   if (typeof timers === 'string') return timers
   const alerts = toAlerts(data.alerts)
   if (typeof alerts === 'string') return alerts
+  const overviewHidden = toHidden(data.overviewHidden)
+  if (typeof overviewHidden === 'string') return overviewHidden
   return {
     version: CURRENT_VERSION,
     clock,
@@ -210,7 +220,14 @@ function toState(data: StoredData): AppState | string {
     boosts,
     timers,
     alerts,
+    overviewHidden,
   }
+}
+
+function toHidden(data: unknown): string[] | string {
+  if (!Array.isArray(data) || !data.every((id) => typeof id === 'string'))
+    return 'The cards hidden from the Overview are not a list of names.'
+  return [...new Set(data)]
 }
 
 function toClock(data: unknown): ClockSettings | string {
