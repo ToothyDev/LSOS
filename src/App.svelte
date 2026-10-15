@@ -15,6 +15,7 @@
   import { PROPERTIES } from './data/properties'
   import { SAFES } from './data/safes'
   import { WEEK } from './data/weekly'
+  import { motionReduced } from './lib/accessibility.svelte'
   import { clocks } from './lib/clock.svelte'
   import {
     dismissPopup,
@@ -54,7 +55,7 @@
       history.replaceState(null, '', hashForTab(tab))
       hash = location.hash
       if (!card) return
-      card.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      card.scrollIntoView({ behavior: motionReduced() ? 'auto' : 'smooth', block: 'center' })
       card.classList.remove('flash')
       void card.offsetWidth
       card.classList.add('flash')

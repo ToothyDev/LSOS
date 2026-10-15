@@ -1,6 +1,7 @@
 <script lang="ts">
   import { PROPERTIES } from '../data/properties'
   import { hiddenLabel } from '../lib/overview'
+  import type { MotionSetting } from '../lib/accessibility'
   import { exportFileName } from '../lib/state'
   import { notificationsSupported, setBrowserAlerts, showOnOverview } from '../lib/overview.svelte'
   import { exportText, importText, setProperties, store } from '../lib/store.svelte'
@@ -33,6 +34,13 @@
     label: minutes === 0 ? 'When it happens' : `${minutes} min before`,
   }))
   const alerts = $derived(store.state.alerts)
+  // Accessibility (issue #55): motion follows the device unless set here.
+  const MOTIONS: { id: MotionSetting; label: string }[] = [
+    { id: 'system', label: 'As set on this device' },
+    { id: 'reduce', label: 'Reduced' },
+    { id: 'full', label: 'Full' },
+  ]
+  const accessibility = $derived(store.state.accessibility)
   const off = $derived(!alerts.browser && !alerts.popup)
   // Cards hidden from the Overview and the alerts (issue #62), by name.
   const hidden = $derived(
@@ -150,6 +158,29 @@
           {/each}
         </ul>
       {/if}
+    </Panel>
+
+    <Panel title="Accessibility">
+      <div class="row">
+        <label for="motion">Motion</label>
+        <Select
+          id="motion"
+          value={accessibility.motion}
+          options={MOTIONS}
+          onchange={(id) =>
+            (store.state.accessibility = { ...accessibility, motion: id as MotionSetting })}
+        />
+      </div>
+      <Hint>Reduced leaves out sliding cards, pop-ups and scrolling, and the boot screen.</Hint>
+      <label>
+        <input
+          type="checkbox"
+          checked={accessibility.scanlines}
+          onchange={(e) =>
+            (store.state.accessibility = { ...accessibility, scanlines: e.currentTarget.checked })}
+        />
+        Scan lines over the screen
+      </label>
     </Panel>
 
     <Panel title="Backup">

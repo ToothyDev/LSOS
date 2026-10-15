@@ -61,18 +61,28 @@
     outline-offset: -3px;
   }
 
-  /* Phones: tighter tabs so all of them fit; the strip still scrolls if they do not. */
+  /* Phones: three tabs a row, so every tab shows without scrolling (issue #55). With two rows the
+     active tab cannot join the window under it, so it is marked by its top edge alone. */
   @media (max-width: 40rem) {
     nav {
-      padding-inline: 0;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      margin-bottom: 0;
+      overflow-x: visible;
+      padding: var(--space-2) 0;
     }
 
     a {
-      flex: 1 0 auto;
+      border-radius: var(--radius);
       font-size: var(--text-xs);
       justify-content: center;
       letter-spacing: 0.04em;
+      min-width: 0;
       padding-inline: var(--space-2);
+    }
+
+    a[aria-current='page'] {
+      border-bottom-color: var(--line);
     }
 
     .dot {
