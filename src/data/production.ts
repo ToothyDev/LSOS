@@ -110,7 +110,7 @@ const SUPPLIES_WITH_EQUIPMENT =
   'Supply use as with both upgrades: only the equipment upgrade makes supplies last longer ' +
   '(gta.wiki, The Open Road, Upgrades).'
 const SUPPLIES_WITHOUT_EQUIPMENT =
-  'Supplies last half as long as with equipment, as in the Bunker (10 instead of 20 units ' +
+  'Supplies last half as long as with equipment as in the Bunker (10 instead of 20 units ' +
   'per full supply bar).'
 const STAFF_ONLY =
   'Speed and value as with equipment only, as in the Bunker, where either upgrade alone ' +

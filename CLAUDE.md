@@ -6,35 +6,35 @@ Svelte 5 + TypeScript + Vite. Public repository.
 
 ## Where things are
 
-| Need                                           | Look in                                           |
-| ---------------------------------------------- | ------------------------------------------------- |
-| Why something is built the way it is           | `docs/decisions/README.md` (index, then one file) |
-| What to work on                                | the issue the maintainer names, only that issue   |
-| Continue an unfinished PR                      | `docs/handoff/<file>.md` on the PR branch         |
-| Tabs and hash routing                          | `src/lib/tabs.ts`, `src/App.svelte`               |
-| Play/real clocks, `onPlayTime` for trackers    | `src/lib/clock.ts`, `clock.svelte.ts` (dec. 008)  |
-| Game logic (pure TS, unit-tested)              | `src/lib/`                                        |
-| Saved user state, migrations, export/import    | `src/lib/state.ts`, `src/lib/store.svelte.ts`     |
-| UI components (thin)                           | `src/components/`                                 |
-| Base UI kit (panel, meter, button...), preview | `src/components/ui/`, `#/kit` in dev (dec. 009)   |
-| Resync values, editable bars (dec. 010, 018)   | `ui/EditableValue`, `EditableBar`, `BusinessBars` |
-| Game data with sources                         | `src/data/` (decision 004)                        |
-| Owned properties and upgrades                  | `data/properties.ts`, `lib/properties.ts` (011)   |
-| Business production (stock, supplies, value)   | `data/production.ts`, `lib/production.ts` (012)   |
-| Nightclub warehouse goods                      | `data/nightclub.ts`, `lib/nightclub.ts` (015)     |
-| Business card order (drag, keys)               | `lib/order.ts`, `ui/Panel` `move` (decision 014)  |
-| Safes and nightclub popularity                 | `data/safes.ts`, `lib/safes.ts` (decision 016)    |
-| Acid Lab, production boost                     | `data/production.ts`, `lib/production.ts` (017)   |
-| Money Fronts safe and heat                     | `data/fronts.ts`, `lib/fronts.ts` (018)           |
-| Value bonus for owning a front                 | `ownedBonus` in `data/production.ts` (019)        |
-| Shut-down businesses (owned, not running)      | `isRunning` in `lib/properties.ts` (020)          |
-| Bunker staff on manufacturing/both/research    | `staffSplit` in `data/production.ts` (025)        |
-| Real-time timers: Lucky Wheel, Mansion boost   | `data/timers.ts`, `lib/timers.ts` (022)           |
-| Overview tab, next events, notifications       | `lib/events.ts`, `lib/overview.ts` (dec. 023)     |
-| Theme tokens                                   | `src/app.css` (decision 009)                      |
-| Link previews (Open Graph), preview image      | `index.html`, `scripts/og-image.html`             |
-| CI, templates                                  | `.github/`                                        |
-| Skills: `handoff`, `finish-pr`; agent: `scout` | `.claude/`                                        |
+| Need                                           | Look in                                            |
+| ---------------------------------------------- | -------------------------------------------------- |
+| Why something is built the way it is           | `docs/decisions/README.md` (index, then one file)  |
+| What to work on                                | the issue the maintainer names, only that issue    |
+| Continue an unfinished PR                      | `docs/handoff/<file>.md` on the PR branch          |
+| Tabs and hash routing                          | `src/lib/tabs.ts`, `src/App.svelte`                |
+| Play/real clocks, `onPlayTime` for trackers    | `src/lib/clock.ts`, `clock.svelte.ts` (dec. 008)   |
+| Game logic (pure TS, unit-tested)              | `src/lib/`                                         |
+| Saved user state, migrations, export/import    | `src/lib/state.ts`, `src/lib/store.svelte.ts`      |
+| UI components (thin)                           | `src/components/`                                  |
+| Base UI kit (panel, meter, button...), preview | `src/components/ui/`, `#/kit` in dev (dec. 009)    |
+| Resync values, editable bars (dec. 010, 018)   | `ui/EditableValue`, `EditableBar`, `BusinessBars`  |
+| Game data with sources                         | `src/data/` (decision 004)                         |
+| Owned properties and upgrades                  | `data/properties.ts`, `lib/properties.ts` (011)    |
+| Business production (stock, supplies, value)   | `data/production.ts`, `lib/production.ts` (012)    |
+| Nightclub warehouse goods                      | `data/nightclub.ts`, `lib/nightclub.ts` (015)      |
+| Card order (drag, keys) on every card tab      | `lib/order.ts`, `ui/CardGrid` (decisions 014, 026) |
+| Safes and nightclub popularity                 | `data/safes.ts`, `lib/safes.ts` (decision 016)     |
+| Acid Lab, production boost                     | `data/production.ts`, `lib/production.ts` (017)    |
+| Money Fronts safe and heat                     | `data/fronts.ts`, `lib/fronts.ts` (018)            |
+| Value bonus for owning a front                 | `ownedBonus` in `data/production.ts` (019)         |
+| Shut-down businesses (owned, not running)      | `isRunning` in `lib/properties.ts` (020)           |
+| Bunker staff on manufacturing/both/research    | `staffSplit` in `data/production.ts` (025)         |
+| Real-time timers: Lucky Wheel, Mansion boost   | `data/timers.ts`, `lib/timers.ts` (022)            |
+| Overview tab, next events, notifications       | `lib/events.ts`, `lib/overview.ts` (dec. 023)      |
+| Theme tokens                                   | `src/app.css` (decision 009)                       |
+| Link previews (Open Graph), preview image      | `index.html`, `scripts/og-image.html`              |
+| CI, templates                                  | `.github/`                                         |
+| Skills: `handoff`, `finish-pr`; agent: `scout` | `.claude/`                                         |
 
 ## Commands
 

@@ -9,7 +9,7 @@
     footer?: Snippet
     /**
      * Makes the title bar a handle to move the panel: these handlers go on it, it takes focus,
-     * and the parent does the moving (issue #30).
+     * and the parent does the moving (`CardGrid`, decision 026).
      */
     move?: HTMLAttributes<HTMLDivElement>
     /** Highlights the panel while it is being moved. */

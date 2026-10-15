@@ -36,3 +36,4 @@ free number, add one line below. **Replacing one:** write a new decision, then m
 - [023](023-overview.md) Overview tab: trackers give a shared `NextEvent`, due first then soonest, supplies on their way counted in the forecast, links that scroll to the card, quick actions with undo on every ready item, popularity in view; alerts as pop-ups and/or notifications, set time ahead
 - [024](024-several-tabs.md) Several tabs: a tab takes the state another tab saves (`storage` event); only the tab that last started counting counts play time (`BroadcastChannel`)
 - [025](025-bunker-staff.md) Bunker staff on Manufacturing, Both or Research: a stock share (Both 0.5, Research 0) on the sourced rates, supplies used as fast on every option (est.), research progress not tracked
+- [026](026-movable-cards-everywhere.md) Movable cards on Businesses, Safes and Timers (`ui/CardGrid`): picked up by the title bar; swap by the dragged card's middle, 10% in; orders saved per tab

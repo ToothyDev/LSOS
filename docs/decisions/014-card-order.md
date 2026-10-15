@@ -1,6 +1,7 @@
 # 014: Business cards in the user's order
 
-2026-10-14, issue #30. Builds on decisions 006 and 009.
+2026-10-14, issue #30. Builds on decisions 006 and 009. Extended to other tabs, with easier
+grabbing and swapping, by decision 026.
 
 ## Decision
 

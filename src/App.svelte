@@ -112,6 +112,8 @@
           onchange={setProperties}
           stored={store.state.safes}
           onresync={(id, safe) => (store.state.safes = { ...store.state.safes, [id]: safe })}
+          order={store.state.safeOrder}
+          onorder={(order) => (store.state.safeOrder = order)}
         />
       {:else if active === 'timers'}
         <Timers
@@ -120,6 +122,8 @@
           timers={store.state.timers}
           now={clocks.now}
           onchange={(timers) => (store.state.timers = timers)}
+          order={store.state.timerOrder}
+          onorder={(order) => (store.state.timerOrder = order)}
         />
       {:else if active === 'settings'}
         <Settings />
