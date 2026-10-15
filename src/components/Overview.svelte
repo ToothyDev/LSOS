@@ -143,33 +143,35 @@
                 {#if event.value}<span class="money">{money(event.value)}</span>{/if}
               </span>
             </a>
-            {#if event.quick}
-              <span class="quick">
-                {#if event.quick.choices}
-                  <span class="pick">
-                    <Select
-                      id="pick-{event.id}"
-                      value={picked[event.id] ?? event.quick.choices[0]?.id}
-                      options={event.quick.choices}
-                      onchange={(id) => (picked = { ...picked, [event.id]: id })}
-                    />
-                  </span>
-                {/if}
-                <Button
-                  variant="primary"
-                  onclick={() => press(event)}
-                  aria-label="{event.source}: {event.quick.label}"
-                  title="Press once you have done it in game">{event.quick.label}</Button
-                >
-              </span>
-            {/if}
-            <button
-              type="button"
-              class="hide"
-              aria-label="Hide {card(event)} from the Overview"
-              title="Hide {card(event)} here and in alerts. Show it again in Settings."
-              onclick={() => hide(event)}>Hide</button
-            >
+            <span class="side">
+              {#if event.quick}
+                <span class="quick">
+                  {#if event.quick.choices}
+                    <span class="pick">
+                      <Select
+                        id="pick-{event.id}"
+                        value={picked[event.id] ?? event.quick.choices[0]?.id}
+                        options={event.quick.choices}
+                        onchange={(id) => (picked = { ...picked, [event.id]: id })}
+                      />
+                    </span>
+                  {/if}
+                  <Button
+                    variant="primary"
+                    onclick={() => press(event)}
+                    aria-label="{event.source}: {event.quick.label}"
+                    title="Press once you have done it in game">{event.quick.label}</Button
+                  >
+                </span>
+              {/if}
+              <button
+                type="button"
+                class="hide"
+                aria-label="Hide {card(event)} from the Overview"
+                title="Hide {card(event)} here and in alerts. Show it again in Settings."
+                onclick={() => hide(event)}>Hide</button
+              >
+            </span>
           </li>
         {/each}
       </ul>
@@ -338,7 +340,7 @@
   .due {
     display: grid;
     gap: var(--space-2);
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
   }
 
   .card {
@@ -371,6 +373,16 @@
     padding: var(--space-2) var(--space-1) var(--space-2) var(--space-3);
   }
 
+  /* The quick action with Hide below it, so Hide takes no width from the name. */
+  .side {
+    align-items: flex-end;
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--space-1) 0;
+  }
+
   .quick {
     align-items: center;
     display: flex;
@@ -395,6 +407,11 @@
 
   .pick {
     width: 12rem;
+  }
+
+  /* Ready now has room for a second line: long names wrap instead of being cut. */
+  .card .source {
+    white-space: normal;
   }
 
   .undo {
@@ -573,14 +590,6 @@
   }
 
   @media (max-width: 40rem) {
-    .action {
-      min-width: 4.5rem;
-    }
-
-    .hide {
-      padding: var(--space-1);
-    }
-
     .row {
       grid-template-columns: 5rem minmax(0, 1fr) 5.5rem;
     }
