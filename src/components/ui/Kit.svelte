@@ -13,10 +13,13 @@
   import Countdown from './Countdown.svelte'
   import EditableValue from './EditableValue.svelte'
   import Fact from './Fact.svelte'
+  import Hint from './Hint.svelte'
   import Meter from './Meter.svelte'
+  import Note from './Note.svelte'
   import NumberField from './NumberField.svelte'
   import Panel from './Panel.svelte'
   import Select from './Select.svelte'
+  import SettingsButton from './SettingsButton.svelte'
 
   let amount = $state(40)
   let picked = $state('a')
@@ -82,13 +85,18 @@
     <Meter label="Empty" value={0} max={100} kind="supplies" />
     <Meter label="Heat" value={30} max={100} kind="heat" segments={10} />
     <Meter label="Five segments" value={amount} max={100} segments={5} />
-    {#snippet footer()}
+  </Panel>
+
+  <Panel title="Buttons">
+    {#snippet actions()}<SettingsButton label="Buttons" open={false} onclick={() => {}} />{/snippet}
+    <div class="row">
       <Button variant="primary">Primary</Button>
       <Button>Ghost</Button>
       <Button disabled>Disabled</Button>
       <Button variant="primary" aria-pressed="true">Owned</Button>
       <Button aria-pressed="false">Not owned</Button>
-    {/snippet}
+      <Button small>Small</Button>
+    </div>
   </Panel>
 
   <Panel title="Countdowns">
@@ -110,6 +118,14 @@
         onchange={(id) => (picked = id)}
       />
     </Fact>
+  </Panel>
+
+  <Panel title="Hints and notes">
+    <Hint>A hint: muted help text.</Hint>
+    <Hint fine>A fine hint, for footnotes like how an estimate is made.</Hint>
+    <Note title="Estimate.">Warn: something to look at.</Note>
+    <Note tone="quiet" title="Shut down.">Quiet: a plain state.</Note>
+    <Note tone="good" title="Tip:">Good: a suggestion.</Note>
   </Panel>
 
   <Panel title="Number field">
@@ -172,7 +188,13 @@
   .grid {
     display: grid;
     gap: var(--space-5);
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--card-width)), 1fr));
+  }
+
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
   }
 
   h2 {

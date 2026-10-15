@@ -111,7 +111,7 @@ export const SAFES: readonly Safe[] = [
         {
           label: 'DJ +10%',
           adds: 10,
-          title: 'Switching back to a DJ you had before (a new DJ fills the bar: use Maxed)',
+          title: 'Switching back to a DJ you had before (a new DJ fills the bar: drag it to full)',
         },
         {
           label: 'Event +10% (est.)',

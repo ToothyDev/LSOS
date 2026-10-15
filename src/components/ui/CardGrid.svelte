@@ -198,7 +198,7 @@
   .grid {
     display: grid;
     gap: var(--space-5);
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--card-width)), 1fr));
   }
 
   /* Lets the card fill its grid cell. */

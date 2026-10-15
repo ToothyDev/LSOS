@@ -1,18 +1,10 @@
 <script lang="ts">
-  // Owned yes/no, shut down (issue #38) and the upgrades of one property (decision 011).
+  // Owned yes/no, shut down (issue #38) and the upgrades of one property (decision 011), as a
+  // card's gear shows them.
   import type { Property } from '../data/properties'
-  import Button from './ui/Button.svelte'
-  import NumberField from './ui/NumberField.svelte'
-  import Select from './ui/Select.svelte'
-  import {
-    isOwned,
-    isShutDown,
-    setOwned,
-    setShutDown,
-    setUpgrade,
-    upgradeValue,
-    type OwnedProperties,
-  } from '../lib/properties'
+  import { isOwned, type OwnedProperties } from '../lib/properties'
+  import PropertyToggles from './PropertyToggles.svelte'
+  import PropertyUpgrades from './PropertyUpgrades.svelte'
 
   interface Props {
     property: Property
@@ -22,70 +14,17 @@
 
   let { property, owned, onchange }: Props = $props()
   const id = $props.id()
-  const isPropertyOwned = $derived(isOwned(owned, property.id))
-  const isPropertyRunning = $derived(!isShutDown(owned, property.id))
 </script>
 
 <div class="property">
   <div class="owned">
     <span id="{id}-name" class="name">{property.label}</span>
-    <div class="toggles">
-      {#if isPropertyOwned && property.canShutDown}
-        <Button
-          variant={isPropertyRunning ? 'primary' : 'ghost'}
-          aria-label="{property.label} running"
-          aria-pressed={isPropertyRunning}
-          onclick={() => onchange(setShutDown(owned, property.id, isPropertyRunning))}
-        >
-          {isPropertyRunning ? 'Running' : 'Shut down'}
-        </Button>
-      {/if}
-      <Button
-        variant={isPropertyOwned ? 'primary' : 'ghost'}
-        aria-labelledby="{id}-name"
-        aria-pressed={isPropertyOwned}
-        onclick={() => onchange(setOwned(owned, property.id, !isPropertyOwned))}
-      >
-        {isPropertyOwned ? 'Owned' : 'Not owned'}
-      </Button>
-    </div>
+    <PropertyToggles {property} {owned} {onchange} labelledby="{id}-name" />
   </div>
 
-  {#if isPropertyOwned && property.upgrades.length > 0}
+  {#if isOwned(owned, property.id) && property.upgrades.length > 0}
     <div class="upgrades">
-      {#each property.upgrades as upgrade (upgrade.id)}
-        {#if upgrade.kind === 'toggle'}
-          <label>
-            <input
-              type="checkbox"
-              checked={upgradeValue(owned, property.id, upgrade) === true}
-              onchange={(event) =>
-                onchange(setUpgrade(owned, property.id, upgrade.id, event.currentTarget.checked))}
-            />
-            {upgrade.label}
-          </label>
-        {:else if upgrade.kind === 'count'}
-          <div class="count">
-            <NumberField
-              label={upgrade.label}
-              value={upgradeValue(owned, property.id, upgrade) as number}
-              min={0}
-              max={upgrade.max}
-              onchange={(value) => onchange(setUpgrade(owned, property.id, upgrade.id, value))}
-            />
-          </div>
-        {:else}
-          <div class="choice">
-            <label for="{id}-{upgrade.id}">{upgrade.label}</label>
-            <Select
-              id="{id}-{upgrade.id}"
-              value={upgradeValue(owned, property.id, upgrade) as string}
-              options={upgrade.options}
-              onchange={(value) => onchange(setUpgrade(owned, property.id, upgrade.id, value))}
-            />
-          </div>
-        {/if}
-      {/each}
+      <PropertyUpgrades {property} {owned} {onchange} />
     </div>
   {/if}
 </div>
@@ -97,13 +36,6 @@
     gap: var(--space-2);
   }
 
-  label {
-    align-items: center;
-    cursor: pointer;
-    display: flex;
-    gap: var(--space-2);
-  }
-
   .owned {
     align-items: center;
     display: flex;
@@ -112,45 +44,15 @@
     justify-content: space-between;
   }
 
-  /* Right-aligned, also when a long name pushes them onto their own line. */
-  .toggles {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
-    justify-content: flex-end;
-    margin-left: auto;
-  }
-
   .name {
     font-family: var(--font-display);
     letter-spacing: var(--tracking);
     text-transform: uppercase;
   }
 
-  /* Labels in one column and selects in the other, so every choice lines up. */
   .upgrades {
-    align-items: center;
     border-left: 2px solid var(--line);
-    display: grid;
-    gap: var(--space-2) var(--space-3);
-    grid-template-columns: auto minmax(0, 1fr);
     margin-left: 0.5rem;
     padding-left: var(--space-3);
-  }
-
-  .upgrades > label,
-  .count {
-    grid-column: 1 / -1;
-  }
-
-  .choice {
-    display: contents;
-  }
-
-  input[type='checkbox'] {
-    accent-color: var(--accent);
-    flex: none;
-    height: 1.125rem;
-    width: 1.125rem;
   }
 </style>

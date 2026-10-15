@@ -5,8 +5,8 @@
   interface Props {
     title: string
     children: Snippet
-    /** Optional strip under the body, like the action row on the in-game business cards. */
-    footer?: Snippet
+    /** Small controls at the right end of the title bar, e.g. the settings gear. */
+    actions?: Snippet
     /**
      * Makes the title bar a handle to move the panel: these handlers go on it, it takes focus,
      * and the parent does the moving (`CardGrid`, decision 026).
@@ -18,32 +18,34 @@
     focus?: string
   }
 
-  let { title, children, footer, move, moving = false, focus }: Props = $props()
+  let { title, children, actions, move, moving = false, focus }: Props = $props()
   const id = $props.id()
 </script>
 
 <section class="panel" class:moving aria-label={title} data-focus={focus}>
-  <h3>
-    {#if move}
-      <div
-        class="title handle"
-        role="button"
-        tabindex="0"
-        aria-describedby="{id}-move"
-        data-move-handle
-        {...move}
-      >
-        {@render heading()}
-      </div>
-      <span id="{id}-move" hidden>Drag, or press the arrow keys, to move this card.</span>
-    {:else}
-      <div class="title">{@render heading()}</div>
+  <div class="head">
+    <h3>
+      {#if move}
+        <div
+          class="title handle"
+          role="button"
+          tabindex="0"
+          aria-describedby="{id}-move"
+          data-move-handle
+          {...move}
+        >
+          {@render heading()}
+        </div>
+        <span id="{id}-move" hidden>Drag, or press the arrow keys, to move this card.</span>
+      {:else}
+        <div class="title">{@render heading()}</div>
+      {/if}
+    </h3>
+    {#if actions}
+      <div class="actions">{@render actions()}</div>
     {/if}
-  </h3>
+  </div>
   <div class="body">{@render children()}</div>
-  {#if footer}
-    <div class="footer">{@render footer()}</div>
-  {/if}
 </section>
 
 {#snippet heading()}
@@ -60,11 +62,31 @@
     min-width: 0;
   }
 
-  h3 {
+  .head {
     background: var(--panel-raised);
     border-bottom: 1px solid var(--line);
+    position: relative;
+  }
+
+  h3 {
     font-size: var(--text-md);
     margin: 0;
+  }
+
+  /* Room for the actions on both sides, so a long title neither runs under them nor
+     leaves the centre. */
+  .head:has(.actions) .title {
+    padding-inline: 2.75rem;
+  }
+
+  /* Over the right end of the title bar, so the title stays centred on the card. */
+  .actions {
+    display: flex;
+    gap: var(--space-1);
+    position: absolute;
+    right: var(--space-2);
+    top: 50%;
+    transform: translateY(-50%);
   }
 
   .title {
@@ -111,13 +133,5 @@
     flex-direction: column;
     gap: var(--space-3);
     padding: var(--space-3) var(--space-4);
-  }
-
-  .footer {
-    border-top: 1px solid var(--line);
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
-    padding: var(--space-2) var(--space-4);
   }
 </style>

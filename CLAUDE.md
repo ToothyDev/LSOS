@@ -34,6 +34,7 @@ Svelte 5 + TypeScript + Vite. Public repository.
 | Overview tab, next events, notifications       | `lib/events.ts`, `lib/overview.ts` (dec. 023)      |
 | Hiding cards from the Overview and alerts      | `visibleEvents` in `lib/overview.ts` (dec. 028)    |
 | Theme tokens                                   | `src/app.css` (decision 009)                       |
+| Hint, Note, empty state, timed Undo            | `ui/`, `lib/cards.svelte.ts` (decision 029)        |
 | Link previews (Open Graph), preview image      | `index.html`, `scripts/og-image.html`              |
 | CI, templates                                  | `.github/`                                         |
 | Skills: `handoff`, `finish-pr`; agent: `scout` | `.claude/`                                         |

@@ -57,6 +57,8 @@
   --scanline-gap: 3px;
   --bar-height: 0.5rem;
   --max-width: 80rem;
+  /* Narrowest card column in a tab's card grid (`ui/CardGrid`). */
+  --card-width: 20rem;
 
   color-scheme: dark;
   font-family: var(--font-body);
@@ -102,6 +104,14 @@ h3 {
 
 a {
   color: var(--accent-text);
+}
+
+/* Every checkbox in the theme's green, a little larger than the browser's. */
+input[type='checkbox'] {
+  accent-color: var(--accent);
+  flex: none;
+  height: 1.125rem;
+  width: 1.125rem;
 }
 
 :focus-visible {

@@ -6,8 +6,16 @@
   import { exportText, importText, setProperties, store } from '../lib/store.svelte'
   import PropertyList from './PropertyList.svelte'
   import Button from './ui/Button.svelte'
+  import Hint from './ui/Hint.svelte'
   import Panel from './ui/Panel.svelte'
   import Select from './ui/Select.svelte'
+
+  interface Props {
+    /** A property to open in the list, e.g. from a link to it. */
+    select?: string
+  }
+
+  let { select }: Props = $props()
 
   let fileInput: HTMLInputElement
   let message: { text: string; error: boolean } | null = $state(null)
@@ -61,124 +69,151 @@
   }
 </script>
 
-<div class="grid">
-  <Panel title="Clock">
-    <label>
-      <input type="checkbox" bind:checked={store.state.clock.trackOnOpen} />
-      Start tracking play time when LSOS opens
-    </label>
-    <p class="hint">
-      Off (recommended): LSOS opens paused. Press Start once you have loaded into a GTA Online
-      session, since that is when the game starts counting. On: loading screens count as play time
-      too, unless you open LSOS only once you are in.
-    </p>
-  </Panel>
+<div class="layout">
+  <div class="side">
+    <Panel title="Clock">
+      <label>
+        <input type="checkbox" bind:checked={store.state.clock.trackOnOpen} />
+        Start tracking play time when LSOS opens
+      </label>
+      <Hint>
+        Off (recommended): LSOS opens paused. Press Start once you have loaded into a GTA Online
+        session, since that is when the game starts counting. On: loading screens count as play time
+        too, unless you open LSOS only once you are in.
+      </Hint>
+    </Panel>
 
-  <Panel title="Alerts">
-    <p class="hint">
-      When stock is full, supplies run out, a safe is full or a timer is ready: anything on the
-      Overview.
-    </p>
-    <label>
-      <input
-        type="checkbox"
-        checked={alerts.popup}
-        onchange={(e) => (store.state.alerts = { ...alerts, popup: e.currentTarget.checked })}
-      />
-      Pop-ups in LSOS
-    </label>
-    <label>
-      <input
-        type="checkbox"
-        checked={alerts.browser}
-        disabled={!notificationsSupported()}
-        onchange={toggleBrowser}
-      />
-      Browser notifications, also over other windows
-    </label>
-    {#if alertError}
-      <p class="error" role="status">{alertError}</p>
-    {:else if !notificationsSupported()}
-      <p class="hint">This browser cannot show notifications.</p>
-    {/if}
-    <div class="row" class:muted={off}>
-      <label for="alert-lead">Alert</label>
-      <Select
-        id="alert-lead"
-        value={String(alerts.leadMs)}
-        options={LEADS}
-        onchange={(id) => (store.state.alerts = { ...alerts, leadMs: Number(id) })}
-      />
-    </div>
-    <label class:muted={off}>
-      <input
-        type="checkbox"
-        checked={alerts.unfocusedOnly}
-        onchange={(e) =>
-          (store.state.alerts = { ...alerts, unfocusedOnly: e.currentTarget.checked })}
-      />
-      Only while LSOS is not the focused window, e.g. while you play
-    </label>
-    <p class="hint">Alerts come only while LSOS is open in a tab.</p>
-  </Panel>
+    <Panel title="Alerts">
+      <Hint>
+        When stock is full, supplies run out, a safe is full or a timer is ready: anything on the
+        Overview.
+      </Hint>
+      <label>
+        <input
+          type="checkbox"
+          checked={alerts.popup}
+          onchange={(e) => (store.state.alerts = { ...alerts, popup: e.currentTarget.checked })}
+        />
+        Pop-ups in LSOS
+      </label>
+      <label>
+        <input
+          type="checkbox"
+          checked={alerts.browser}
+          disabled={!notificationsSupported()}
+          onchange={toggleBrowser}
+        />
+        Browser notifications, also over other windows
+      </label>
+      {#if alertError}
+        <p class="error" role="status">{alertError}</p>
+      {:else if !notificationsSupported()}
+        <Hint>This browser cannot show notifications.</Hint>
+      {/if}
+      <div class="row" class:muted={off}>
+        <label for="alert-lead">Alert</label>
+        <Select
+          id="alert-lead"
+          value={String(alerts.leadMs)}
+          options={LEADS}
+          onchange={(id) => (store.state.alerts = { ...alerts, leadMs: Number(id) })}
+        />
+      </div>
+      <label class:muted={off}>
+        <input
+          type="checkbox"
+          checked={alerts.unfocusedOnly}
+          onchange={(e) =>
+            (store.state.alerts = { ...alerts, unfocusedOnly: e.currentTarget.checked })}
+        />
+        Only while LSOS is not the focused window, e.g. while you play
+      </label>
+      <Hint>Alerts come only while LSOS is open in a tab.</Hint>
+    </Panel>
 
-  <Panel title="Hidden from Overview">
-    <p class="hint">
-      Left out of the Overview and the alerts, but still tracked on their own tabs and counted in
-      the money waiting. Hide one with Hide on its Overview item.
-    </p>
-    {#if hidden.length === 0}
-      <p>Nothing is hidden.</p>
-    {:else}
-      <ul class="hidden">
-        {#each hidden as item (item.focus)}
-          <li>
-            <span>{item.label}</span>
-            <Button onclick={() => showOnOverview(item.focus)} aria-label="Show {item.label}"
-              >Show</Button
-            >
-          </li>
-        {/each}
-      </ul>
-    {/if}
-  </Panel>
+    <Panel title="Hidden from Overview">
+      <Hint>
+        Left out of the Overview and the alerts, but still tracked on their own tabs and counted in
+        the money waiting. Hide one with Hide on its Overview item.
+      </Hint>
+      {#if hidden.length === 0}
+        <p>Nothing is hidden.</p>
+      {:else}
+        <ul class="hidden">
+          {#each hidden as item (item.focus)}
+            <li>
+              <span>{item.label}</span>
+              <Button onclick={() => showOnOverview(item.focus)} aria-label="Show {item.label}"
+                >Show</Button
+              >
+            </li>
+          {/each}
+        </ul>
+      {/if}
+    </Panel>
 
-  <Panel title="Backup">
-    <p>
-      Your data lives only in this browser. Export it to keep a copy or to move to another device.
-    </p>
-    <div class="actions">
-      <Button variant="primary" onclick={exportBackup}>Export</Button>
-      <Button onclick={() => fileInput.click()}>Import</Button>
-      <input
-        bind:this={fileInput}
-        type="file"
-        accept=".json,application/json"
-        hidden
-        onchange={importBackup}
-      />
-    </div>
-    {#if message}
-      <p class:error={message.error} role="status">{message.text}</p>
-    {/if}
-  </Panel>
+    <Panel title="Backup">
+      <p>
+        Your data lives only in this browser. Export it to keep a copy or to move to another device.
+      </p>
+      <div class="actions">
+        <Button variant="primary" onclick={exportBackup}>Export</Button>
+        <Button onclick={() => fileInput.click()}>Import</Button>
+        <input
+          bind:this={fileInput}
+          type="file"
+          accept=".json,application/json"
+          hidden
+          onchange={importBackup}
+        />
+      </div>
+      {#if message}
+        <p class:error={message.error} role="status">{message.text}</p>
+      {/if}
+    </Panel>
+  </div>
 
-  <!-- The long list goes last, across the whole width, in as many columns as fit. -->
-  <div class="wide">
-    <PropertyList catalog={PROPERTIES} owned={store.state.properties} onchange={setProperties} />
+  <!-- The long list: beside the other settings where there is room, else after them. -->
+  <div class="main">
+    <PropertyList
+      catalog={PROPERTIES}
+      owned={store.state.properties}
+      onchange={setProperties}
+      {select}
+    />
   </div>
 </div>
 
 <style>
-  .grid {
+  .layout {
     display: grid;
     gap: var(--space-5);
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 1fr));
   }
 
-  .wide {
+  .side {
+    align-content: start;
     display: grid;
-    grid-column: 1 / -1;
+    gap: var(--space-5);
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--card-width)), 1fr));
+  }
+
+  /* Wide: the properties take the room, the other settings a narrow column on the right. */
+  @media (min-width: 64rem) {
+    .layout {
+      align-items: start;
+      grid-template-columns: minmax(0, 1fr) var(--card-width);
+    }
+
+    .side {
+      grid-column: 2;
+      grid-row: 1;
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .main {
+      grid-column: 1;
+      grid-row: 1;
+    }
   }
 
   p {
@@ -195,17 +230,6 @@
     cursor: pointer;
     display: flex;
     gap: var(--space-2);
-  }
-
-  input[type='checkbox'] {
-    accent-color: var(--accent);
-    height: 1.125rem;
-    width: 1.125rem;
-  }
-
-  .hint {
-    color: var(--muted);
-    font-size: var(--text-sm);
   }
 
   .row {

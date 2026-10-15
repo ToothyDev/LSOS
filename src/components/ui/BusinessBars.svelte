@@ -21,24 +21,29 @@
     now: number
     /** Called with the corrected bars; the tracker stores them as of now (decision 003). */
     onresync: (bars: Bars) => void
-    /** False for a business that cannot be raided: no "Raided" button. */
-    raids?: boolean
+    /** Bar labels, e.g. with "(est.)" when the rates are estimated (decision 013). */
+    stockLabel?: string
+    suppliesLabel?: string
+    /** Muted text after the stock label, e.g. "40 / 100 units". */
+    stockDetail?: string
   }
 
-  let { bars: stored, now, onresync, raids = true }: Props = $props()
+  let {
+    bars: stored,
+    now,
+    onresync,
+    stockLabel = 'Stock',
+    suppliesLabel = 'Supplies',
+    stockDetail,
+  }: Props = $props()
 
   // The bars as of now, with an arrived delivery filled in. Every change starts from these.
   const bars = $derived(settleBars(stored, now, SUPPLY_PURCHASE.fillsTo))
   const dueAt = $derived(bars.suppliesDueAt)
 
-  const events = $derived(
-    Object.entries(BUSINESS_EVENTS)
-      .filter(([id]) => raids || id !== 'raided')
-      .map(([, event]) => event)
-      .filter((event) => bars.supplies !== undefined || !event.empties.includes('supplies')),
-  )
+  const sold = BUSINESS_EVENTS.sold
 
-  // One undo for the whole business: the last edit, Full or event, whichever bars it changed.
+  // One undo for the whole business: the last edit or event, whichever bars it changed.
   // Dragging and nudging one bar with the keys in a row count as one edit.
   let last = $state<BarsEdit | null>(null)
 
@@ -66,7 +71,8 @@
 
 <div class="bars">
   <EditableBar
-    label="Stock"
+    label={stockLabel}
+    detail={stockDetail}
     value={bars.stock}
     segments={BAR_SEGMENTS.count}
     undoable={false}
@@ -76,7 +82,7 @@
   />
   {#if bars.supplies !== undefined}
     <EditableBar
-      label="Supplies"
+      label={suppliesLabel}
       value={bars.supplies}
       kind="supplies"
       segments={BAR_SEGMENTS.count}
@@ -97,17 +103,10 @@
   {/if}
   <!-- All actions in one row to keep the card short. -->
   <div class="actions">
-    <Button
-      onclick={() =>
-        set({ ...bars, stock: 100 }, `stock was ${formatValue(bars.stock, 'percent')}`)}
-      >Full</Button
-    >
     {#if bars.supplies !== undefined}
       <Button onclick={buy} disabled={dueAt !== undefined}>{SUPPLY_PURCHASE.label}</Button>
     {/if}
-    {#each events as event (event.label)}
-      <Button onclick={() => set(applyEvent(bars, event), event.label)}>{event.label}</Button>
-    {/each}
+    <Button onclick={() => set(applyEvent(bars, sold), sold.label)}>{sold.label}</Button>
     {#if last}
       <Button onclick={undo} title="Take back the last change ({last.label})">Undo</Button>
     {/if}

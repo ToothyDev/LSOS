@@ -59,7 +59,7 @@ describe('boostableBusinesses', () => {
     ).map((p) => p.id)
 
   it('lists owned, running businesses the boost covers', () => {
-    expect(ids(owned)).toEqual(['mc-meth', 'mc-weed', 'bunker'])
+    expect(ids(owned)).toEqual(['bunker', 'mc-meth', 'mc-weed'])
     expect(ids(setShutDown(owned, 'bunker', true))).toEqual(['mc-meth', 'mc-weed'])
   })
 

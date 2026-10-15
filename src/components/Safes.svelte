@@ -8,12 +8,11 @@
   import { isOwned, type OwnedProperties } from '../lib/properties'
   import { emptyFronts } from '../lib/fronts'
   import { emptySafe, type SafesById, type SafeState } from '../lib/safes'
-  import { hashForTab } from '../lib/tabs'
   import PropertySettings from './PropertySettings.svelte'
   import MoneyFrontsCard from './MoneyFrontsCard.svelte'
   import SafeCard from './SafeCard.svelte'
-  import Button from './ui/Button.svelte'
   import CardGrid from './ui/CardGrid.svelte'
+  import MarkOwned from './ui/MarkOwned.svelte'
   import Panel from './ui/Panel.svelte'
   import SettingsButton from './ui/SettingsButton.svelte'
 
@@ -51,27 +50,35 @@
   const frontProperties = $derived(
     FRONTS.flatMap((front) => catalog.filter((p) => p.id === front.propertyId)),
   )
-  // Money Fronts first until moved, then the property safes.
-  const cards = $derived([
-    ...(fronts ? [{ id: CAR_WASH, label: 'Money Fronts' }] : []),
-    ...shown.map(({ property }) => ({ id: property.id, label: property.label })),
-  ])
+  // In the catalog's order until moved (issue #60); Money Fronts goes where the Car Wash is.
+  const place = (id: string) => catalog.findIndex((p) => p.id === id)
+  const cards = $derived(
+    [
+      ...(fronts ? [{ id: CAR_WASH, label: 'Money Fronts' }] : []),
+      ...shown.map(({ property }) => ({ id: property.id, label: property.label })),
+    ].sort((a, b) => place(a.id) - place(b.id)),
+  )
+  // The card whose settings are open, one at a time.
   let open = $state<string | null>(null)
-  let editing = $state<string | null>(null)
 </script>
 
+{#snippet gear(id: string, label: string)}
+  <SettingsButton {label} open={open === id} onclick={() => (open = open === id ? null : id)} />
+{/snippet}
+
 {#if shown.length === 0 && !fronts}
-  <p class="empty">
+  <MarkOwned>
     You do not own a property with a safe yet: {[CAR_WASH, ...safes.map((safe) => safe.propertyId)]
       .map((id) => catalog.find((p) => p.id === id)?.label)
-      .join(', ')}. Mark what you own in <a href={hashForTab('settings')}>Settings</a>.
-  </p>
+      .join(', ')}.
+  </MarkOwned>
 {:else}
   <CardGrid items={cards} id={(card) => card.id} label={(card) => card.label} {order} {onorder}>
     {#snippet card({ id }, move, moving)}
       {@const entry = shown.find(({ property }) => property.id === id)}
       {#if id === CAR_WASH}
         <Panel title="Money Fronts" focus={CAR_WASH} {move} {moving}>
+          {#snippet actions()}{@render gear(CAR_WASH, 'Money Fronts')}{/snippet}
           {#if open === CAR_WASH}
             {#each frontProperties as property (property.id)}
               <PropertySettings {property} {owned} {onchange} />
@@ -82,25 +89,13 @@
             {owned}
             {onchange}
             safeState={stored[CAR_WASH] ?? emptyFronts()}
-            editing={editing === CAR_WASH}
             onresync={(state) => onresync(CAR_WASH, state)}
           />
-          {#snippet footer()}
-            <Button
-              aria-expanded={editing === CAR_WASH}
-              onclick={() => (editing = editing === CAR_WASH ? null : CAR_WASH)}
-              >{editing === CAR_WASH ? 'Done' : 'Edit'}</Button
-            >
-            <SettingsButton
-              label="Money Fronts"
-              open={open === CAR_WASH}
-              onclick={() => (open = open === CAR_WASH ? null : CAR_WASH)}
-            />
-          {/snippet}
         </Panel>
       {:else if entry}
         {@const { safe, property } = entry}
         <Panel title={property.label} focus={property.id} {move} {moving}>
+          {#snippet actions()}{@render gear(property.id, property.label)}{/snippet}
           {#if open === property.id}
             <PropertySettings {property} {owned} {onchange} />
           {/if}
@@ -109,34 +104,10 @@
             {property}
             {owned}
             safeState={stored[property.id] ?? emptySafe(safe)}
-            editing={editing === property.id}
             onresync={(state) => onresync(property.id, state)}
           />
-          {#snippet footer()}
-            <Button
-              aria-expanded={editing === property.id}
-              onclick={() => (editing = editing === property.id ? null : property.id)}
-              >{editing === property.id ? 'Done' : 'Edit'}</Button
-            >
-            <SettingsButton
-              label={property.label}
-              open={open === property.id}
-              onclick={() => (open = open === property.id ? null : property.id)}
-            />
-          {/snippet}
         </Panel>
       {/if}
     {/snippet}
   </CardGrid>
 {/if}
-
-<style>
-  .empty {
-    color: var(--muted);
-    margin: 0;
-  }
-
-  .empty a {
-    color: var(--accent-text);
-  }
-</style>

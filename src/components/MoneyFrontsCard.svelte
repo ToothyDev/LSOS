@@ -1,7 +1,7 @@
 <script lang="ts">
   // The Money Fronts safe in the Car Wash (issue #11): money, payout, next payout, time until
-  // full (or until the Car Wash stops it, if sooner), and a heat bar per owned front. `editing` adds the resync controls and the mission and
-  // legal-job buttons. Logic: lib/fronts.ts.
+  // full (or until the Car Wash stops it, if sooner), and a heat bar per owned front with its mission and
+  // legal-job buttons, always editable (issue #60). Logic: lib/fronts.ts.
   import { CAR_WASH, FRONTS_CAPACITY, FRONTS_ESTIMATE, HEAT_PER_MISSION } from '../data/fronts'
   import type { Property } from '../data/properties'
   import {
@@ -25,19 +25,19 @@
   import Fact from './ui/Fact.svelte'
   import EditableBar from './ui/EditableBar.svelte'
   import EditableValue from './ui/EditableValue.svelte'
+  import Hint from './ui/Hint.svelte'
   import Meter from './ui/Meter.svelte'
+  import Note from './ui/Note.svelte'
 
   interface Props {
     catalog: readonly Property[]
     owned: OwnedProperties
     onchange: (owned: OwnedProperties) => void
     safeState: SafeState
-    /** Show the controls to correct money and heat, log missions and sync the payout time. */
-    editing: boolean
     onresync: (safeState: SafeState) => void
   }
 
-  let { catalog, owned, onchange, safeState: current, editing, onresync }: Props = $props()
+  let { catalog, owned, onchange, safeState: current, onresync }: Props = $props()
 
   const fronts = $derived(ownedFronts(owned))
   const parts = $derived(payoutParts(current, owned, catalog))
@@ -59,124 +59,89 @@
 
 {#each fronts as front (front.propertyId)}
   {@const heat = heatOf(current, front.propertyId)}
-  {#if editing}
-    <EditableBar
-      label="{front.label} heat (est.)"
-      value={heat}
-      kind="heat"
-      segments={MAX_HEAT / HEAT_PER_MISSION}
-      onresync={(value) => onresync(setHeat(current, front.propertyId, value))}
-    />
+  <!-- The mission buttons sit right under the bar, small, in one row (issue #60). -->
+  <EditableBar
+    label="{front.label} heat (est.)"
+    value={heat}
+    kind="heat"
+    segments={MAX_HEAT / HEAT_PER_MISSION}
+    onresync={(value) => onresync(setHeat(current, front.propertyId, value))}
+  >
     <div class="actions">
       <Button
+        small
         title="A laundering mission launched here: +{HEAT_PER_MISSION}% heat, counts toward doubling this front's pay"
-        onclick={() => log(front.propertyId, 'laundering')}>Laundering +{HEAT_PER_MISSION}%</Button
+        onclick={() => log(front.propertyId, 'laundering')}>+{HEAT_PER_MISSION}% Laundering</Button
       >
       <Button
+        small
         title="A Mr. Faber job launched here: +{HEAT_PER_MISSION}% heat, counts toward doubling every front's pay"
-        onclick={() => log(front.propertyId, 'faber')}>Faber job +{HEAT_PER_MISSION}%</Button
+        onclick={() => log(front.propertyId, 'faber')}>+{HEAT_PER_MISSION}% Faber</Button
       >
       <Button
+        small
         title="Legal work here (washing cars, a helitour, a weed delivery) clears the heat"
         onclick={() => onresync(legalJob(current, front.propertyId))}>Legal job</Button
       >
     </div>
-  {:else}
-    <Meter
-      label="{front.label} heat (est.)"
-      value={heat}
-      max={MAX_HEAT}
-      kind="heat"
-      segments={MAX_HEAT / HEAT_PER_MISSION}
-    />
-  {/if}
+  </EditableBar>
 {/each}
 
 {#if carWashStopped}
-  <p class="warn" role="note">
-    <strong>Safe stopped.</strong> The Car Wash is at 100% heat: the safe gets nothing until you do a
-    legal job there.
-  </p>
+  <Note title="Safe stopped.">
+    The Car Wash is at 100% heat: the safe gets nothing until you do a legal job there.
+  </Note>
 {:else if stopped.length > 0}
-  <p class="warn" role="note">
-    <strong>Front stopped.</strong>
+  <Note title="Front stopped.">
     {stopped.map((f) => `${f.label} (${money(frontPay(f, owned, catalog))})`).join(', ')}
     {stopped.length === 1 ? 'is' : 'are'} at 100% heat and pay nothing until a legal job there.
-  </p>
+  </Note>
 {/if}
 
-{#if editing}
-  <EditableValue
-    label="Safe"
-    value={current.money}
-    unit="money"
-    min={0}
-    max={FRONTS_CAPACITY}
-    presets={[
-      { label: 'Collected', value: 0 },
-      { label: 'Full', value: FRONTS_CAPACITY },
-    ]}
-    onresync={(value) => onresync({ ...current, money: value })}
-  />
-{:else}
-  <Meter
-    label="Safe"
-    value={current.money}
-    max={FRONTS_CAPACITY}
-    valueText="{money(current.money)} / {money(FRONTS_CAPACITY)}"
-  />
-{/if}
+<EditableValue
+  label="Safe"
+  detail="of {money(FRONTS_CAPACITY)}"
+  value={current.money}
+  unit="money"
+  min={0}
+  max={FRONTS_CAPACITY}
+  presets={[{ label: 'Collected', value: 0 }]}
+  inlinePresets
+  onresync={(value) => onresync({ ...current, money: value })}
+>
+  <Meter label="Safe" value={current.money} max={FRONTS_CAPACITY} bare />
+</EditableValue>
 
 <Fact label="Payout">{money(parts.fronts + parts.others)} a day</Fact>
-<p class="hint">
+<Hint fine>
   Fronts {money(parts.fronts)} + your other businesses {money(parts.others)}. A shut-down business
   adds nothing.
-</p>
+</Hint>
 
 <Countdown label="Next payout in" remainingMs={nextPayoutInMs(current)} />
-{#if editing}
-  <div class="actions">
-    <Button onclick={() => onresync(syncFronts(current, owned, catalog))}
-      >Payout just arrived</Button
-    >
-    <p class="hint">Press when the game says money was added to this safe.</p>
-  </div>
-{/if}
+<div class="actions">
+  <Button
+    small
+    title="Press when the game says money was added to this safe"
+    onclick={() => onresync(syncFronts(current, owned, catalog))}>Payout just arrived</Button
+  >
+</div>
 {#if full === null}
-  <p class="hint">Never full: this safe gets nothing a day.</p>
+  <Hint fine>Never full: this safe gets nothing a day.</Hint>
 {:else if stopsFirst}
   <Countdown label="Car Wash max heat in (est.)" remainingMs={stopsIn ?? 0} />
-  <p class="hint">The safe stops before it is full unless you do a legal job at the Car Wash.</p>
+  <Hint fine>The safe stops before it is full unless you do a legal job at the Car Wash.</Hint>
 {:else}
   <Countdown label="Full in" remainingMs={full} readyText="Full" />
 {/if}
 
-<p class="hint" role="note">{FRONTS_ESTIMATE}</p>
+<Hint fine role="note">{FRONTS_ESTIMATE}</Hint>
 
 <style>
-  p {
-    margin: 0;
-  }
-
   .actions {
     align-items: center;
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-2) var(--space-3);
-  }
-
-  .warn {
-    border-left: 3px solid var(--warn);
-    font-size: var(--text-sm);
-    padding-left: var(--space-2);
-  }
-
-  .warn strong {
-    color: var(--warn);
-  }
-
-  .hint {
-    color: var(--muted);
-    font-size: var(--text-xs);
+    gap: var(--space-2);
   }
 </style>

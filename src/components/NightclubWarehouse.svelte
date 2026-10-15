@@ -1,7 +1,7 @@
 <script lang="ts">
   // Nightclub warehouse goods: one row per category with stock, value and when it is full, the
   // next one to fill highlighted, and the most profitable technician setup for what the user
-  // owns (issue #7). `editing` swaps the rows for resync fields. Logic: lib/nightclub.ts.
+  // owns (issue #7). Crates can be typed in on each row (issue #60). Logic: lib/nightclub.ts.
   import type { Goods } from '../data/nightclub'
   import type { Property } from '../data/properties'
   import {
@@ -24,7 +24,9 @@
   import Digits from './ui/Digits.svelte'
   import EditableValue from './ui/EditableValue.svelte'
   import Fact from './ui/Fact.svelte'
+  import Hint from './ui/Hint.svelte'
   import Meter from './ui/Meter.svelte'
+  import Note from './ui/Note.svelte'
 
   interface Props {
     goods: readonly Goods[]
@@ -32,12 +34,10 @@
     owned: OwnedProperties
     onchange: (owned: OwnedProperties) => void
     stock: GoodsStock
-    /** Show the fields to correct each category's crates. */
-    editing: boolean
     onresync: (goodsId: string, crates: number) => void
   }
 
-  let { goods, nightclub, owned, onchange, stock, editing, onresync }: Props = $props()
+  let { goods, nightclub, owned, onchange, stock, onresync }: Props = $props()
 
   const setup = $derived(warehouseSetup(owned, nightclub))
   const crates = (id: string) => stock[id] ?? 0
@@ -67,56 +67,41 @@
   }
 </script>
 
-{#if editing}
-  {#each goods as g (g.id)}
-    {@const cap = capacity(g, setup.floors)}
-    <EditableValue
-      label={g.label}
-      value={crates(g.id)}
-      unit="crates"
-      min={0}
-      max={cap}
-      presets={[
-        { label: 'Sold', value: 0 },
-        { label: 'Full', value: cap },
-      ]}
-      onresync={(value) => onresync(g.id, value)}
-    >
-      <Meter label={g.label} value={crates(g.id)} max={cap} bare />
-    </EditableValue>
-  {/each}
-{:else if shown.length === 0}
-  <p class="hint">No technician is making goods. Assign one in this card's settings.</p>
+{#if shown.length === 0}
+  <Hint>No technician is making goods. Assign one in this card's settings.</Hint>
 {:else}
-  <!-- Two lines per goods type: name and crates · value, then the bar with its play time to
-       full. The time column has one header instead of a label on every row. -->
+  <!-- Two lines per goods type: name, value and crates (click to type them), then the bar with
+       its play time to full. The time column has one header instead of a label on every row. -->
   <div class="head" aria-hidden="true"><span>Goods</span><span>Full in</span></div>
   {#each shown as g (g.id)}
     {@const cap = capacity(g, setup.floors)}
     {@const ms = fullInMs(g, crates(g.id), setup)}
     {@const producing = isProducing(g, setup, owned)}
     <div class="row" class:next={next === g.id}>
-      <div class="top">
-        <span class="name">{g.label}</span>
-        <span class="amount"
-          >{wholeCrates(crates(g.id))} / {cap} · {formatValue(
-            goodsValue(g, crates(g.id)),
-            'money',
-          )}</span
-        >
-      </div>
-      <div class="bottom">
-        <Meter label={g.label} value={crates(g.id)} max={cap} bare />
-        {#if !producing}
-          <span class="time idle">Idle</span>
-        {:else if ms <= 0}
-          <span class="time full">Full</span>
-        {:else}
-          <span class="time" aria-label="Full in {formatDuration(ms)}"
-            ><Digits text={formatDuration(ms)} /></span
-          >
-        {/if}
-      </div>
+      <EditableValue
+        label={g.label}
+        detail="{formatValue(goodsValue(g, crates(g.id)), 'money')} · max {cap}"
+        value={crates(g.id)}
+        unit="crates"
+        min={0}
+        max={cap}
+        presets={[{ label: 'Sold', value: 0 }]}
+        inlinePresets
+        onresync={(value) => onresync(g.id, value)}
+      >
+        <div class="bottom">
+          <Meter label={g.label} value={crates(g.id)} max={cap} bare />
+          {#if !producing}
+            <span class="time idle">Idle</span>
+          {:else if ms <= 0}
+            <span class="time full">Full</span>
+          {:else}
+            <span class="time" aria-label="Full in {formatDuration(ms)}"
+              ><Digits text={formatDuration(ms)} /></span
+            >
+          {/if}
+        </div>
+      </EditableValue>
     </div>
   {/each}
 {/if}
@@ -124,65 +109,55 @@
 <Fact label="Total value">{formatValue(total, 'money')}</Fact>
 
 {#each fullStuck as id (id)}
-  <p class="note" role="note">
-    <strong>{label(id)} is full.</strong> Sell it: its technician makes nothing until then.
-  </p>
+  <Note title="{label(id)} is full.">Sell it: its technician makes nothing until then.</Note>
 {/each}
 
 {#if suggestion}
-  <div class="tip" role="note">
-    <p>
-      <strong>More per hour:</strong>
-      {#each suggestion.moves as move (move.technician)}
-        {#if full.includes(move.from)}
-          <span class="move"
-            >{label(move.from)} is full. Sell it, or move technician {move.technician} to
-            {label(move.to)}.</span
-          >
-        {:else}
-          <span class="move"
-            >Technician {move.technician}: {label(move.to)}
-            <span class="was">(now {label(move.from)})</span></span
-          >
-        {/if}
-      {/each}
-    </p>
-    <div class="apply">
-      <span class="gain">+{formatValue(suggestion.gainPerHour, 'money')} / h</span>
-      <Button onclick={applySuggestion}>Move</Button>
-    </div>
-  </div>
+  <Note tone="good" title="More per hour:">
+    {#each suggestion.moves as move (move.technician)}
+      {#if full.includes(move.from)}
+        <span class="move"
+          >{label(move.from)} is full. Sell it, or move technician {move.technician} to
+          {label(move.to)}.</span
+        >
+      {:else}
+        <span class="move"
+          >Technician {move.technician}: {label(move.to)}
+          <span class="was">(now {label(move.from)})</span></span
+        >
+      {/if}
+    {/each}
+    {#snippet actions()}
+      <div class="apply">
+        <span class="gain">+{formatValue(suggestion.gainPerHour, 'money')} / h</span>
+        <Button onclick={applySuggestion}>Move</Button>
+      </div>
+    {/snippet}
+  </Note>
 {/if}
 
 {#if locked.length > 0}
-  <p class="note" role="note">
-    <strong>Locked.</strong>
+  <Note title="Locked.">
     {locked.map((g) => g.label).join(', ')}: own the business that makes
     {locked.length === 1 ? 'it' : 'them'}, and keep it running, to start production.
-  </p>
+  </Note>
 {/if}
 {#if setup.doubled}
-  <p class="note" role="note">
-    <strong>Two technicians on one category.</strong> The game allows one technician per category, so
-    only one counts.
-  </p>
+  <Note title="Two technicians on one category."
+    >The game allows one technician per category, so only one counts.</Note
+  >
 {/if}
 
 <style>
-  .head,
-  .top {
+  .head {
+    color: var(--muted);
     display: flex;
     font-family: var(--font-display);
-    font-size: var(--text-sm);
+    font-size: var(--text-xs);
     gap: var(--space-2);
     justify-content: space-between;
     letter-spacing: var(--tracking);
     text-transform: uppercase;
-  }
-
-  .head {
-    color: var(--muted);
-    font-size: var(--text-xs);
     padding-left: calc(var(--space-2) + 3px);
   }
 
@@ -196,17 +171,6 @@
 
   .row.next {
     border-left-color: var(--accent);
-  }
-
-  .name {
-    color: var(--muted);
-  }
-
-  .amount {
-    color: var(--accent-text);
-    font-variant-numeric: tabular-nums;
-    text-align: right;
-    white-space: nowrap;
   }
 
   .bottom {
@@ -233,29 +197,6 @@
     font-size: var(--text-sm);
   }
 
-  .hint {
-    color: var(--muted);
-    font-size: var(--text-sm);
-    margin: 0;
-  }
-
-  .tip {
-    border-left: 3px solid var(--accent);
-    display: flex;
-    flex-direction: column;
-    font-size: var(--text-sm);
-    gap: var(--space-2);
-    padding-left: var(--space-2);
-  }
-
-  .tip p {
-    margin: 0;
-  }
-
-  .tip strong {
-    color: var(--accent-text);
-  }
-
   .move {
     display: block;
   }
@@ -274,16 +215,5 @@
   .gain {
     color: var(--accent-text);
     font-variant-numeric: tabular-nums;
-  }
-
-  .note {
-    border-left: 3px solid var(--warn);
-    font-size: var(--text-sm);
-    margin: 0;
-    padding-left: var(--space-2);
-  }
-
-  .note strong {
-    color: var(--warn);
   }
 </style>

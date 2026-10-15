@@ -27,6 +27,10 @@
     max?: number
     /** One-click values, e.g. "Sold" setting stock to 0. The tracker decides what each one means. */
     presets?: Preset[]
+    /** Presets as small buttons next to the value instead of a row of their own. */
+    inlinePresets?: boolean
+    /** Muted text after the label, e.g. "40 / 100 units". */
+    detail?: string
     /** Show an Undo button for the last edit. Off when the parent keeps one undo for several values. */
     undoable?: boolean
     /** Shown under the value, e.g. a bare Meter. */
@@ -42,6 +46,8 @@
     min,
     max,
     presets = [],
+    inlinePresets = false,
+    detail,
     undoable = true,
     children,
     onresync,
@@ -106,7 +112,10 @@
 
 <div class="editable">
   <div class="row">
-    <span class="label" id="{id}-label">{label}</span>
+    <span class="label"
+      ><span id="{id}-label">{label}</span>{#if detail}<span class="detail">{detail}</span
+        >{/if}</span
+    >
     {#if editing}
       <form class="edit" onsubmit={confirm}>
         <input
@@ -126,6 +135,15 @@
         <Button onclick={stopEditing}>Cancel</Button>
       </form>
     {:else}
+      {#if inlinePresets}
+        <span class="inline">
+          {#each presets as preset (preset.label)}
+            <Button small title={preset.title} onclick={() => apply(preset.value)}
+              >{preset.label}</Button
+            >
+          {/each}
+        </span>
+      {/if}
       <button
         bind:this={valueButton}
         type="button"
@@ -145,9 +163,9 @@
     </p>
   {/if}
 
-  {#if presets.length > 0 || last}
+  {#if (presets.length > 0 && !inlinePresets) || last}
     <div class="actions">
-      {#each presets as preset (preset.label)}
+      {#each inlinePresets ? [] : presets as preset (preset.label)}
         <Button title={preset.title} onclick={() => apply(preset.value)}>{preset.label}</Button>
       {/each}
       {#if last}
@@ -181,6 +199,22 @@
     font-size: var(--text-sm);
     letter-spacing: var(--tracking);
     text-transform: uppercase;
+  }
+
+  .detail {
+    color: var(--muted);
+    font-family: var(--font-body);
+    font-size: var(--text-xs);
+    letter-spacing: normal;
+    margin-left: var(--space-2);
+    text-transform: none;
+  }
+
+  /* The presets sit by the value, the label keeps the left. */
+  .inline {
+    display: flex;
+    gap: var(--space-1);
+    margin-left: auto;
   }
 
   .value {

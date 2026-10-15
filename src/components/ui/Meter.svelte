@@ -111,7 +111,10 @@
       onkeydown={key}
     >
       {@render bar()}
-      <div class="handle" style:left="{fraction * 100}%"></div>
+      <div
+        class="handle"
+        style:left="calc(var(--reach) + (100% - 2 * var(--reach)) * {fraction})"
+      ></div>
     </div>
   {:else}
     <div
@@ -235,10 +238,14 @@
   }
 
   /* Taller than the bar to give fingers and the pointer room; vertical scrolling still works. */
+  /* Reaches half a handle past both ends of the bar, so a handle at 0% or 100% can be grabbed
+     anywhere on it. The value is still measured on the bar. */
   .slider {
+    --reach: 0.5rem;
     border-radius: var(--radius);
     cursor: ew-resize;
-    padding: var(--space-2) 0;
+    margin-inline: calc(-1 * var(--reach));
+    padding: var(--space-2) var(--reach);
     position: relative;
     touch-action: pan-y;
   }
@@ -253,5 +260,20 @@
     top: 50%;
     transform: translate(-50%, -50%);
     width: 0.5rem;
+  }
+
+  /* Every card's bars can be dragged (issue #60): the handle shows only over the card, or while
+     the bar has focus, so a tab of cards reads as plain bars. Touch screens always show it. */
+  @media (hover: hover) {
+    .handle {
+      opacity: 0;
+      transition: opacity 0.12s;
+    }
+
+    :global(.panel:hover) .handle,
+    .slider:focus-visible .handle,
+    .slider:active .handle {
+      opacity: 1;
+    }
   }
 </style>

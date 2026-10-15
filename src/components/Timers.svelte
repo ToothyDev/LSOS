@@ -6,13 +6,11 @@
   import type { Property } from '../data/properties'
   import { LUCKY_WHEEL, MANSION_BOOST } from '../data/timers'
   import { isOwned, type OwnedProperties } from '../lib/properties'
-  import { hashForTab } from '../lib/tabs'
   import {
     boostableBusinesses,
     mansionBoostOn,
     readyAt,
     startForRemaining,
-    type MansionBoost,
     type Timers,
   } from '../lib/timers'
   import Button from './ui/Button.svelte'
@@ -20,8 +18,12 @@
   import Countdown from './ui/Countdown.svelte'
   import EditableValue from './ui/EditableValue.svelte'
   import Fact from './ui/Fact.svelte'
+  import Hint from './ui/Hint.svelte'
+  import MarkOwned from './ui/MarkOwned.svelte'
   import Panel from './ui/Panel.svelte'
   import Select from './ui/Select.svelte'
+  import UndoStatus from './ui/UndoStatus.svelte'
+  import { TimedUndo } from '../lib/cards.svelte'
 
   interface Props {
     catalog: readonly Property[]
@@ -42,18 +44,21 @@
     { id: 'mansion', label: 'Mansion boost' },
   ]
 
-  // What each timer's last button press replaced, so a press by mistake can be taken back.
-  let undoSpin = $state<{ before: number | undefined } | null>(null)
-  let undoBoost = $state<{ before: MansionBoost | undefined } | null>(null)
+  // A press by mistake can be taken back for a while, on the card it was on.
+  const undo = new TimedUndo()
 
   function spin() {
-    undoSpin = { before: timers.luckyWheelSpunAt }
+    const before = timers.luckyWheelSpunAt
     onchange({ ...timers, luckyWheelSpunAt: now })
+    undo.offer('lucky-wheel', 'Spin marked', () =>
+      onchange({ ...timers, luckyWheelSpunAt: before }),
+    )
   }
 
   function activate(propertyId: string) {
-    undoBoost = { before: timers.mansionBoost }
+    const before = timers.mansionBoost
     onchange({ ...timers, mansionBoost: { propertyId, startedAt: now } })
+    undo.offer('mansion', 'Boost marked', () => onchange({ ...timers, mansionBoost: before }))
   }
 
   const spinAt = $derived(readyAt(timers.luckyWheelSpunAt, LUCKY_WHEEL.cooldownMs))
@@ -69,37 +74,10 @@
   const target = $derived(choices.some((p) => p.id === chosen) ? chosen : choices[0]?.id)
 </script>
 
-<!-- Undo sits in the card's action strip, only right after a press. -->
-{#snippet wheelUndo()}
-  <Button
-    onclick={() => {
-      onchange({ ...timers, luckyWheelSpunAt: undoSpin?.before })
-      undoSpin = null
-    }}
-    title="Take back a spin marked by mistake">Undo spin</Button
-  >
-{/snippet}
-
-{#snippet mansionUndo()}
-  <Button
-    onclick={() => {
-      onchange({ ...timers, mansionBoost: undoBoost?.before })
-      undoBoost = null
-    }}
-    title="Take back a boost marked by mistake">Undo boost</Button
-  >
-{/snippet}
-
 <CardGrid items={CARDS} id={(card) => card.id} label={(card) => card.label} {order} {onorder}>
   {#snippet card({ id }, move, moving)}
     {#if id === 'lucky-wheel'}
-      <Panel
-        title="Lucky Wheel"
-        focus="lucky-wheel"
-        footer={undoSpin ? wheelUndo : undefined}
-        {move}
-        {moving}
-      >
+      <Panel title="Lucky Wheel" focus="lucky-wheel" {move} {moving}>
         {#if now < spinAt}
           <EditableValue
             label="Next spin in"
@@ -113,29 +91,24 @@
                 luckyWheelSpunAt: startForRemaining(ms, LUCKY_WHEEL.cooldownMs, now),
               })}
           />
+          <UndoStatus {undo} at="lucky-wheel" />
         {:else}
           <Fact label="Spin ready">
             <Button onclick={spin}>Spun</Button>
           </Fact>
         {/if}
-        <p class="hint">One spin per 24 real hours, also while LSOS is closed.</p>
+        <Hint>One spin per 24 real hours, also while LSOS is closed.</Hint>
       </Panel>
     {:else}
-      <Panel
-        title="Mansion boost"
-        focus="mansion"
-        footer={undoBoost ? mansionUndo : undefined}
-        {move}
-        {moving}
-      >
+      <Panel title="Mansion boost" focus="mansion" {move} {moving}>
         {#if !mansionOwned}
-          <p class="hint">
-            The production boost from the Mansion's AI assistant. Mark a Mansion as owned in
-            <a href={hashForTab('settings')}>Settings</a> to track it.
-          </p>
+          <MarkOwned property={MANSION_BOOST.propertyId}
+            >The production boost from the Mansion's AI assistant, once you own a Mansion.</MarkOwned
+          >
         {:else}
           {#if boostOn}
             <Fact label="Boosting">{label(last!.propertyId)}</Fact>
+            <UndoStatus {undo} at="mansion" />
             <EditableValue
               label="Ends in"
               value={endsAt - now}
@@ -168,31 +141,19 @@
                 <Button disabled={!target} onclick={() => activate(target!)}>Activated</Button>
               </Fact>
             {:else}
-              <p class="hint">
+              <Hint>
                 Boost ready, but no business you own and run can take it{last
                   ? ` (${label(last.propertyId)} was boosted last time)`
                   : ''}.
-              </p>
+              </Hint>
             {/if}
           {/if}
-          <p class="hint">
+          <Hint>
             Production ×{MANSION_BOOST.speed} at one Bunker, Acid Lab or MC business for 24 real hours.
             The next boost is ready 24 real hours after the last one, for a different business.
-          </p>
+          </Hint>
         {/if}
       </Panel>
     {/if}
   {/snippet}
 </CardGrid>
-
-<style>
-  .hint {
-    color: var(--muted);
-    font-size: var(--text-sm);
-    margin: 0;
-  }
-
-  .hint a {
-    color: var(--accent-text);
-  }
-</style>

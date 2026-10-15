@@ -9,13 +9,15 @@
      * when pressed and `ghost` when not.
      */
     variant?: 'primary' | 'ghost'
+    /** Smaller, for a row of several actions or a title bar. */
+    small?: boolean
     children: Snippet
   }
 
-  let { variant = 'ghost', type = 'button', children, ...rest }: Props = $props()
+  let { variant = 'ghost', small = false, type = 'button', children, ...rest }: Props = $props()
 </script>
 
-<button class={variant} {type} {...rest}>{@render children()}</button>
+<button class={variant} class:small {type} {...rest}>{@render children()}</button>
 
 <style>
   button {
@@ -33,6 +35,13 @@
     transition:
       background-color 0.12s,
       border-color 0.12s;
+  }
+
+  button.small {
+    font-size: var(--text-xs);
+    letter-spacing: var(--tracking);
+    min-height: 1.75rem;
+    padding: 0 var(--space-2);
   }
 
   button:hover {

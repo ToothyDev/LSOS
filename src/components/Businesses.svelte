@@ -19,18 +19,18 @@
   import {
     isShutDown,
     ownedProperties,
-    upgradeValue,
+    upgradeSummary,
     type OwnedProperties,
   } from '../lib/properties'
   import type { GoodsStock } from '../lib/nightclub'
   import type { Bars } from '../lib/resync'
-  import { hashForTab } from '../lib/tabs'
   import type { MansionBoost } from '../lib/timers'
   import BusinessProduction from './BusinessProduction.svelte'
   import NightclubWarehouse from './NightclubWarehouse.svelte'
   import PropertySettings from './PropertySettings.svelte'
-  import Button from './ui/Button.svelte'
   import CardGrid from './ui/CardGrid.svelte'
+  import Hint from './ui/Hint.svelte'
+  import MarkOwned from './ui/MarkOwned.svelte'
   import Panel from './ui/Panel.svelte'
   import SettingsButton from './ui/SettingsButton.svelte'
 
@@ -78,33 +78,12 @@
   const ownedList = $derived(
     ownedProperties(catalog, owned).filter((property) => property.card !== false),
   )
+  // The card whose settings are open, one at a time.
   let open = $state<string | null>(null)
-  // Cards start collapsed: bars, value and next countdown only (issue #6).
-  let editing = $state<string | null>(null)
-
-  /** Short summary of the bought upgrades, e.g. "Equipment, Technician: Cash". */
-  function summary(property: Property): string {
-    const parts = property.upgrades.flatMap((upgrade) => {
-      const value = upgradeValue(owned, property.id, upgrade)
-      if (upgrade.kind === 'toggle') return value === true ? [upgrade.label] : []
-      if (upgrade.kind === 'count') return [`${upgrade.label}: ${value}`]
-      if (upgrade.summary === false || value === upgrade.options[0]?.id) return []
-      const option = upgrade.options.find((o) => o.id === value)
-      return option ? [`${upgrade.label}: ${option.label}`] : []
-    })
-    return parts.length > 0 ? parts.join(', ') : 'No upgrades'
-  }
 </script>
 
 {#if ownedList.length === 0}
-  <p class="empty">
-    {#if catalog.length === 0}
-      No businesses are tracked yet.
-    {:else}
-      You do not own any business yet. Mark what you own in
-      <a href={hashForTab('settings')}>Settings</a>.
-    {/if}
-  </p>
+  <MarkOwned>You do not own any business yet.</MarkOwned>
 {:else}
   <CardGrid
     items={ownedList}
@@ -118,10 +97,17 @@
       {@const warehouse = property.id === NIGHTCLUB_ID && goods.length > 0}
       <div class="shell" class:shut={isShutDown(owned, property.id)}>
         <Panel title={property.label} {move} {moving} focus={property.id}>
+          {#snippet actions()}
+            <SettingsButton
+              label={property.label}
+              open={open === property.id}
+              onclick={() => (open = open === property.id ? null : property.id)}
+            />
+          {/snippet}
           {#if open === property.id}
             <PropertySettings {property} {owned} {onchange} />
           {:else}
-            <p class="hint">{summary(property)}</p>
+            <Hint>{upgradeSummary(owned, property)}</Hint>
           {/if}
           {#if production}
             <BusinessProduction
@@ -131,7 +117,6 @@
               shutDown={isShutDown(owned, property.id)}
               bars={businesses[property.id] ?? emptyBars()}
               {now}
-              editing={editing === property.id}
               onresync={(bars) => onresync(property.id, bars)}
               bonus={valueBonus(production, owned, property)}
               farEstimated={farValueEstimated(production, owned)}
@@ -147,24 +132,9 @@
               {owned}
               {onchange}
               stock={nightclubStock}
-              editing={editing === property.id}
               onresync={onnightclub}
             />
           {/if}
-          {#snippet footer()}
-            {#if production || warehouse}
-              <Button
-                aria-expanded={editing === property.id}
-                onclick={() => (editing = editing === property.id ? null : property.id)}
-                >{editing === property.id ? 'Done' : 'Edit'}</Button
-              >
-            {/if}
-            <SettingsButton
-              label={property.label}
-              open={open === property.id}
-              onclick={() => (open = open === property.id ? null : property.id)}
-            />
-          {/snippet}
         </Panel>
       </div>
     {/snippet}
@@ -180,22 +150,5 @@
   /* A shut-down business is dimmed like a disabled control: same colours, darker (issue #38). */
   .shell.shut {
     filter: brightness(0.65);
-  }
-
-  p {
-    margin: 0;
-  }
-
-  .empty {
-    color: var(--muted);
-  }
-
-  .empty a {
-    color: var(--accent-text);
-  }
-
-  .hint {
-    color: var(--muted);
-    font-size: var(--text-sm);
   }
 </style>
