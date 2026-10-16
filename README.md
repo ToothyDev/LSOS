@@ -15,7 +15,8 @@ emptying.
   Nothing is sent anywhere. Export/import lets you back up or move your data.
 - **Time-based estimates.** LSOS can't see the game. Business production runs while LSOS is
   open and tracking ("play time"). LSOS opens paused: press Start once you have loaded into a
-  session, or turn on tracking on open in Settings. Real-world cooldowns such as the Lucky Wheel
+  session, or turn on tracking on open in Settings. Played a while without LSOS? Skip time
+  moves every play-time tracker forward by however long you enter. Real-world cooldowns such as the Lucky Wheel
   run on the wall clock even when LSOS is closed.
 - **Sourced game data.** Rates and values come from sources such as gta.wiki. Where none exists
   for your upgrades, LSOS uses a best estimate and labels those numbers "(est.)".

@@ -99,6 +99,16 @@ export function dismissGaps(clock: ClockState): void {
   clock.unconfirmedMs = 0
 }
 
+/**
+ * The user played without LSOS tracking (issue #70): count `ms` as play time, as if LSOS had
+ * been running. Returns the play time counted, for trackers to add to their progress.
+ */
+export function skipAhead(clock: ClockState, ms: number): number {
+  const counted = Math.max(0, ms)
+  clock.playMs += counted
+  return counted
+}
+
 /** Real time since `sinceMs` (epoch ms). Never negative, even if the clock was set back. */
 export function realElapsed(sinceMs: number, now: number): number {
   return Math.max(0, now - sinceMs)
