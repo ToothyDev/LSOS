@@ -7,6 +7,7 @@ import {
   dismissGaps,
   pause,
   resume,
+  skipAhead,
   startSession,
   tick,
   type ClockState,
@@ -69,6 +70,12 @@ export function togglePause(): void {
 export function answerGaps(playing: boolean): void {
   if (playing) report(confirmGaps(clocks.play))
   else dismissGaps(clocks.play)
+}
+
+/** Counts `ms` of play time the user spent without LSOS tracking, so every tracker catches up. */
+export function skipPlayTime(ms: number): void {
+  report(skipAhead(clocks.play, ms))
+  saveNow()
 }
 
 setInterval(onTick, TICK_INTERVAL_MS)

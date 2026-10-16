@@ -18,7 +18,7 @@ free number, add one line below. **Replacing one:** write a new decision, then m
 - [005](005-weekly-data.md) Weekly events come from a JSON file updated by PR, not a live API
 - [006](006-persisted-state.md) Persisted state is versioned, migrated on load, exportable as JSON
 - [007](007-state-store.md) State store: unreadable data blocks saving like a newer version; import overrides
-- [008](008-clock-details.md) Clock details: session play time, opens paused (setting), throttled ticks counted, long gaps asked about
+- [008](008-clock-details.md) Clock details: session play time, opens paused (setting), throttled ticks counted, long gaps asked about, Skip time for play without LSOS
 - [009](009-terminal-design.md) Terminal look: tokens in `app.css`, self-hosted Oswald (OFL), browser-style tabs, base components in `src/components/ui/`
 - [010](010-resync.md) Resync: `EditableValue` for every tracked value, `BusinessBars` with Sold/Raided/Full and supply deliveries, undo keeps progress since, five-segment bars you can drag (duration format amended by 022; presets and edit view amended by 029)
 - [011](011-owned-properties.md) Owned properties and upgrades: catalog in `src/data/properties.ts`, toggle/choice upgrades (count: 016), Settings panel and Businesses gear

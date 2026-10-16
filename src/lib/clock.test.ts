@@ -8,6 +8,7 @@ import {
   pause,
   realElapsed,
   resume,
+  skipAhead,
   startSession,
   tick,
   type ClockState,
@@ -101,6 +102,27 @@ describe('confirming long gaps', () => {
     t.tickAfter(MINUTE, 30 * MINUTE)
     dismissGaps(t.clock)
     expect(t.clock).toMatchObject({ playMs: MINUTE, unconfirmedMs: 0 })
+  })
+})
+
+describe('skipping ahead', () => {
+  it('counts time played without LSOS and reports it, paused or not', () => {
+    const t = setup()
+    t.tickAfter(MINUTE)
+    expect(skipAhead(t.clock, 10 * MINUTE)).toBe(10 * MINUTE)
+    expect(t.clock.playMs).toBe(11 * MINUTE)
+    pause(t.clock, t.now())
+    expect(skipAhead(t.clock, 5 * MINUTE)).toBe(5 * MINUTE)
+    expect(t.clock).toMatchObject({ playMs: 16 * MINUTE, paused: true })
+  })
+
+  it('does not move the next tick or count negative time', () => {
+    const t = setup()
+    skipAhead(t.clock, 10 * MINUTE)
+    t.tickAfter(SECOND)
+    expect(t.reported()).toBe(SECOND)
+    expect(skipAhead(t.clock, -MINUTE)).toBe(0)
+    expect(t.clock.playMs).toBe(10 * MINUTE + SECOND)
   })
 })
 

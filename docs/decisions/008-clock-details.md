@@ -33,6 +33,11 @@ browser events, listeners), `src/components/ClockBar.svelte` (indicator, toggle,
 - **Leaving the page** (`pagehide`) counts up to that moment and stops measuring, so time away
   is not counted if the page returns from the back/forward cache. `visibilitychange` fires after
   `pagehide` and must not restart the clock.
+- **Skip time** (issue #70): the clock bar's "Skip time" button takes a duration the user played
+  without LSOS tracking (same formats as resync: `10`, `1h 30m`, `1:30`) and reports it through
+  `onPlayTime` like any counted stretch, so every play-time tracker catches up at once. Real-time
+  timers are left alone: real time already passed. There is no undo, because trackers only take
+  positive stretches; the button shows the exact amount (`Skip 1:30:00`) before it is pressed.
 
 ## Why
 
