@@ -1,7 +1,8 @@
 # Writing a week's events
 
 Each Thursday's GTA Online events go into `src/data/weekly.ts` (decision 027), replaced in full
-by one pull request. By hand or by the weekly routine (#17), the steps are the same.
+by one pull request. By hand or by the weekly routine (#17, the `weekly-update` skill, which adds
+when to stop and what the pull request says), the steps are the same.
 
 1. **Wait for the page.** Find the week's page on gta.wiki: the newest in
    [Category:Weekly events](https://gta.wiki/w/Category:Weekly_events), e.g. "Halloween 2026

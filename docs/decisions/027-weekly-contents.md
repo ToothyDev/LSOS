@@ -54,7 +54,15 @@
   `type = weeklyevent`, e.g. "Halloween 2026 (Week 3)"). The routine reads its wikitext through
   the MediaWiki API (`https://gta.wiki/api.php?action=parse&page=<title>&prop=wikitext&format=json`).
   The page's Rockstar Newswire link is kept as a second link in the file.
-- **Routine time** (#17): Thursday late afternoon, about 16:00 UTC, so the wiki page is complete.
+- **Routine** (#17): a Claude Code scheduled task, Thursdays at 16:00 UTC, once, so the wiki
+  page is complete. Each run starts a fresh session that follows the `weekly-update` skill
+  (`.claude/skills/weekly-update/SKILL.md`): stop if this week is already written or has an
+  open pull request; stop without writing if the page is incomplete; otherwise replace
+  `src/data/weekly.ts` and open a pull request. No retries during the day: an incomplete page
+  is re-run by hand.
+- **Merge policy:** every weekly pull request is reviewed and merged by hand, no auto-merge.
+  CI catches a malformed week, not a misread name or percentage; an unmerged week shows
+  "Out of date" rather than wrong data.
 
 ## Why
 
